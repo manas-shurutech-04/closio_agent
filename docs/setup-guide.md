@@ -33,6 +33,16 @@
 | Claude Code | Runs `closio-agent` | **Inside Node v22 with npm**, see [below](#install-claude-code-and-codex-inside-node-v22--verified) |
 | Codex (optional) | Runs `closio-agent` | **Inside Node v22 with npm**, see [below](#install-claude-code-and-codex-inside-node-v22--verified) |
 
+### Get closio-agent (one-time)
+
+The repo is **private** on GitHub, so ask Manas to add your GitHub account first. Then, in the folder where you keep your projects:
+
+```bash
+git clone https://github.com/manas-shurutech-04/closio_agent.git closio-agent
+```
+
+The `closio-agent` at the end names the folder the way these docs expect. Without it, git would call it `closio_agent`.
+
 ### Install Claude Code and Codex (inside Node v22) ✅ verified
 
 Both tools are installed with npm **inside Node v22**. That way there's only one copy of each on your Mac, and both follow the Node v22 rule ([D41](design-decisions.md#d41)). Your logins and settings are kept, because they live in `~/.claude` and `~/.codex`, not in the install.

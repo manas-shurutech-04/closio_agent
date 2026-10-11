@@ -4,6 +4,7 @@ Dated list of what changed in closio-agent. Newest first.
 
 ## 2026-10-11
 
+- **closio-agent is on GitHub** (private): `https://github.com/manas-shurutech-04/closio_agent.git`. Clone steps in the README and the setup guide.
 - `flow-doctor` tested by the user in Claude Code and Codex. Fixed: inside Codex's sandbox, the Codex background service check now says "can't check from here" instead of a wrong ✅. Jira in Codex works through the Atlassian app on your ChatGPT account (setup guide, section 3).
 
 ## 2026-10-10

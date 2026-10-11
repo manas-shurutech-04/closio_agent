@@ -517,7 +517,7 @@ Every decision taken while building the agent, including the options we rejected
 - **Status:** Accepted (created 2026-10-09). Local-path handling **approved by the user on 2026-10-10**.
 - **Context:** Everything lives in this project folder, which the team clones (D36). The user approved `git init` and creating the structure.
 - **Decision:**
-  - `git init` (branch `main`). **No commit yet** (user: not yet). **No remote yet** (user will push later).
+  - `git init` (branch `main`). **First commit and push on 2026-10-11** (user): remote **`https://github.com/manas-shurutech-04/closio_agent.git`** (private GitHub repo). Teammates clone it with `git clone https://github.com/manas-shurutech-04/closio_agent.git closio-agent`. Before the push, the chat transcript's WS1 login user ID was blanked out, like the GitLab token.
   - **Folder rename:** the project folder will be renamed from `AI Pipeline` to `closio-agent` (user agreed 2026-10-10). **The user will rename it themselves later** (2026-10-10). Note: Claude Code ties its session history and memory to the folder path.
   - Folders: `.agents/skills/`, `config/repos/`, `scripts/`, `e2e/`, `runs/` (each with a `.gitkeep`), plus the existing `docs/` and `build-memory/`, and a top-level `README.md`.
   - `.gitignore` excludes: `/local/` (personal settings and local repo paths), `.env` and `.env.*`, `*.pem`/`*.key`, Playwright dependencies and outputs under `e2e/`, `node_modules/`, `.DS_Store`, `*.log`.

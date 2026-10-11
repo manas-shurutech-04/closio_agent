@@ -133,7 +133,7 @@ More docs may be added as the user specifies.
 
 | # | Piece | Status |
 |---|---|---|
-| F0 | Project skeleton (`git init`, folders, `.gitignore`, README) | **Done 2026-10-09** (D39), no commit and no remote yet |
+| F0 | Project skeleton (`git init`, folders, `.gitignore`, README) | **Done 2026-10-09** (D39). First commit + push 2026-10-11 to GitHub |
 | F1 | Skill format check in Claude Code + Codex: `flow-ping` + first version of `flow-doctor` (D8, D43, D44) | **Built 2026-10-10.** T1, T2, T5 passed; T4 passed after `AGENTS.md` (D45); T3 passed after Codex was reinstalled inside Node v22 and its background service restarted. **F1 complete** |
 | F2 | Rest of `flow-doctor` (tools, Codex service, VPN state, GitLab + token, Keychain names, Jira via the AI); shared settings file (D46) | **Built 2026-10-10, tested by the user 2026-10-11** in Claude Code and Codex (only the 5 Keychain items missing, as expected). One Codex-sandbox fix. **F2 complete** |
 | F3 | Connectivity script + agent (D30) | — |
@@ -148,7 +148,7 @@ More docs may be added as the user specifies.
 ## Answers (user, 2026-10-10)
 
 - `local/` approach for local repo paths: **approved** (D39).
-- Git remote: the user will **push later**.
+- Git remote: **pushed 2026-10-11** to the private GitHub repo `https://github.com/manas-shurutech-04/closio_agent.git` (user). Clone with `... closio-agent` as the folder name.
 - Rename the folder `AI Pipeline` → `closio-agent`: **yes** (timing open; renaming loses Claude Code's session history and memory for this path).
 - First commit: **not yet**.
 - **New requirement, user-specific runtime context memory (D40):** when users run the workflows they may want to store changes/preferences for current and future runs. It's an additional memory, user-specific, maintained by each user, stored in this repository, used in coding and all other phases to make results more precise to the user's description. **Rule A7:** always load and apply it in every command when present.

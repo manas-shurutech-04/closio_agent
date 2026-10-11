@@ -11,7 +11,6 @@
 - **Vitest threshold:** check that `thresholds.global` in closio-web-v2 is actually enforced by Vitest 3.
 - **Subagents:** decided per phase (D16). So far: AC-check agent (Phase 5), story-verification agent (Phase 6).
 - **Agent's own memory (per-card run folder, A1):** location (D36), keep after done and shared pickup (D38) decided. Still to finalise: the file structure (draft: state.json, history.md, card.md, plan.md, context.md, phases/, deployment-doc.md), after the foundation is built.
-- **Git remote:** the user will push later. No commit yet (user: not yet).
 - **Folder rename to `closio-agent`:** the user will do it later themselves. (Claude Code ties session history and memory to the folder path.)
 - **New-user test (F9):** user agreed to a separate macOS account and asked how big the setup is. Explained 2026-10-09 (incl. the Homebrew multi-user caveat).
 - **Jira in Codex:** works through the Atlassian app on the user's ChatGPT account (verified 2026-10-11). Still to write up: how a new user connects that app in ChatGPT (exact steps). The `codex mcp add` way is untested.
@@ -56,4 +55,4 @@
 - User memory mechanism is built as F6b, right after F6 `setup-repo` (user, 2026-10-10).
 - Node v22 for the whole project, `nvm use v22` before Claude Code (A9, D41). Sessions start in the closio-agent folder (A10, D42). Rules R12 (simple language) and R13 (relevant names).
 - Claude Code and Codex installed with npm inside Node v22, Homebrew copies removed; Codex service restarted from v22; F1 complete (D41). Prefix `flow-`, commands `flow-ping` + `flow-doctor` (D43). Commands only run when typed (D44). Node v22 also working rule R14.
-
+- Git remote: private GitHub repo `manas-shurutech-04/closio_agent`, first commit pushed 2026-10-11 (D39).

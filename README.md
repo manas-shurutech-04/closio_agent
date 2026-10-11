@@ -10,6 +10,7 @@ It runs as commands inside **Claude Code** (`/flow-start`) and **Codex** (`$flow
 
 > **Every time you use it:** open a terminal in **this folder**, run `nvm use v22`, then start `claude` or `codex`. Never start it inside a code repo; the agent adds the repos it needs itself ([D41](docs/design-decisions.md#d41), [D42](docs/design-decisions.md#d42)).
 
+0. **Get it (one-time):** `git clone https://github.com/manas-shurutech-04/closio_agent.git closio-agent`. The repo is private, so ask Manas for access first. The `closio-agent` at the end names the folder the way the docs expect.
 1. **Set up your Mac:** [docs/setup-guide.md](docs/setup-guide.md) (VPN, GitLab token, Keychain secrets, repos).
 2. **Understand the flow:** [docs/architecture.md](docs/architecture.md).
 3. **Check it works:** type `/flow-ping`, then `/flow-doctor` (Codex: `$flow-ping`, `$flow-doctor`). See [docs/commands.md](docs/commands.md).

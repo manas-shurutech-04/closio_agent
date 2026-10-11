@@ -17,4 +17,4 @@ Memory for **building** `closio-agent` (JIRA card → … → MR review → depl
 | `decisions.md` | One-line index of decisions, each linking to its full record | Before proposing anything that might overlap with an earlier decision |
 | `open-questions.md` | Unresolved questions; answered ones become decisions and are listed briefly under "Resolved" | When planning a step or when asking the user something |
 | `history.md` | Step log, one row per step | When the step needs past context; always append after a step |
-| `full-chat-transcript.md` | The entire build conversation (2026-10-09 → 2026-10-10), exported from the Claude Code sessions; GitLab tokens redacted; long tool output truncated | When exact past wording or context is needed (large file) |
+| `full-chat-transcript.md` | The entire build conversation (2026-10-09 → 2026-10-10), exported from the Claude Code sessions; GitLab tokens and the WS1 login user ID redacted; long tool output truncated | When exact past wording or context is needed (large file) |
