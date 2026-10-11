@@ -1,0 +1,24 @@
+# closio-agent — files that must never be committed (D36)
+
+# Personal, per-user settings and local repo paths (F4/F5): stay on your Mac only
+/local/
+
+# Secrets must never be committed (D33, D34, A6)
+.env
+.env.*
+*.pem
+*.key
+
+# Playwright project dependencies and outputs (D24)
+/e2e/node_modules/
+/e2e/test-results/
+/e2e/playwright-report/
+/e2e/.cache/
+
+# Generic
+node_modules/
+.DS_Store
+*.log
+
+# Personal Claude Code settings (each person has their own)
+.claude/settings.local.json

@@ -1,0 +1,59 @@
+# Open Questions
+
+- **A6 confirmation:** user said "hold onto this rule for now". Recorded as adopted provisionally; confirm the interpretation (adopt vs. defer).
+- **Codex Jira access:** how Codex connects to Jira (Atlassian MCP) isn't set up or documented yet.
+- **MR title/description content:** e.g. title `SCRUM-519: <summary>`. Labels or draft?
+- **Security:** a GitLab personal access token was used in plain text in a past Claude Code session (2026-10-08), so it's stored in that transcript and was sent to the AI provider. Recommend the user revokes it and creates a new one for D32, stored only in the Keychain.
+- **Connectivity agent (D30) feasibility test:** T1, T2, T3, T5 passed. T4 (GitLab MCP) and T6 (Codex GitLab MCP) are **no longer needed**: GitLab MCP removed (D32).
+- **REST API description step (D32), to test when built:** `PUT /api/v4/projects/:id/merge_requests/:iid` with a multi-line `description`, token read from the Keychain and kept off the command line (e.g. curl reading the header from stdin). Also confirm the push option `merge_request.assign` works on the Japfa GitLab.
+- **Coverage check on every commit:** husky runs the full `coverage:check` on pre-commit and pre-push in notification, pricingengine and targetsalesincentive. Each atomic commit must pass 80/70/80/80 on its own, and every commit runs the whole suite (slow). The commit-splitting design (Phase 7) must account for this.
+- **VPN connect script design (when the VPN step is built):** connect only when needed and detect an existing connection; handle a renewed certificate (the current one expires 2027-02-03; pin vs `--ca-file`); add/remove the domain resolver file (D27), including removing a stale one; what happens to the existing per-host `jcvs` file.
+- **Vitest threshold:** check that `thresholds.global` in closio-web-v2 is actually enforced by Vitest 3.
+- **Subagents:** decided per phase (D16). So far: AC-check agent (Phase 5), story-verification agent (Phase 6).
+- **Agent's own memory (per-card run folder, A1):** location (D36), keep after done and shared pickup (D38) decided. Still to finalise: the file structure (draft: state.json, history.md, card.md, plan.md, context.md, phases/, deployment-doc.md), after the foundation is built.
+- **Git remote:** the user will push later. No commit yet (user: not yet).
+- **Folder rename to `closio-agent`:** the user will do it later themselves. (Claude Code ties session history and memory to the folder path.)
+- **New-user test (F9):** user agreed to a separate macOS account and asked how big the setup is. Explained 2026-10-09 (incl. the Homebrew multi-user caveat).
+- **Jira in Codex:** works through the Atlassian app on the user's ChatGPT account (verified 2026-10-11). Still to write up: how a new user connects that app in ChatGPT (exact steps). The `codex mcp add` way is untested.
+- **Not yet seen:** doctor's ✅ for a stored Keychain item and a real GitLab token check (no items stored yet).
+- **Watch:** Codex's updater process still runs with Node v18; if Codex falls back to v18 after an update, restart the service again (fallback: `nvm alias default 22`). How to restart the updater itself is not checked yet (documented as such in the setup guide).
+- **Backend allow list (security):** `japfa/backend/.claude/settings.local.json` allows `echo $GITLAB_TOKEN` / `echo $GITLAB_PRIVATE_TOKEN` without asking. Suggested removing them; user's call.
+- **Desktop app + Node v22 (D41):** the desktop app doesn't start from a terminal; scripts must switch to v22 themselves. Design when scripts are built.
+- **Adding code repos as extra folders (D42):** launch option (`--add-dir`) vs a saved setting, for both tools. Check and draft with the setup commands.
+- **Split cards:** skipped for now (user, 2026-10-09). Come back to it later.
+
+## Resolved (2026-10-09)
+
+- VPN credentials: nothing stored, because SSO is handled by the browser or Microsoft sign-in (D14).
+- VPN sudo: the user types their Mac password on each connect (D14).
+- VPN end to end: `--realm=sso` + `--trusted-cert` + `/etc/resolver` file; verified (D14, `docs/setup-guide.md`).
+- `configure-user` contents approved (D15).
+- Command form: `/name` in Claude Code, `$name` in Codex; custom agents decided per phase (D16).
+- Agent name: `closio-agent` (D17).
+- Developer-testing phase placed before the push; tests committed; story-verification agent (D18).
+- Phases 5 and 6 stay separate, with different subagents (D19).
+- Test credentials: per person, in the macOS Keychain (D20).
+- Local Redis (all use) and RabbitMQ; dev Postgres directly, no cleanup concern (D21).
+- Dev-environment testing after merge (D22).
+- Repos in scope; registered with `configure-repo`, which captures the test format (D23).
+- No committed tests for repos without a suite (D25).
+- Playwright lives outside the repo, in closio-agent's workspace (D24, option a).
+- `story-implementation-workflow.md` is the baseline, with Express 5 (D26).
+- Login API: `napp_pk: 4` and `client_type: "web"` are the same for everyone.
+- VPN DNS: one domain-wide resolver file, added on connect and removed on disconnect (D27).
+- ~~GitLab operations: GitLab MCP server (D28)~~ → superseded by D32.
+- ~~GitLab access token removed (D29)~~ → restored by D32.
+- A5 approach: a connectivity custom agent at the start of each phase that needs it; manual steps allowed (D30). W1/W2/W3 rejected.
+- Connectivity agent: Phases 1–9 + setup-repo; password via macOS dialog (D30); MCP check removed (D32).
+- MRs: push options (create + assign) in Phase 7 (D31); full description via REST API + Keychain token; GitLab MCP removed (D32, option a).
+- FE login ≠ WS1 login; WS2 client ID/secret per service from `.env`; dev Postgres creds from `.env` (D34).
+- Dedicated repo-registration command (`configure-repo`) for current and new repos (D35).
+- Dev WS2 creds per service in the Keychain (D37). Everything in this project folder, runs shared (D36). Keep run folders; anyone can pick up a paused card (D38).
+- Shared repo registry (user agreed); foundation order F0→F9 approved; `git init` + structure approved and done (D39).
+- Local repo paths in git-ignored `local/` (D39, approved 2026-10-10).
+- Rule A7: every command loads and applies the user memory if present (user, 2026-10-10).
+- User memory: local-only `local/memory/` (option b), no username folder, dedicated memory command + agent-offered saves; A8 team rules win (D40).
+- User memory mechanism is built as F6b, right after F6 `setup-repo` (user, 2026-10-10).
+- Node v22 for the whole project, `nvm use v22` before Claude Code (A9, D41). Sessions start in the closio-agent folder (A10, D42). Rules R12 (simple language) and R13 (relevant names).
+- Claude Code and Codex installed with npm inside Node v22, Homebrew copies removed; Codex service restarted from v22; F1 complete (D41). Prefix `flow-`, commands `flow-ping` + `flow-doctor` (D43). Commands only run when typed (D44). Node v22 also working rule R14.
+
