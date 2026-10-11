@@ -20,6 +20,7 @@ Before you start: open a terminal **in the closio-agent folder**, run `nvm use v
 |---|---|---|
 | [`flow-ping`](#flow-ping) | Checks that the flow commands are loaded in your tool | Built 2026-10-10 (F1). Works in Claude Code (CLI and desktop app) and Codex |
 | [`flow-doctor`](#flow-doctor) | Checks your setup and tells you how to fix each problem | Built 2026-10-10 (F1, F2). Works in Claude Code and Codex. Later pieces add their own checks |
+| [`flow-vpn`](#flow-vpn) | Connects, checks or disconnects the Japfa VPN | Built 2026-10-11 (F3). Tested in Claude Code and Codex |
 
 ---
 
@@ -121,3 +122,35 @@ Checked in Claude Code
 **If something is wrong with the check itself:** see the [setup guide](setup-guide.md#check-that-the-flow-commands-work) (for example, restarting Codex's background service; watch out for Codex's updater).
 
 **Files:** `.agents/skills/flow-doctor/`, `scripts/doctor.sh` (you can also run it yourself in a terminal: `bash scripts/doctor.sh`; it then shows everything except the Jira check), `config/project-settings.sh`
+
+---
+
+### `flow-vpn`
+
+**Purpose:** connects, checks or disconnects the Japfa VPN, so GitLab and the dev servers can be reached ([D14](design-decisions.md#d14), [D27](design-decisions.md#d27), [D30](design-decisions.md#d30)).
+
+**Usage:**
+```
+/flow-vpn connect | status | disconnect      (Claude Code)
+$flow-vpn connect | status | disconnect      (Codex: approve running it outside the sandbox)
+```
+
+| Action | What happens |
+|---|---|
+| `connect` | If GitLab already answers (through openfortivpn **or** the FortiClient app), it does nothing. Otherwise: **one** macOS password dialog, then the SSO login page opens in your browser (it may finish by itself). All admin steps happen in that one go: remove a leftover DNS file and the old GitLab-only one, start openfortivpn, wait for the tunnel, add the VPN DNS file. Then it checks GitLab. **The VPN stays on** until you disconnect |
+| `status` | Only reads: on (and through which client), off, or a problem with its fix |
+| `disconnect` | One password dialog: stops openfortivpn and removes the VPN DNS file. If you're on the FortiClient app instead, it tells you to disconnect there |
+
+**If something goes wrong** it cleans up by itself and tells you what to do (rule A11):
+- SSO login not finished in 3 minutes: openfortivpn is stopped and the DNS file removed.
+- The VPN gateway's certificate changed (the current pin expires 2027-02-03): it shows the new fingerprint, to confirm with IT and put in `config/project-settings.sh`.
+- Password dialog cancelled: nothing is changed.
+
+**Output example:**
+```
+✅ VPN connected (openfortivpn). GitLab is reachable. It stays on until you run /flow-vpn disconnect
+```
+
+**Files:** `.agents/skills/flow-vpn/`, `scripts/vpn.sh` (you can also run it in a terminal: `bash scripts/vpn.sh connect`), `scripts/vpn-admin-steps.sh` (the only part that runs with admin rights; review changes to it carefully), `scripts/password-dialog.sh`. The openfortivpn log is `local/vpn/openfortivpn.log` (private, git-ignored).
+
+**The connectivity agent:** `flow-connectivity` (`.claude/agents/flow-connectivity.md`, `.codex/agents/flow-connectivity.toml`) runs the same `connect` at the start of every phase that needs GitLab (Phases 1–9, `flow-setup-repo`) and reports one line ([D30](design-decisions.md#d30)). You don't call it yourself.

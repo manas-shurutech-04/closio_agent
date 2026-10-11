@@ -115,7 +115,9 @@ If something is wrong:
 
 GitLab, the dev API and the dev database are **only reachable over the Japfa VPN**. `closio-agent` uses **openfortivpn**, a command-line client, instead of the FortiClient app, so it can connect by itself ([D14](design-decisions.md#d14)).
 
-> 🛠 **Planned:** a connectivity agent will do steps 2.2–2.5 automatically at the start of each phase. You'll only type your Mac password into a macOS dialog and complete the SSO login in your browser ([D30](design-decisions.md#d30)).
+> **The easy way (built, F3):** in Claude Code type `/flow-vpn connect`, `/flow-vpn status` or `/flow-vpn disconnect` (Codex: `$flow-vpn …`). You only type your Mac password into one macOS dialog and finish the SSO login in your browser. The VPN stays on until you disconnect. The agent also connects by itself at the start of each phase that needs GitLab ([D30](design-decisions.md#d30), [commands.md](commands.md#flow-vpn)).
+>
+> The manual steps below (2.2–2.5) do the same by hand. Use them if the command doesn't work.
 
 > **Disconnect FortiClient** before using openfortivpn. Two VPN clients connected at once can interfere.
 

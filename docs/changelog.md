@@ -4,6 +4,7 @@ Dated list of what changed in closio-agent. Newest first.
 
 ## 2026-10-11
 
+- **`flow-vpn` (F3):** `connect`, `status`, `disconnect` the Japfa VPN with one macOS password dialog; the SSO page opens by itself; cleans up after a timeout or a changed certificate; removes the old GitLab-only DNS file; the VPN stays on until you disconnect. New `flow-connectivity` agent (Claude Code and Codex) for the phases. `flow-doctor` tips now point to `flow-vpn` ([D30](design-decisions.md#d30)). All live tests passed in both tools.
 - **closio-agent is on GitHub** (private): `https://github.com/manas-shurutech-04/closio_agent.git`. Clone steps in the README and the setup guide.
 - `flow-doctor` tested by the user in Claude Code and Codex. Fixed: inside Codex's sandbox, the Codex background service check now says "can't check from here" instead of a wrong ✅. Jira in Codex works through the Atlassian app on your ChatGPT account (setup guide, section 3).
 

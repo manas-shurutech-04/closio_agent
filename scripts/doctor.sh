@@ -238,18 +238,17 @@ else
   elif [ -n "$openfortivpn_up" ]; then
     if [ ! -f "$VPN_RESOLVER_FILE" ]; then
       fail "VPN is on (openfortivpn), but the VPN DNS file is missing, so GitLab's name doesn't resolve" \
-        "Run: sudo mkdir -p /etc/resolver && printf \"nameserver 10.90.0.53\\nnameserver 10.190.0.55\\n\" | sudo tee $VPN_RESOLVER_FILE" \
-        "(setup guide, section 2.3)"
+        "Run /flow-vpn connect (Codex: \$flow-vpn connect). It adds the file."
     else
       fail "VPN is on (openfortivpn), but GitLab doesn't answer (HTTP ${code:-none})" \
-        "See the VPN troubleshooting table (setup guide, section 2.6)."
+        "Run /flow-vpn disconnect, then /flow-vpn connect. If it still fails, see the setup guide, section 2.6."
     fi
   else
     warn "VPN is off. That's fine until you need GitLab" \
-      "To connect, follow the setup guide, section 2.2."
+      "To connect, run /flow-vpn connect (Codex: \$flow-vpn connect)."
     if [ -f "$VPN_RESOLVER_FILE" ]; then
       fail "A leftover VPN DNS file is still there; it stops the next VPN connection" \
-        "Run: sudo rm -f $VPN_RESOLVER_FILE"
+        "Run /flow-vpn connect (it removes the file first), or: sudo rm -f $VPN_RESOLVER_FILE"
     else
       pass "No leftover VPN DNS file"
     fi
@@ -258,7 +257,7 @@ fi
 
 if [ -f "$VPN_OLD_RESOLVER_FILE" ]; then
   warn "An old GitLab-only DNS file is still there (no longer needed)" \
-    "Remove it with: sudo rm -f $VPN_OLD_RESOLVER_FILE"
+    "It's removed the next time you run /flow-vpn connect, or now with: sudo rm -f $VPN_OLD_RESOLVER_FILE"
 fi
 
 # The pinned VPN certificate (D14) stops working when the gateway's certificate is renewed.

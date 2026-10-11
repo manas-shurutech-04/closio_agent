@@ -4,7 +4,7 @@ An AI agent for the Japfa **Closio** team. It takes a Jira card from **SCRUM** t
 
 It runs as commands inside **Claude Code** (`/flow-start`) and **Codex** (`$flow-start`). Every command starts with `flow-` and only runs when you type it ([D43](docs/design-decisions.md#d43), [D44](docs/design-decisions.md#d44)).
 
-> **Status:** in design. The foundation (setup commands) is being built first; see the build plan in [build-memory/project-context.md](build-memory/project-context.md). First commands: `flow-ping` and `flow-doctor` ([docs/commands.md](docs/commands.md)).
+> **Status:** in design. The foundation (setup commands) is being built first; see the build plan in [build-memory/project-context.md](build-memory/project-context.md). Commands so far: `flow-ping`, `flow-doctor`, `flow-vpn` ([docs/commands.md](docs/commands.md)).
 
 ## Start here
 
@@ -22,6 +22,7 @@ It runs as commands inside **Claude Code** (`/flow-start`) and **Codex** (`$flow
 |---|---|---|
 | `AGENTS.md` | Rules the AI follows in every session here, read by both Claude Code and Codex ([D45](docs/design-decisions.md#d45)) | ✅ |
 | `.agents/skills/` | The agent's commands (skills), one source for Claude Code and Codex ([D8](docs/design-decisions.md#d8)) | ✅ |
+| `.claude/agents/`, `.codex/agents/` | Custom agents (helpers the commands use), one file per tool, e.g. `flow-connectivity` ([D30](docs/design-decisions.md#d30)) | ✅ |
 | `config/repos/` | Shared repo registry: one file per repo with the facts that are the same for everyone ([D35](docs/design-decisions.md#d35)) | ✅ |
 | `scripts/` | Helper scripts the commands run (VPN, Keychain, Git, …) | ✅ |
 | `e2e/` | Playwright project for front-end end-to-end tests, kept outside the code repos ([D24](docs/design-decisions.md#d24)) | ✅ (dependencies and outputs ignored) |

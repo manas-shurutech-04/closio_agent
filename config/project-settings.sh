@@ -21,6 +21,7 @@ VPN_DNS_DOMAIN="${VPN_DNS_DOMAIN:-japfacomfeed.co.id}"
 VPN_DNS_SERVERS="${VPN_DNS_SERVERS:-10.90.0.53 10.190.0.55}"
 VPN_RESOLVER_FILE="${VPN_RESOLVER_FILE:-/etc/resolver/japfacomfeed.co.id}"
 VPN_OLD_RESOLVER_FILE="${VPN_OLD_RESOLVER_FILE:-/etc/resolver/jcvs.japfacomfeed.co.id}"
+VPN_CONNECT_TIMEOUT="${VPN_CONNECT_TIMEOUT:-180}"   # seconds to finish the SSO login
 
 # macOS Keychain (D33): items are named <prefix>.<name>, account = your Mac username
 KEYCHAIN_PREFIX="${KEYCHAIN_PREFIX:-closio-agent}"

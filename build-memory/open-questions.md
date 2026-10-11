@@ -56,3 +56,4 @@
 - Node v22 for the whole project, `nvm use v22` before Claude Code (A9, D41). Sessions start in the closio-agent folder (A10, D42). Rules R12 (simple language) and R13 (relevant names).
 - Claude Code and Codex installed with npm inside Node v22, Homebrew copies removed; Codex service restarted from v22; F1 complete (D41). Prefix `flow-`, commands `flow-ping` + `flow-doctor` (D43). Commands only run when typed (D44). Node v22 also working rule R14.
 - Git remote: private GitHub repo `manas-shurutech-04/closio_agent`, first commit pushed 2026-10-11 (D39).
+- F3 VPN: all live tests passed in both tools (2026-10-11); openfortivpn stays on after the AI tool's command ends.

@@ -327,6 +327,7 @@ Every decision taken while building the agent, including the options we rejected
   - One resolver file per internal host: the list keeps growing.
   - A permanent domain-wide file: while the VPN is off it would send lookups for the public VPN gateway `vpnwm.japfacomfeed.co.id` to unreachable internal DNS servers, so the VPN couldn't connect.
 - **Design note:** if the VPN drops without a clean disconnect, the file can be left behind. The connect step must remove any stale file **before** connecting.
+- **Built (F3, 2026-10-11):** connect removes a leftover file first, and also the old GitLab-only file `/etc/resolver/jcvs.japfacomfeed.co.id` (user, 2026-10-11), all in the same password dialog.
 
 <a id="d28"></a>
 ### D28 — GitLab operations use the GitLab MCP server (set up during setup)
@@ -386,6 +387,14 @@ Every decision taken while building the agent, including the options we rejected
     - The prompt step learned something: the user first reconnected **Atlassian** by mistake, so the agent's message must name **GitLab** explicitly (or suggest `/mcp reconnect all`).
   - **T5 Disconnect: PASS.** One `sudo -A` call (one dialog) stopped openfortivpn (`pkill -INT`; log: "Terminated pppd", "Logged out") and removed `/etc/resolver/japfacomfeed.co.id`. `ppp0` is gone, and the public gateway `vpnwm` still resolves (202.51.108.234).
 - **Amendment (D32, 2026-10-09):** GitLab MCP is removed entirely, so the step-4 MCP check is **removed**.
+- **Built (F3, 2026-10-11):**
+  - `scripts/vpn.sh connect | status | disconnect`. "Connected" means GitLab answers, through openfortivpn or another VPN client such as the FortiClient app; then nothing is done.
+  - All admin steps run in **one** `sudo -A` call (one macOS password dialog, `scripts/password-dialog.sh`): `scripts/vpn-admin-steps.sh` removes a leftover DNS file and the old GitLab-only one, stops any stuck openfortivpn, starts openfortivpn in its own session (so it outlives the AI tool's command), waits for the tunnel, writes the DNS file. It checks every input. On a timeout (180 s) or a refused certificate it cleans up by itself.
+  - The SSO page is opened as the user (`open`), only if the URL starts with the VPN gateway's address.
+  - **The VPN stays on** until the user runs `flow-vpn disconnect` (user, 2026-10-11): disconnecting after every phase would mean a password dialog each time.
+  - The agent: `flow-connectivity` (`.claude/agents/flow-connectivity.md` and `.codex/agents/flow-connectivity.toml`), a thin wrapper that runs `connect` and returns one result line. User command: `flow-vpn` (user, 2026-10-11).
+  - In Codex, the command must be approved to run outside the sandbox (admin rights and network).
+  - **Tested by the user on 2026-10-11, all passed:** connect (one dialog + SSO), stays on after the command ends, connect again (no dialog), disconnect, leftover DNS file cleaned up, cancelled dialog, SSO timeout cleanup, wrong certificate pin message, FortiClient already connected, `flow-vpn` in Claude Code and Codex, and the `flow-connectivity` agent in both tools.
 
 <a id="d31"></a>
 ### D31 — MRs are created and assigned with git push options during the single push; GitLab MCP is added once it works

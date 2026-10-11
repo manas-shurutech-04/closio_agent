@@ -136,7 +136,7 @@ More docs may be added as the user specifies.
 | F0 | Project skeleton (`git init`, folders, `.gitignore`, README) | **Done 2026-10-09** (D39). First commit + push 2026-10-11 to GitHub |
 | F1 | Skill format check in Claude Code + Codex: `flow-ping` + first version of `flow-doctor` (D8, D43, D44) | **Built 2026-10-10.** T1, T2, T5 passed; T4 passed after `AGENTS.md` (D45); T3 passed after Codex was reinstalled inside Node v22 and its background service restarted. **F1 complete** |
 | F2 | Rest of `flow-doctor` (tools, Codex service, VPN state, GitLab + token, Keychain names, Jira via the AI); shared settings file (D46) | **Built 2026-10-10, tested by the user 2026-10-11** in Claude Code and Codex (only the 5 Keychain items missing, as expected). One Codex-sandbox fix. **F2 complete** |
-| F3 | Connectivity script + agent (D30) | — |
+| F3 | Connectivity script + agent (D30): `scripts/vpn.sh` (connect/status/disconnect, one password dialog), `flow-connectivity` agent for both tools, `flow-vpn` command | **Built and tested 2026-10-11** (all 12 live tests passed in Claude Code and Codex). **F3 complete** |
 | F4 | `configure-user` | — |
 | F5 | `configure-repo` (shared registry + local paths) | — |
 | F6 | `setup-repo` (VPN, clone, install, local Redis/RabbitMQ, run tests) | — |
@@ -155,6 +155,7 @@ More docs may be added as the user specifies.
 - User memory decisions (2026-10-10): **local only** (`local/memory/`, git-ignored), no username folder; dedicated memory command plus agent-offered saves; **A8**: team rules always win; folder rename left to the user.
 - User memory is ever-growing and may not exist even at the first card; created on first entry, absence is normal (user, 2026-10-10).
 - F6b position (after `setup-repo`) confirmed (user, 2026-10-10).
+- F3 answers (user, 2026-10-11): add `flow-vpn` (connect/status/disconnect); VPN stays connected until the user disconnects; remove the old `jcvs` DNS file during connect.
 - F2 answers (user, 2026-10-10): ⚠️ symbol OK; `config/project-settings.sh` OK; new rule A11 (always give fix steps). Codex Jira: give the fix steps (setup guide §3) rather than a separate plan step.
 - Codex installed with npm inside Node v22 like Claude Code, Homebrew copy removed, background service restarted; `$flow-doctor` passes in Codex (user, 2026-10-10). Doctor symbols stay as they are.
 - F1 test follow-up (user, 2026-10-10): `AGENTS.md` rules file approved (D45), re-run T4 in new sessions. Doctor output problem is the spacing between ✅/❌ and the words in the Claude app console; Codex chat showed all checks joined on one line (and Node v18).

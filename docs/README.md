@@ -6,7 +6,7 @@
 
 **Pick up the JIRA card → … → MR (Merge Request) review → Deployment doc creation**
 
-> Status: in design. The phases are approved (see [architecture.md](architecture.md)). First commands built: `flow-ping` and `flow-doctor` (first version), see [commands.md](commands.md).
+> Status: in design. The phases are approved (see [architecture.md](architecture.md)). Commands built so far: `flow-ping`, `flow-doctor`, `flow-vpn`, see [commands.md](commands.md).
 
 > **New to closio-agent?** Start with [setup-guide.md](setup-guide.md) to prepare your Mac (VPN, GitLab token, Keychain secrets, repos), then read [architecture.md](architecture.md).
 >
@@ -18,7 +18,7 @@
 |-----|----------------|--------|
 | [design-decisions.md](design-decisions.md) | Every decision taken, including the options we rejected and why | Available |
 | [setup-guide.md](setup-guide.md) | Access needed, installation, configuration, first run | Available: full manual setup for Japfa (accounts, tools, VPN, Jira, GitLab token, Keychain secrets, repos, local services, security). Automation is planned |
-| [commands.md](commands.md) | Every agent command: purpose, usage, inputs, outputs, example | Available: `flow-ping`, `flow-doctor` |
+| [commands.md](commands.md) | Every agent command: purpose, usage, inputs, outputs, example | Available: `flow-ping`, `flow-doctor`, `flow-vpn` |
 | [architecture.md](architecture.md) | How the pipeline stages connect and what each one takes in and produces | Available (phases approved; first commands built) |
 | [changelog.md](changelog.md) | Dated list of what changed in the agent | Available |
 
@@ -30,6 +30,7 @@ This project folder is the `closio-agent` repository that the team clones ([D36]
 |--------|---------|------------|
 | `AGENTS.md` | Rules the AI follows in every session here, read by both Claude Code and Codex ([D45](design-decisions.md#d45)). Don't add a `CLAUDE.md` | ✅ |
 | `.agents/skills/` | The agent's commands (skills), one source for Claude Code and Codex ([D8](design-decisions.md#d8)) | ✅ |
+| `.claude/agents/`, `.codex/agents/` | Custom agents, one file per tool (e.g. `flow-connectivity`, [D30](design-decisions.md#d30)) | ✅ |
 | `config/repos/` | Shared repo registry, one file per repo ([D35](design-decisions.md#d35), [D39](design-decisions.md#d39)) | ✅ |
 | `scripts/` | Helper scripts the commands run | ✅ |
 | `e2e/` | Playwright project ([D24](design-decisions.md#d24)) | ✅ (dependencies and outputs ignored) |
