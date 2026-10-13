@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash scripts/configure-user.sh show)",
+      "Bash(bash scripts/configure-user.sh check-folder)",
+      "Bash(bash scripts/configure-user.sh secrets)",
+      "Bash(bash scripts/configure-user.sh secret *)",
+      "Bash(bash scripts/configure-user.sh gitlab-username-from-token)",
+      "Bash(bash scripts/configure-user.sh set jira-account-id *)",
+      "Bash(bash scripts/configure-user.sh set gitlab-username *)",
+      "Bash(bash scripts/configure-user.sh set workspace-dir *)",
+      "Bash(bash scripts/configure-user.sh set ai-tools *)",
+      "Bash(bash scripts/configure-user.sh set vpn-username *)",
+      "Bash(bash scripts/doctor.sh)",
+      "Bash(bash scripts/vpn.sh status)",
+      "Bash(bash scripts/vpn.sh connect)",
+      "Bash(bash scripts/vpn.sh disconnect)",
+      "Bash(bash scripts/wait-seconds.sh *)"
+    ]
+  }
+}

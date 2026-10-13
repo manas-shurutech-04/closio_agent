@@ -94,6 +94,19 @@ claude        # or: codex
 - 🛠 The setup commands will tell you this and check it.
 - 🛠 The Claude desktop app doesn't start from a terminal, so you can't run `nvm use v22` there first. How the agent handles this will be built with its scripts.
 
+### Approval prompts in Claude Code
+
+The first time you start Claude Code in this folder, it asks whether you trust it. Say yes: that turns on the shared file `.claude/settings.json`, which lets Claude Code run our own setup scripts without asking you each time (only the parts that read, or ask you themselves in a macOS dialog; [D49](design-decisions.md#d49)). Anything else still asks.
+
+### First-time setup, in order
+
+1. Get closio-agent and install the tools (above).
+2. Start Claude Code or Codex the right way (above).
+3. `/flow-ping`: are the commands loaded?
+4. `/flow-doctor`: what's missing?
+5. `/flow-configure-user`: your personal settings and secrets.
+6. `/flow-vpn connect`, then `/flow-doctor` again: everything should be ✅ or ⚠️, apart from the parts still to come (repos).
+
 ### Check that the flow commands work
 
 In the session you just started, type (Codex: use `$` instead of `/`):
@@ -195,6 +208,8 @@ sudo rm -f /etc/resolver/japfacomfeed.co.id
 | Tool | How | Status |
 |---|---|---|
 | Claude Code | Claude's **Atlassian** connector (`https://mcp.atlassian.com`), connected to your Atlassian account. It shows as "claude.ai Atlassian MCP" in `claude mcp list` | ✅ verified working on 2026-10-09 |
+
+> **If Jira shows ❌ right after starting Claude Code:** the Atlassian connector can take a while to load, or time out (seen on 2026-10-13: "tools fetch failed — Request timed out"). The flow commands wait and retry for about 30 seconds. If it's still ❌: type `/mcp`, choose "claude.ai Atlassian MCP", then **Reconnect**, and run the command again.
 | Codex | **The Atlassian app connected to the ChatGPT account you use for Codex.** Codex then has Jira tools by itself (it shows them as `codex_apps`). How to connect the app in ChatGPT isn't written up here yet. **Other way:** Atlassian's MCP server: `codex mcp add atlassian --url https://mcp.atlassian.com/v2/mcp`, then `codex mcp login atlassian` (approve in the browser), start Codex again, check with `codex mcp list` (steps from Atlassian's docs) | ✅ the ChatGPT app way verified on 2026-10-11 (`$flow-doctor` read project SCRUM). 🛠 The MCP server way is not tested |
 
 ---
@@ -230,7 +245,9 @@ All secrets live in your **login Keychain**, one item per secret ([D33](design-d
 
 `closio-agent` scripts read them at run time, so they never appear in the chat, a file or a command line.
 
-> 🛠 **Planned:** `flow-configure-user` will ask for these and store them for you. Until then, use the commands below in your **own terminal**, not the AI chat.
+> **The easy way (built, F4):** run `/flow-configure-user` (Codex: `$flow-configure-user`). It asks all missing secrets in one go. For each secret, a macOS message first says which one is next ("Copy it now, then click Continue"), then a hidden box opens to paste it into. It goes straight into the Keychain ([commands.md](commands.md#flow-configure-user)).
+>
+> **Backup:** the terminal commands below do the same by hand. Run them in your **own terminal**, never in the AI chat.
 
 ### 5.1 How to add one secret
 

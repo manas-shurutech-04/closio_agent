@@ -5,12 +5,15 @@
 #   ✅ fine   ⚠️ worth a look (doesn't fail)   ❌ must fix (with the steps to fix it, rule A11)
 # Only reads: never changes anything, never asks for a password, never prints a secret.
 # Exit code 1 if anything must be fixed.
-# Checks for pieces not built yet are added by those pieces (F4 settings, F5 repos, F6 local services).
+# Checks for pieces not built yet are added by those pieces (F5 repos, F6 local services).
 
 set -u
 
 AGENT_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 . "$AGENT_ROOT/config/project-settings.sh"
+USER_SETTINGS_FILE="${USER_SETTINGS_FILE:-$AGENT_ROOT/local/user-settings.sh}"
+JIRA_ACCOUNT_ID=""; GITLAB_USERNAME=""; WORKSPACE_DIR=""; AI_TOOLS=""; VPN_USERNAME=""
+[ -f "$USER_SETTINGS_FILE" ] && . "$USER_SETTINGS_FILE"
 NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 NODE_DIR_PREFIX="$NVM_DIR/versions/node/v$NODE_MAJOR."
 
@@ -152,9 +155,29 @@ EOF_PATHS
   return 0
 }
 
-check_ai_tool claude "Claude Code" "@anthropic-ai/claude-code" required claude-code
+# Which tools you use comes from your personal settings (flow-configure-user). Until that's set:
+# Claude Code is required and Codex optional.
+uses_tool() { case " $AI_TOOLS " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
+claude_need="required"; codex_need="optional"
+if [ -n "$AI_TOOLS" ]; then
+  uses_tool claude-code || claude_need="unused"
+  uses_tool codex && codex_need="required" || codex_need="unused"
+fi
 
-if check_ai_tool codex "Codex" "@openai/codex" optional codex; then
+if [ "$claude_need" = "unused" ] && ! command -v claude >/dev/null 2>&1; then
+  pass "Claude Code not installed (you don't use it)"
+else
+  check_ai_tool claude "Claude Code" "@anthropic-ai/claude-code" "${claude_need/unused/optional}" claude-code
+fi
+
+codex_ok=""
+if [ "$codex_need" = "unused" ] && ! command -v codex >/dev/null 2>&1; then
+  pass "Codex not installed (you don't use it)"
+elif check_ai_tool codex "Codex" "@openai/codex" "${codex_need/unused/optional}" codex; then
+  codex_ok="yes"
+fi
+
+if [ -n "$codex_ok" ]; then
   # Codex runs its commands through a background service that keeps the Node it started with.
   service_pids="$(pgrep -f 'codex app-server --listen' 2>/dev/null)"
   if [ -z "$service_pids" ] && [ -n "${CODEX_SANDBOX:-}${CODEX_SANDBOX_NETWORK_DISABLED:-}" ]; then
@@ -275,6 +298,27 @@ if [ -n "$expires_epoch" ]; then
   fi
 fi
 
+# ---------------------------------------------------------------- Personal settings (F4)
+section "Personal settings (local/user-settings.sh)"
+
+if [ ! -f "$USER_SETTINGS_FILE" ]; then
+  fail "Your personal settings aren't set up yet" "Run /flow-configure-user (Codex: \$flow-configure-user)."
+else
+  check_setting() { # $1 value, $2 label, $3 item name
+    if [ -n "$1" ]; then pass "$2: $1"; else fail "$2 is not set" "Run /flow-configure-user $3"; fi
+  }
+  check_setting "$JIRA_ACCOUNT_ID" "Jira account ID" jira-account-id
+  check_setting "$GITLAB_USERNAME" "GitLab username" gitlab-username
+  if [ -z "$WORKSPACE_DIR" ]; then
+    fail "Workspace folder is not set" "Run /flow-configure-user workspace-dir"
+  elif [ ! -d "$WORKSPACE_DIR" ]; then
+    fail "Workspace folder doesn't exist: $WORKSPACE_DIR" "Create it again, or choose another with /flow-configure-user workspace-dir"
+  else
+    pass "Workspace folder: $WORKSPACE_DIR"
+  fi
+  check_setting "$AI_TOOLS" "AI tools" ai-tools
+fi
+
 # ---------------------------------------------------------------- Keychain
 section "Keychain (names only, values are never read)"
 
@@ -286,8 +330,8 @@ for item in $KEYCHAIN_PERSONAL_ITEMS; do
     pass "$service"
   elif [ "$rc" -eq 44 ]; then
     fail "$service is missing" \
-      "In your own terminal (not the AI chat) run: security add-generic-password -U -a \"\$USER\" -s \"$service\" -l \"$KEYCHAIN_PREFIX: $item\" -w" \
-      "It asks for the value twice, hidden (setup guide, section 5)."
+      "Run /flow-configure-user $item (Codex: \$flow-configure-user $item). It asks for the value in a hidden macOS box." \
+      "Backup, in your own terminal (not the AI chat): security add-generic-password -U -a \"\$USER\" -s \"$service\" -w"
   else
     warn "Couldn't read the Keychain from here to check $service" \
       "Run 'bash scripts/doctor.sh' in a normal terminal."

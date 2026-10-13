@@ -18,5 +18,6 @@ Connects, checks or disconnects the Japfa VPN. The VPN stays on until the user d
 5. Show the script's output exactly as printed. Every ❌ already includes the steps to fix it (rule A11).
 
 Rules:
+- Run the script exactly as written here (`bash scripts/…` from the closio-agent folder, no `cd`, nothing joined with `&&`). That's how Claude Code recognises it as pre-approved (D49).
 - Run only that command. Don't fix anything yourself.
 - Never read or print secrets, `.env` files or Keychain values.

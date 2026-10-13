@@ -15,6 +15,7 @@
 - **New-user test (F9):** user agreed to a separate macOS account and asked how big the setup is. Explained 2026-10-09 (incl. the Homebrew multi-user caveat).
 - **Jira in Codex:** works through the Atlassian app on the user's ChatGPT account (verified 2026-10-11). Still to write up: how a new user connects that app in ChatGPT (exact steps). The `codex mcp add` way is untested.
 - **Not yet seen:** doctor's ✅ for a stored Keychain item and a real GitLab token check (no items stored yet).
+- **Codex pre-approval:** not checked yet whether Codex can pre-approve our scripts like Claude Code (D49).
 - **Watch:** Codex's updater process still runs with Node v18; if Codex falls back to v18 after an update, restart the service again (fallback: `nvm alias default 22`). How to restart the updater itself is not checked yet (documented as such in the setup guide).
 - **Backend allow list (security):** `japfa/backend/.claude/settings.local.json` allows `echo $GITLAB_TOKEN` / `echo $GITLAB_PRIVATE_TOKEN` without asking. Suggested removing them; user's call.
 - **Desktop app + Node v22 (D41):** the desktop app doesn't start from a terminal; scripts must switch to v22 themselves. Design when scripts are built.
@@ -57,3 +58,5 @@
 - Claude Code and Codex installed with npm inside Node v22, Homebrew copies removed; Codex service restarted from v22; F1 complete (D41). Prefix `flow-`, commands `flow-ping` + `flow-doctor` (D43). Commands only run when typed (D44). Node v22 also working rule R14.
 - Git remote: private GitHub repo `manas-shurutech-04/closio_agent`, first commit pushed 2026-10-11 (D39).
 - F3 VPN: all live tests passed in both tools (2026-10-11); openfortivpn stays on after the AI tool's command ends.
+- Agent limits: per agent, in scripts + Claude `maxTurns` (D47). One GitLab token (D48). VPN profile kept optional (D15).
+- F4 complete (user tests passed 2026-10-13). Jira wait-and-retry added. Old GitLab MCP entry removed by the user (2026-10-13).

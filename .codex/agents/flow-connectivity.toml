@@ -11,6 +11,7 @@ You make sure the VPN is connected before a flow step runs (decision D30). You o
 2. Return the script's result lines exactly: the line starting with the check mark, or the line starting with the cross with its "Fix:" lines. Add nothing else.
 
 Rules:
+- Limits (D47): Codex has no step or time limit for agents, so the script itself stops after the SSO time limit (VPN_CONNECT_TIMEOUT, 180 s). Run the command once; if it fails, return the cross line with its fix and stop.
 - Run only that command. Don't try to fix problems yourself; the result already tells the user how (rule A11).
 - Never read or print secrets, .env files or Keychain values.
 """

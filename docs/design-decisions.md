@@ -180,7 +180,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d15"></a>
 ### D15 — What the per-user setup (`configure-user`) stores
 - **Date:** 2026-10-09
-- **Status:** Accepted; amended by [D29](#d29) (GitLab access token removed), then **by [D32](#d32) (GitLab access token restored)**
+- **Status:** Accepted; amended by [D29](#d29) (GitLab access token removed), then **by [D32](#d32) (GitLab access token restored)**. **Built in F4 (2026-10-12) with changes**, see "Built" below.
 - **Context:** Some details differ per person and are needed by several phases.
 - **Decision:** `configure-user` stores, outside the code repos:
 
@@ -195,7 +195,13 @@ Every decision taken while building the agent, including the options we rejected
   | Workspace folder | Where repos are cloned | Asked once |
 
   Shared settings (Jira site, project key `SCRUM`) belong in the project config, not the user's.
-- **Why:** Approved by the user. Personal details and secrets never get committed, and secrets never pass through the AI chat (anything typed there is sent to the AI provider and saved in the session history).
+- **Built (F4, 2026-10-12), command `flow-configure-user`:**
+  - Personal settings go to `local/user-settings.sh` (private, git-ignored): Jira account ID (fetched by the AI from Jira), GitLab username (read with the token when the VPN is on, else typed), workspace folder (typed, **no folder suggested**, must exist), AI tools (Claude Code, Codex or both; `flow-doctor` uses it), and the **optional VPN username**.
+  - **VPN profile kept, but marked "not needed today"** (user, 2026-10-12): the VPN logs in with SSO in the browser, and the gateway, port, realm and certificate pin are the same for everyone, so they live in `config/project-settings.sh` ([D46](#d46)). Only the optional VPN username is stored per person, for later use.
+  - Git name and email: read from git; asked only if missing, then set in the global git settings.
+  - The 5 secrets go to the Keychain through **a heads-up message ("Copy it now, then click Continue") followed by a hidden macOS input box** (user, 2026-10-12). The value is passed to `security` on its standard input, never on a command line, and never through the AI chat. The terminal commands in the setup guide stay as a backup.
+  - The per-repo dev WS2 keys ([D37](#d37)) are **asked in F5 (`flow-configure-repo`)** instead, where it's known which repos are WS2 services (user, 2026-10-12).
+  - Every item can be redone alone (e.g. `/flow-configure-user gitlab-token`).- **Why:** Approved by the user. Personal details and secrets never get committed, and secrets never pass through the AI chat (anything typed there is sent to the AI provider and saved in the session history).
 - **Rejected options:**
   - Storing the token in a config file: it could leak or be committed by accident.
 
@@ -679,3 +685,50 @@ Every decision taken while building the agent, including the options we rejected
 - **Rejected options:**
   - Writing the values into every script: they would drift apart.
   - A `.env`-style file: those names are git-ignored and the AI must not read them (A6), which would be confusing for a file that is meant to be shared.
+
+<a id="d47"></a>
+### D47 — Each agent has its own limits, set in what it runs
+- **Date:** 2026-10-12
+- **Status:** Accepted
+- **Context:** The user asked for time limits on the separate agents, so one that doesn't finish doesn't hang the work. Checked in the official docs (2026-10-12): **Claude Code** agents can have a step limit (`maxTurns`) but no time limit; **Codex** agents have neither.
+- **Decision:**
+  - **Time limits live in the scripts each agent runs**, so they work the same in both tools. The values are in `config/project-settings.sh`.
+  - **In Claude Code, each agent also gets a step limit** (`maxTurns`) as a safety net.
+  - **Different agents get different limits** (user, 2026-10-12), decided when each agent is built and listed in [architecture.md](architecture.md#applies-across-all-phases).
+  - When a limit is hit, the agent reports ❌ with what to do next (rule A11).
+  - First agent: `flow-connectivity`: script limit 180 s for the SSO login (`VPN_CONNECT_TIMEOUT`), `maxTurns: 3`.
+- **Limit:** for agents that mostly think (e.g. the AC-check and story-verification agents), a script can't limit their time; only Claude Code's step limit applies. Codex has nothing for them.
+- **Why:** User decision. It's the only approach that works in both tools.
+- **Rejected options:**
+  - A time limit on the agent itself: neither tool supports it.
+
+<a id="d48"></a>
+### D48 — One GitLab token for everything, including the review agent
+- **Date:** 2026-10-12
+- **Status:** Accepted
+- **Context:** The user asked whether the review agent and the other agents should have separate GitLab tokens. GitLab tokens come in two strengths: `api` (read and change) and `read_api` (read only).
+- **Decision:** keep **one** personal token (`closio-agent.gitlab-token`, scope `api`, [D32](#d32)) for all agents.
+- **Why:** User decision. The review agent will also comment on MRs when needed, so it needs `api` anyway. A second token would then add setup work without limiting anything.
+- **Rejected options:**
+  - A separate read-only (`read_api`) token for the review agent: only useful if it never writes.
+
+<a id="d49"></a>
+### D49 — Claude Code runs our own setup scripts without asking, through a shared project settings file
+- **Date:** 2026-10-13
+- **Status:** Accepted
+- **Context:** During `/flow-configure-user` the user had to come back to the Claude window and approve the script after every secret. They don't want auto mode.
+- **Decision:**
+  - `flow-configure-user` asks for **all missing secrets in one script run** (`configure-user.sh secrets`), so there's one approval instead of five. This helps in Codex too.
+  - A committed project settings file, **`.claude/settings.json`**, pre-approves only our own script calls that either just read or ask the user themselves through a macOS dialog:
+    - `configure-user.sh`: `show`, `check-folder`, `secrets`, `secret <item>`, `gitlab-username-from-token`, and `set` for `jira-account-id`, `gitlab-username`, `workspace-dir`, `ai-tools`, `vpn-username` (these only write the private `local/` settings file)
+    - `doctor.sh` (only reads)
+    - `vpn.sh status`, `connect`, `disconnect` (connect and disconnect still need the Mac password in the macOS dialog)
+    - `wait-seconds.sh` (waits 1–30 s; used while the Jira connector loads; added 2026-10-13)
+  - **Still asks:** changing the global git name or email (`set git-name`, `set git-email`) and every other command.
+  - The commands must run the scripts exactly as written (`bash scripts/…`, no `cd`, nothing joined with `&&`), or the rules don't match.
+  - Checked in Claude Code's docs (2026-10-13): a rule like `Bash(safe-cmd *)` doesn't approve `safe-cmd && other-cmd`, because each part of a joined command must match a rule on its own. Project allow rules only apply after the user trusts the folder.
+- **Why:** User decision. Fewer interruptions without giving the AI a free hand: only our own scripts, and only the safe parts.
+- **Rejected options:**
+  - Auto mode: the user doesn't want it.
+  - `allowed-tools` inside the command file: Claude Code clears that permission when the user sends their next message, and `flow-configure-user` asks questions in between, so the prompts would come back.
+- **Not covered:** Codex's own way to pre-approve commands hasn't been checked yet.

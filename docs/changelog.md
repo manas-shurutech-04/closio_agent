@@ -2,6 +2,17 @@
 
 Dated list of what changed in closio-agent. Newest first.
 
+## 2026-10-13
+
+- Jira check in `flow-doctor` and `flow-configure-user`: waits and retries up to 3 times (about 30 s) while the Atlassian connector loads, and the fix now says how to reconnect it (`/mcp`). New `scripts/wait-seconds.sh`.
+- `flow-configure-user` tested by the user; working.
+- `flow-configure-user` asks all missing secrets in one go. New shared `.claude/settings.json` lets Claude Code run our own setup scripts without an approval prompt each time; changing git name/email still asks ([D49](design-decisions.md#d49)).
+
+## 2026-10-12
+
+- **`flow-configure-user` (F4):** sets up your personal settings (`local/user-settings.sh`) and your 5 secrets (heads-up message, then a hidden macOS box, straight into the Keychain). The VPN profile is kept as optional. `flow-doctor` now checks your personal settings and uses your AI tools setting.
+- Agents get their own limits ([D47](design-decisions.md#d47)); `flow-connectivity` now has a step limit of 3. One GitLab token for everything ([D48](design-decisions.md#d48)).
+
 ## 2026-10-11
 
 - **`flow-vpn` (F3):** `connect`, `status`, `disconnect` the Japfa VPN with one macOS password dialog; the SSO page opens by itself; cleans up after a timeout or a changed certificate; removes the old GitLab-only DNS file; the VPN stays on until you disconnect. New `flow-connectivity` agent (Claude Code and Codex) for the phases. `flow-doctor` tips now point to `flow-vpn` ([D30](design-decisions.md#d30)). All live tests passed in both tools.

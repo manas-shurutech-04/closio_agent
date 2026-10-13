@@ -49,15 +49,11 @@ Repos in scope ([D23](design-decisions.md#d23)). Each is registered with `flow-c
 - **Strict rule for every setup command ([D42](design-decisions.md#d42)):** tell the user that sessions always start in the closio-agent folder, and check that this session did.
 - **VPN** (built, [commands.md](commands.md#flow-vpn)): `flow-vpn connect | status | disconnect`.
 - **Install checks** (built, [commands.md](commands.md)): `flow-ping` (are the commands loaded in this tool?) and `flow-doctor` (is the setup right? project, tools, VPN and GitLab, Keychain names, Jira; later pieces add their own checks).
-- **Per user** (`flow-configure-user`, [D15](design-decisions.md#d15)):
-  - Jira account ID
-  - GitLab host and username
-  - GitLab personal access token (`api` scope), stored in the macOS Keychain ([D32](design-decisions.md#d32), [D33](design-decisions.md#d33))
-  - test credentials (FE login, WS1 login, which are different), in the Keychain ([D20](design-decisions.md#d20), [D33](design-decisions.md#d33), [D34](design-decisions.md#d34))
-  - git name and email
-  - VPN profile (gateway, port, username; no password)
-  - the AI tool(s) used
-  - workspace folder
+- **Per user** (`flow-configure-user`, built in F4, [D15](design-decisions.md#d15), [commands.md](commands.md#flow-configure-user)):
+  - in `local/user-settings.sh` (private): Jira account ID (fetched by the AI), GitLab username, workspace folder, the AI tool(s) used, and an **optional** VPN username (not needed today; gateway and port are shared settings)
+  - git name and email (global git settings)
+  - in the macOS Keychain, through a heads-up message and a hidden input box: the GitLab personal access token (`api` scope, one token for everything, [D32](design-decisions.md#d32), [D48](design-decisions.md#d48)) and the test credentials (FE login, WS1 login, which are different; [D20](design-decisions.md#d20), [D33](design-decisions.md#d33), [D34](design-decisions.md#d34))
+  - the per-repo dev WS2 keys come with `flow-configure-repo` ([D37](design-decisions.md#d37))
 - **Per repository** (`flow-configure-repo`, [D23](design-decisions.md#d23), [D35](design-decisions.md#d35)): the **only way to add a repo**, current or new. It records name, local path, GitLab remote and path, FE/BE and role, base branch, branch-naming rule, install/run/test commands, **test-case format** (framework, file layout, patterns, coverage rules, or "no test suite"), which `.env` to use, local services needed, and rulesets.
 - **Repository code setup** (`flow-setup-repo`): runs the connectivity agent first ([D30](design-decisions.md#d30)), then clones, installs dependencies and sets up the environment.
 - **Jira card template**: the structure card creators follow. The agent checks each card against it in Phase 1.
@@ -144,6 +140,12 @@ _Details still open: how the coverage check that runs on every commit affects at
 - **FE and BE:** each repo is tagged FE or BE, and that tag decides the rulesets and run/test commands.
 - **Claude Code and Codex:** every command runs in both tools ([D8](design-decisions.md#d8), [D16](design-decisions.md#d16)).
 - **Custom agents:** decided phase by phase ([D16](design-decisions.md#d16)). So far: the AC-check agent in Phase 5, the story-verification agent in Phase 6 ([D19](design-decisions.md#d19)), and the **connectivity agent** at the start of **every phase from 1 to 9** and in `flow-setup-repo` ([D30](design-decisions.md#d30)).
+- **Agent limits ([D47](design-decisions.md#d47)):** each agent has its own limits: a time limit in the script it runs (works in both tools) and, in Claude Code, a step limit (`maxTurns`). On a limit it reports ❌ with what to do next.
+
+  | Agent | Time limit (in its script) | Step limit (Claude Code) |
+  |---|---|---|
+  | `flow-connectivity` | 180 s for the SSO login (`VPN_CONNECT_TIMEOUT`) | 3 |
+  | Later agents | Set when each is built | Set when each is built |
 
 ## Not covered yet
 

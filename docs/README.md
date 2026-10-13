@@ -6,7 +6,7 @@
 
 **Pick up the JIRA card → … → MR (Merge Request) review → Deployment doc creation**
 
-> Status: in design. The phases are approved (see [architecture.md](architecture.md)). Commands built so far: `flow-ping`, `flow-doctor`, `flow-vpn`, see [commands.md](commands.md).
+> Status: in design. The phases are approved (see [architecture.md](architecture.md)). Commands built so far: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, see [commands.md](commands.md).
 
 > **New to closio-agent?** Start with [setup-guide.md](setup-guide.md) to prepare your Mac (VPN, GitLab token, Keychain secrets, repos), then read [architecture.md](architecture.md).
 >
@@ -18,7 +18,7 @@
 |-----|----------------|--------|
 | [design-decisions.md](design-decisions.md) | Every decision taken, including the options we rejected and why | Available |
 | [setup-guide.md](setup-guide.md) | Access needed, installation, configuration, first run | Available: full manual setup for Japfa (accounts, tools, VPN, Jira, GitLab token, Keychain secrets, repos, local services, security). Automation is planned |
-| [commands.md](commands.md) | Every agent command: purpose, usage, inputs, outputs, example | Available: `flow-ping`, `flow-doctor`, `flow-vpn` |
+| [commands.md](commands.md) | Every agent command: purpose, usage, inputs, outputs, example | Available: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user` |
 | [architecture.md](architecture.md) | How the pipeline stages connect and what each one takes in and produces | Available (phases approved; first commands built) |
 | [changelog.md](changelog.md) | Dated list of what changed in the agent | Available |
 

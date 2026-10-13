@@ -137,7 +137,7 @@ More docs may be added as the user specifies.
 | F1 | Skill format check in Claude Code + Codex: `flow-ping` + first version of `flow-doctor` (D8, D43, D44) | **Built 2026-10-10.** T1, T2, T5 passed; T4 passed after `AGENTS.md` (D45); T3 passed after Codex was reinstalled inside Node v22 and its background service restarted. **F1 complete** |
 | F2 | Rest of `flow-doctor` (tools, Codex service, VPN state, GitLab + token, Keychain names, Jira via the AI); shared settings file (D46) | **Built 2026-10-10, tested by the user 2026-10-11** in Claude Code and Codex (only the 5 Keychain items missing, as expected). One Codex-sandbox fix. **F2 complete** |
 | F3 | Connectivity script + agent (D30): `scripts/vpn.sh` (connect/status/disconnect, one password dialog), `flow-connectivity` agent for both tools, `flow-vpn` command | **Built and tested 2026-10-11** (all 12 live tests passed in Claude Code and Codex). **F3 complete** |
-| F4 | `configure-user` | — |
+| F4 | `flow-configure-user`: personal settings in `local/user-settings.sh` + 5 Keychain secrets via heads-up + hidden macOS dialogs; doctor check; agent limits (D47) | **Built 2026-10-12; user tests passed 2026-10-13** (plus D49 fewer prompts, Jira wait-and-retry). **F4 complete** |
 | F5 | `configure-repo` (shared registry + local paths) | — |
 | F6 | `setup-repo` (VPN, clone, install, local Redis/RabbitMQ, run tests) | — |
 | F7 | Jira card template | — |
@@ -155,6 +155,9 @@ More docs may be added as the user specifies.
 - User memory decisions (2026-10-10): **local only** (`local/memory/`, git-ignored), no username folder; dedicated memory command plus agent-offered saves; **A8**: team rules always win; folder rename left to the user.
 - User memory is ever-growing and may not exist even at the first card; created on first entry, absence is normal (user, 2026-10-10).
 - F6b position (after `setup-repo`) confirmed (user, 2026-10-10).
+- F4 approved (user, 2026-10-12): build it; different limits for different agents (D47); the review agent will also comment, so **one GitLab token** (D48).
+- F4 answers 2 (user, 2026-10-12): keep the VPN profile for future use, marked as not necessary; heads-up + hidden dialog OK. New ideas: time limits for the separate agents; separate GitLab tokens for the review agent and the other agents (thoughts given, waiting on the user).
+- F4 answers (user, 2026-10-12): per-repo dev WS2 keys → F5 (F5 will hold many more details); keep "AI tools used"; hidden macOS dialogs for secrets, with a heads-up before each so the value can be copied first; don't suggest a workspace folder; asked why the VPN profile is unused (explained, confirmation pending).
 - F3 answers (user, 2026-10-11): add `flow-vpn` (connect/status/disconnect); VPN stays connected until the user disconnects; remove the old `jcvs` DNS file during connect.
 - F2 answers (user, 2026-10-10): ⚠️ symbol OK; `config/project-settings.sh` OK; new rule A11 (always give fix steps). Codex Jira: give the fix steps (setup guide §3) rather than a separate plan step.
 - Codex installed with npm inside Node v22 like Claude Code, Homebrew copy removed, background service restarted; `$flow-doctor` passes in Codex (user, 2026-10-10). Doctor symbols stay as they are.
