@@ -1,13 +1,10 @@
 # Open Questions
 
 - **A6 confirmation:** user said "hold onto this rule for now". Recorded as adopted provisionally; confirm the interpretation (adopt vs. defer).
-- **Codex Jira access:** how Codex connects to Jira (Atlassian MCP) isn't set up or documented yet.
 - **MR title/description content:** e.g. title `SCRUM-519: <summary>`. Labels or draft?
 - **Security:** a GitLab personal access token was used in plain text in a past Claude Code session (2026-10-08), so it's stored in that transcript and was sent to the AI provider. Recommend the user revokes it and creates a new one for D32, stored only in the Keychain.
-- **Connectivity agent (D30) feasibility test:** T1, T2, T3, T5 passed. T4 (GitLab MCP) and T6 (Codex GitLab MCP) are **no longer needed**: GitLab MCP removed (D32).
 - **REST API description step (D32), to test when built:** `PUT /api/v4/projects/:id/merge_requests/:iid` with a multi-line `description`, token read from the Keychain and kept off the command line (e.g. curl reading the header from stdin). Also confirm the push option `merge_request.assign` works on the Japfa GitLab.
 - **Coverage check on every commit:** husky runs the full `coverage:check` on pre-commit and pre-push in notification, pricingengine and targetsalesincentive. Each atomic commit must pass 80/70/80/80 on its own, and every commit runs the whole suite (slow). The commit-splitting design (Phase 7) must account for this.
-- **VPN connect script design (when the VPN step is built):** connect only when needed and detect an existing connection; handle a renewed certificate (the current one expires 2027-02-03; pin vs `--ca-file`); add/remove the domain resolver file (D27), including removing a stale one; what happens to the existing per-host `jcvs` file.
 - **Vitest threshold:** check that `thresholds.global` in closio-web-v2 is actually enforced by Vitest 3.
 - **Subagents:** decided per phase (D16). So far: AC-check agent (Phase 5), story-verification agent (Phase 6).
 - **Agent's own memory (per-card run folder, A1):** location (D36), keep after done and shared pickup (D38) decided. Still to finalise: the file structure (draft: state.json, history.md, card.md, plan.md, context.md, phases/, deployment-doc.md), after the foundation is built.
@@ -15,14 +12,15 @@
 - **New-user test (F9):** user agreed to a separate macOS account and asked how big the setup is. Explained 2026-10-09 (incl. the Homebrew multi-user caveat).
 - **Jira in Codex:** works through the Atlassian app on the user's ChatGPT account (verified 2026-10-11). Still to write up: how a new user connects that app in ChatGPT (exact steps). The `codex mcp add` way is untested.
 - **Not yet seen:** doctor's ✅ for a stored Keychain item and a real GitLab token check (no items stored yet).
+- **F5 live tests + confirm the 7 registry files (user):** review `config/repos/*.yaml`; `/flow-configure-repo` list; `/flow-configure-repo <ws2 repo>` for dev keys; register flow with a decline at the confirm step; `/flow-doctor`. Open: dev DB details (later). MR labels/reviewers: optional defaults, finalised at MR creation (decided). The answer "okayy" to dev DB details was read as "add later".
 - **Codex pre-approval:** not checked yet whether Codex can pre-approve our scripts like Claude Code (D49).
 - **Watch:** Codex's updater process still runs with Node v18; if Codex falls back to v18 after an update, restart the service again (fallback: `nvm alias default 22`). How to restart the updater itself is not checked yet (documented as such in the setup guide).
 - **Backend allow list (security):** `japfa/backend/.claude/settings.local.json` allows `echo $GITLAB_TOKEN` / `echo $GITLAB_PRIVATE_TOKEN` without asking. Suggested removing them; user's call.
-- **Desktop app + Node v22 (D41):** the desktop app doesn't start from a terminal; scripts must switch to v22 themselves. Design when scripts are built.
-- **Adding code repos as extra folders (D42):** launch option (`--add-dir`) vs a saved setting, for both tools. Check and draft with the setup commands.
+- **Desktop app + Node v22 (D41, A13):** the desktop app doesn't start from a terminal. `flow-doctor` shows a wrong Node; when the agent runs anything in a code repo it must switch to Node 22 itself (rule A13). Build the switch with F6.
+- **Adding code repos as extra folders (D42):** launch option (`--add-dir`) vs a saved setting, for both tools. Decide and build with F6 (the start-folder check itself is built).
 - **Split cards:** skipped for now (user, 2026-10-09). Come back to it later.
 
-## Resolved (2026-10-09)
+## Resolved
 
 - VPN credentials: nothing stored, because SSO is handled by the browser or Microsoft sign-in (D14).
 - VPN sudo: the user types their Mac password on each connect (D14).
@@ -60,3 +58,10 @@
 - F3 VPN: all live tests passed in both tools (2026-10-11); openfortivpn stays on after the AI tool's command ends.
 - Agent limits: per agent, in scripts + Claude `maxTurns` (D47). One GitLab token (D48). VPN profile kept optional (D15).
 - F4 complete (user tests passed 2026-10-13). Jira wait-and-retry added. Old GitLab MCP entry removed by the user (2026-10-13).
+- Codex Jira access: through the Atlassian app on the user's ChatGPT account (verified 2026-10-11).
+- Connectivity agent (D30): feasibility tests passed 2026-10-09; built and tested in F3 (2026-10-11).
+- VPN connect script design: built in F3 (already-connected detection incl. FortiClient, stale DNS file removed first, old `jcvs` file removed, certificate change reported with the new fingerprint).
+- `flow-configure-repo <repo> path <new path>`: approved and built (2026-10-14).
+- Repos on another Node version: each repo runs on its own version, installed with nvm if missing (D52, 2026-10-14).
+- Cloning: always manual; no registering from a GitLab address with an automatic clone (D53, 2026-10-14).
+- One team doc for all agent rules: `docs/agent-rules.md`, approved and added (D5, 2026-10-15).

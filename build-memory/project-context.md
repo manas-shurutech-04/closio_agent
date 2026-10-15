@@ -6,7 +6,7 @@ Build an **automated AI agent** that covers the software delivery flow:
 
 **Pick up a specified JIRA card → … → MR (Merge Request) review → Deployment doc creation**
 
-- The stages in between are not yet defined; the user will specify them.
+- The stages in between were defined on 2026-10-09: the 10 phases in `docs/architecture.md` (D18).
 - The agent will be refined step by step over several days through the user's commands.
 
 ## Users
@@ -33,6 +33,8 @@ People across the organisation, both existing and new team members. That's why e
 
 ## Agent Behaviour Rules (from user)
 
+These are the rules for the **agent** (closio-agent when it runs). The team copy, with each rule's decision and where it's applied, is `docs/agent-rules.md` (G1–G4 too); the ones the AI must follow in every session are also in `AGENTS.md`. Update all three together. The rules for **building** the agent are R1–R16 in `rules.md`.
+
 - A1: For every Jira card, **each step creates a history entry**. If the run is paused midway, the context must be saved in files so it can resume from there.
 - A2: Any GitLab operation (pull, fetch, push, MR) connects to the VPN **automatically** if it isn't connected. The user never connects manually. They only type the `sudo` password, plus the SSO login if the browser session has expired.
 - A3: The agent never moves a card to **Blocked**. That status is for QA only.
@@ -41,9 +43,12 @@ People across the organisation, both existing and new team members. That's why e
 - A6: Scripts and apps load `.env` themselves; **the AI never reads or prints `.env` values in the conversation** (user: "hold onto this rule for now", 2026-10-09, read as adopted provisionally; to be confirmed and revisited).
 - A7: **Every time any closio-agent command runs, the current user's memory (user-specific runtime context memory, D40) must be loaded and taken into account. If it's present, the agent's actions depend on it.** (user, 2026-10-10)
 - A8: **Team rules always take priority over user memory.** On conflict, the agent points it out and follows the team rule. (user, 2026-10-10)
-- A9: **Always run `nvm use v22` before starting Claude Code. Node v22 is used for the entire project** (user, 2026-10-10). Since the whole project uses v22, this also applies to Codex sessions, closio-agent scripts and running the code repos. See D41.
-- A11: **Whenever anything fails (a check, a step, a command), always tell the user the exact steps to fix it, in setup and in the entire execution** (user, 2026-10-10). Written into `AGENTS.md` (rule 4).
+- A9: **Always run `nvm use v22` before starting Claude Code. Node v22 is used for the entire project** (user, 2026-10-10). This also applies to Codex sessions and closio-agent's own scripts. Code repos run on their own Node version instead (A13, D52). See D41.
 - A10: **Always start Claude Code / Codex in the closio-agent folder.** The code repos are added as extra folders. This must be clearly stated everywhere and **strictly built into the setup commands** (user, 2026-10-10). See D42.
+- A11: **Whenever anything fails (a check, a step, a command), always tell the user the exact steps to fix it, in setup and in the entire execution** (user, 2026-10-10). Written into `AGENTS.md` (rule 4).
+- A12: **Branch names strictly follow `SCRUM-<number>/<short-description>`** (lowercase words joined by `-`, only a-z/0-9, **at most 5 words**, same name in every repo of a card). Stored as a rule (user, 2026-10-14): `AGENTS.md` rule 5, D50, `scripts/branch-name.sh`.
+- A13: **Each code repo runs on the Node version it is built for** (`node_version` from its Dockerfile, in `config/repos/<repo>.yaml`); before running anything in a repo, `nvm use <version>`, and `nvm install <version>` if nvm doesn't have it (user, 2026-10-14; first written the same day as "all repos on Node 22"). closio-agent, Claude Code and Codex stay on 22 (A9). `AGENTS.md` rule 6, D52.
+- A14: **Cloning a repo is always manual** (user, 2026-10-14). The agent never clones; it gives the `git clone` command. `AGENTS.md` rule 7, D53.
 
 ## Rough Steps (user's original list, 2026-10-09)
 
@@ -117,7 +122,11 @@ People across the organisation, both existing and new team members. That's why e
 | `docs/setup-guide.md` | Access, installation, configuration, first run | Setup changes (created 2026-10-09 with the VPN section) |
 | `docs/commands.md` | Every agent command | A command is added or changed (created 2026-10-10 with `flow-ping`, `flow-doctor`) |
 | `docs/architecture.md` | How the stages connect, inputs and outputs | Stages change (created 2026-10-09) |
+| `docs/agent-rules.md` | Every agent rule (G1–G4, A1–A14): decision, `AGENTS.md` number, where it's applied today | A rule is added or changed, or a command starts applying one (created 2026-10-15) |
 | `docs/changelog.md` | Dated changes to the agent | Every change to the agent (created 2026-10-10) |
+| `README.md` (top level) | Entry point for the repo: status, start here, folder table, commands so far | Any command, folder or status change |
+| `AGENTS.md` | Rules both AI tools read every session | A rule for the agent is added or changed |
+| `config/repos/*.yaml`, `config/project-settings.sh` | Shared repo facts and shared settings | A repo detail or shared value changes |
 
 More docs may be added as the user specifies.
 
@@ -138,8 +147,8 @@ More docs may be added as the user specifies.
 | F2 | Rest of `flow-doctor` (tools, Codex service, VPN state, GitLab + token, Keychain names, Jira via the AI); shared settings file (D46) | **Built 2026-10-10, tested by the user 2026-10-11** in Claude Code and Codex (only the 5 Keychain items missing, as expected). One Codex-sandbox fix. **F2 complete** |
 | F3 | Connectivity script + agent (D30): `scripts/vpn.sh` (connect/status/disconnect, one password dialog), `flow-connectivity` agent for both tools, `flow-vpn` command | **Built and tested 2026-10-11** (all 12 live tests passed in Claude Code and Codex). **F3 complete** |
 | F4 | `flow-configure-user`: personal settings in `local/user-settings.sh` + 5 Keychain secrets via heads-up + hidden macOS dialogs; doctor check; agent limits (D47) | **Built 2026-10-12; user tests passed 2026-10-13** (plus D49 fewer prompts, Jira wait-and-retry). **F4 complete** |
-| F5 | `configure-repo` (shared registry + local paths) | — |
-| F6 | `setup-repo` (VPN, clone, install, local Redis/RabbitMQ, run tests) | — |
+| F5 | `flow-configure-repo` (shared registry `config/repos/<repo>.yaml` + personal `local/repos/<repo>.yaml`, auto-detect then confirm, per-repo dev WS2 keys, doctor checks) | **Built 2026-10-14.** My tests passed; **7 repos registered** (`config/repos/`, local paths set on this Mac). **Committed and pushed 2026-10-15** (atomic commits, with its docs). Next: user confirms the files and runs live tests (dev keys) |
+| F6 | `flow-setup-repo` (VPN; on a clone the user already made: install under the repo's own Node version, `nvm install` if missing (A13, D52), local Redis/RabbitMQ/BullMQ, run tests; how repos are added as extra folders, D42). **No cloning** (D53) | Next, after F5 tests |
 | F7 | Jira card template | — |
 | F8 | Docs (setup guide on commands, `commands.md`, `changelog.md`) | — |
 | F9 | Completely-new-user test (separate macOS account) | — |
@@ -147,14 +156,22 @@ More docs may be added as the user specifies.
 
 ## Answers (user, 2026-10-10)
 
+- Agent rules doc (user, 2026-10-15): yes to `docs/agent-rules.md` (all agent rules in one table, linked to their decisions); "keep the documents updated with each command" (added to R15). Then: "point me to the right files only" → yes to making it rule R16.
 - `local/` approach for local repo paths: **approved** (D39).
 - Git remote: **pushed 2026-10-11** to the private GitHub repo `https://github.com/manas-shurutech-04/closio_agent.git` (user). Clone with `... closio-agent` as the folder name.
 - Rename the folder `AI Pipeline` → `closio-agent`: **yes** (timing open; renaming loses Claude Code's session history and memory for this path).
-- First commit: **not yet**.
+- First commit: **not yet** at the time; made and pushed on 2026-10-11 (D39).
 - **New requirement, user-specific runtime context memory (D40):** when users run the workflows they may want to store changes/preferences for current and future runs. It's an additional memory, user-specific, maintained by each user, stored in this repository, used in coding and all other phases to make results more precise to the user's description. **Rule A7:** always load and apply it in every command when present.
 - User memory decisions (2026-10-10): **local only** (`local/memory/`, git-ignored), no username folder; dedicated memory command plus agent-offered saves; **A8**: team rules always win; folder rename left to the user.
 - User memory is ever-growing and may not exist even at the first card; created on first entry, absence is normal (user, 2026-10-10).
 - F6b position (after `setup-repo`) confirmed (user, 2026-10-10).
+- F5 answers (user, 2026-10-14): run each repo on the Node version in the repo, install it with nvm if missing (A13 changed, D52); cloning remains manual only (D53); asked whether all new commands are documented (added helper-scripts and agents sections to `commands.md`).
+- F5 path option approved; user not convinced a brand-new repo can be added later (2026-10-14): showed detection on two never-registered repos, made detection work for non-Node repos (`language`), added a step-by-step to commands.md.
+- F5 test feedback (user, 2026-10-14): don't make the repo list static (new repos must stay addable; they are); test 6 couldn't be done because the clone path was already saved (proposed a `path` option); missing dev keys should be ⚠️ not ❌ (done).
+- F5 follow-up (user, 2026-10-14): MR labels and reviewers: **stored as optional defaults (`none` for now), finalised when each MR is created** (corrected the same day; first read as "not stored"); rule A13 (Node 22 for every repo); update all docs.
+- F5 repo answers (user, 2026-10-14): base branch `develop` for the backend repos, `development` for the web app (their main work branches); port is in each repo's `.env` (recorded as "from the repo's .env (PORT / VITE_PORT)", the AI doesn't read it); no health URL except notification (**wrong: corrected 2026-10-14, the user says every repo must have one; all backend repos use `/api/v1/health-checker`, web `/`**); MR labels optional (none for now), reviewers not given (none for now); dev DB details: "okayy", read as add later.
+- F5 answers 2 (user, 2026-10-14): branch rule OK, but **strict, stored in the rules, with a word limit** (set to 5); detected migration values are suggestions, ask if a repo differs; dev DB user/password optional keys: yes; nothing else to add.
+- F5 answers (user, 2026-10-14): local services incl. BullMQ; rulesets refined later; per-repo keys can go beyond client ID/secret (e.g. DB connection), shortlist from the repos; migrations/seeders: say whether to follow the existing pattern; queues recorded; run/lint commands suggested from scripts then confirmed; calls between WS1, WS2 and FE; MR target branch, labels, reviewers asked; base branch can differ per repo; Claude to propose a standard branch-naming rule; flat YAML OK; register the 7 repos during testing.
 - F4 approved (user, 2026-10-12): build it; different limits for different agents (D47); the review agent will also comment, so **one GitLab token** (D48).
 - F4 answers 2 (user, 2026-10-12): keep the VPN profile for future use, marked as not necessary; heads-up + hidden dialog OK. New ideas: time limits for the separate agents; separate GitLab tokens for the review agent and the other agents (thoughts given, waiting on the user).
 - F4 answers (user, 2026-10-12): per-repo dev WS2 keys → F5 (F5 will hold many more details); keep "AI tools used"; hidden macOS dialogs for secrets, with a heads-up before each so the value can be copied first; don't suggest a workspace folder; asked why the VPN profile is unused (explained, confirmation pending).
