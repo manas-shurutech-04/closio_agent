@@ -13,6 +13,7 @@ Before you start: open a terminal **in the closio-agent folder**, run `nvm use v
 - **They only run when you type them ([D44](design-decisions.md#d44)).** The tool never starts a command by itself. Claude Code: `disable-model-invocation: true` in `SKILL.md`. Codex: `agents/openai.yaml` in the command's folder. Also, the rules file `AGENTS.md` tells the AI not to do a command's steps by hand: if you ask for what a command does (e.g. "check my setup"), it tells you which command to type ([D45](design-decisions.md#d45)). Tested in both tools on 2026-10-10. This is an instruction, not a hard lock, so the tool still asks before running a script.
 - **Your user memory is applied ([D40](design-decisions.md#d40), rules A7/A8).** Every command first reads `local/memory/general.md` if it exists. Team rules always win.
 - **Shared logic lives in `scripts/`.** The command tells the AI which script to run, so both tools do the same thing.
+- **Every command follows the agent rules** in [agent-rules.md](agent-rules.md), e.g. every problem comes with the steps to fix it (A11).
 
 **Fewer approval prompts (Claude Code, [D49](design-decisions.md#d49)):** the shared file `.claude/settings.json` lets Claude Code run our own scripts without asking, but only the parts that just read or ask you themselves in a macOS dialog: `configure-user.sh` (not the git name/email change), `configure-repo.sh` (all its steps), `branch-name.sh`, `doctor.sh`, `vpn.sh`, `wait-seconds.sh`, and writing files in `config/repos/`. Everything else still asks.
 

@@ -1,6 +1,7 @@
 # Rules for AI tools in closio-agent
 
 Claude Code and Codex both read this file at the start of every session in this folder (D45).
+The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
 
 1. Flow commands run only when the user types them (`/flow-…` or `$flow-…`).
    Don't do a command's steps or run its scripts on your own.

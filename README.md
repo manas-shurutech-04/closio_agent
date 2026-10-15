@@ -12,7 +12,7 @@ It runs as commands inside **Claude Code** (`/flow-start`) and **Codex** (`$flow
 
 0. **Get it (one-time):** `git clone https://github.com/manas-shurutech-04/closio_agent.git closio-agent`. The repo is private, so ask Manas for access first. The `closio-agent` at the end names the folder the way the docs expect.
 1. **Set up your Mac:** [docs/setup-guide.md](docs/setup-guide.md) (VPN, GitLab token, Keychain secrets, repos).
-2. **Understand the flow:** [docs/architecture.md](docs/architecture.md).
+2. **Understand the flow:** [docs/architecture.md](docs/architecture.md), and the rules the agent always follows: [docs/agent-rules.md](docs/agent-rules.md).
 3. **Check it works:** type `/flow-ping`, then `/flow-doctor` (Codex: `$flow-ping`, `$flow-doctor`). See [docs/commands.md](docs/commands.md).
 4. **Why things are the way they are:** [docs/design-decisions.md](docs/design-decisions.md).
 

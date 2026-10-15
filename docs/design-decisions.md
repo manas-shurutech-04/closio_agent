@@ -51,9 +51,9 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d5"></a>
 ### D5 — Layout of `docs/`, with files created only once they have real content
 - **Date:** 2026-10-09
-- **Status:** Accepted
+- **Status:** Accepted. **`agent-rules.md` added on 2026-10-15** (user): every agent rule (G1–G4, A1–A14) in one table, so colleagues find them in one place.
 - **Context:** Team documentation needs a fixed home and structure for existing and new team members.
-- **Decision:** `docs/` contains `README.md`, `setup-guide.md`, `commands.md`, `design-decisions.md`, `architecture.md` and `changelog.md` (all six exist since 2026-10-10). Each file is created only once there is real content for it. `docs/README.md` lists all of them with their status.
+- **Decision:** `docs/` contains `README.md`, `setup-guide.md`, `commands.md`, `design-decisions.md`, `architecture.md` and `changelog.md` (all six exist since 2026-10-10), plus `agent-rules.md` (since 2026-10-15). Each file is created only once there is real content for it. `docs/README.md` lists all of them with their status.
 - **Why:** These cover the required documentation (commands, design decisions, setup guide). `architecture.md` shows how the stages connect, and `changelog.md` lets existing users catch up without reading every doc.
 - **Rejected options:**
   - Creating empty placeholder files upfront: they could mislead colleagues into thinking content exists.

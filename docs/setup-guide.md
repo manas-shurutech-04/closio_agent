@@ -90,7 +90,7 @@ claude        # or: codex
 ```
 
 - **Always start in the closio-agent folder** ([D42](design-decisions.md#d42), rule A10). The agent's commands only load from there. Don't start the tool inside a code repo: the agent adds the repos it needs as extra folders itself. (Today the folder is still called `AI Pipeline`.)
-- **Always run `nvm use v22` first** ([D41](design-decisions.md#d41), rule A9). closio-agent, Claude Code and Codex run on Node v22; each code repo runs on its own Node version, which the agent switches to itself (rule A13, [D52](design-decisions.md#d52)).
+- **Always run `nvm use v22` first** ([D41](design-decisions.md#d41), rule A9). closio-agent, Claude Code and Codex run on Node v22; each code repo runs on its own Node version, which the agent switches to itself (rule A13, [D52](design-decisions.md#d52)). All agent rules: [agent-rules.md](agent-rules.md).
 - The setup commands (`flow-configure-user`, `flow-configure-repo`) remind you of this and stop if the session wasn't started in the closio-agent folder; `flow-doctor` checks it too.
 - 🛠 The Claude desktop app doesn't start from a terminal, so you can't run `nvm use v22` there first. `flow-doctor` shows it if Node isn't 22. When the agent runs anything in a code repo, it switches to that repo's Node version itself first (rule A13); that part comes with `flow-setup-repo` (F6).
 

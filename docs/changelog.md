@@ -2,6 +2,10 @@
 
 Dated list of what changed in closio-agent. Newest first.
 
+## 2026-10-15
+
+- New [agent-rules.md](agent-rules.md): every rule the agent follows (git rules G1–G4, behaviour rules A1–A14) in one place, each with its decision, its `AGENTS.md` number and where it's applied today.
+
 ## 2026-10-14
 
 - **Each repo runs on its own Node version** (rule A13 changed, [D52](design-decisions.md#d52)): `node_version` from the repo's Dockerfile; `nvm install <version>` if it's missing (`flow-doctor` and `flow-configure-repo` warn). Claude Code, Codex and closio-agent stay on Node 22. `AGENTS.md` rule 6 updated.
