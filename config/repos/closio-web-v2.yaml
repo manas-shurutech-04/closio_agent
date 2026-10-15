@@ -1,0 +1,33 @@
+# Shared repo facts for closio-web-v2 (F5, D35, D51). Committed: no secrets here.
+# Branch names are not set here: one strict rule for every repo (rule A12, D50).
+name: closio-web-v2
+gitlab_url: https://jcvs.japfacomfeed.co.id/closio/frontend-web/closio-web-v2.git
+gitlab_path: closio/frontend-web/closio-web-v2
+type: FE
+language: node
+role: FE: Closio web app (Vue 3 + Vite)
+base_branch: development
+node_version: 22   # from the Dockerfile; run everything in this repo after 'nvm use v22' (rule A13)
+install_command: npm ci
+dev_command: npm run dev
+port: from the repo's .env (VITE_PORT)
+health_url: /   # no health endpoint in the web app; the dev server start page
+check_commands: none
+test_command: npm test
+test_framework: vitest, @vue/test-utils
+test_layout:
+coverage_command: npm run test:coverage
+coverage_rules: branches:70 functions:70 lines:70 statements:70
+coverage_enforced_by: not enforced by git hooks
+migration_tool: none
+queues: none
+local_services: none
+calls: nodejs-ws1closio
+env_file: .env
+dev_keys: none
+dev_keys_optional: none
+mr_target_branch: development
+mr_labels: none   # optional default; confirmed or changed when each MR is created (D51)
+mr_reviewers: none   # optional default (GitLab usernames); confirmed or changed when each MR is created
+rulesets: none yet
+registered_on: 2026-10-14

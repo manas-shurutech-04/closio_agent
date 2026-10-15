@@ -1,0 +1,46 @@
+# Shared repo facts for nodejs-ws2closio (F5, D35, D51). Committed: no secrets here.
+# Branch names are not set here: one strict rule for every repo (rule A12, D50).
+name: nodejs-ws2closio
+gitlab_url: https://jcvs.japfacomfeed.co.id/closio/backend/nodejs-ws2closio.git
+gitlab_path: closio/backend/nodejs-ws2closio
+type: BE
+language: node
+role: WS2 service: core Closio APIs
+base_branch: develop
+node_version: 22   # from the Dockerfile; run everything in this repo after 'nvm use v22' (rule A13)
+install_command: npm ci
+dev_command: npm run dev
+start_command: npm start
+port: from the repo's .env (PORT)
+health_url: /api/v1/health-checker   # also /api/v1/health-checker/external (checks the services it calls)
+check_commands: npm run lint, npm run check:circular
+test_command: npm test
+test_framework: mocha, chai, sinon, supertest, nyc
+test_unit_command: npm run test:unit
+test_api_command: npm run test:api
+test_layout: test/api test/fixtures test/helpers test/stubs test/unit
+coverage_command: npm run coverage:check
+coverage_rules: --statements=80 --branches=70 --functions=80 --lines=80
+coverage_enforced_by: not enforced by git hooks
+migration_tool: sequelize-cli
+migrations_path: src/migrations
+seeders_path: src/seeders
+migration_name_pattern: YYYYMMDDHHMMSS-<short-description>.js
+seeder_name_pattern: YYYYMMDDHHMMSS-seed-<name>.js
+migration_commands: npm run migration:generate, npm run migrate, npm run migrate:undo
+seed_commands: npm run seed, npm run seed:undo
+queues: none
+local_services: redis
+calls: nodejs-ws2notification, nodejs-ws2pricingengine, ws2jauth
+env_file: .env
+dev_keys: ws2-client-id, ws2-client-secret
+dev_keys_optional: db-user, db-password
+dev_db_host:
+dev_db_port:
+dev_db_name:
+dev_db_schema:
+mr_target_branch: develop
+mr_labels: none   # optional default; confirmed or changed when each MR is created (D51)
+mr_reviewers: none   # optional default (GitLab usernames); confirmed or changed when each MR is created
+rulesets: backend/story-implementation-workflow.md
+registered_on: 2026-10-14
