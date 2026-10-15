@@ -34,6 +34,8 @@ bad() {
   [ -n "${3:-}" ] && echo "        $3"
 }
 
+. "$AGENT_ROOT/scripts/lib/secret-dialogs.sh"
+
 # ---------------------------------------------------------------- personal settings file
 
 JIRA_ACCOUNT_ID=""
@@ -92,27 +94,10 @@ valid_secret_item() {
   return 1
 }
 
-secret_stored() { security find-generic-password -a "$USER" -s "$KEYCHAIN_PREFIX.$1" >/dev/null 2>&1; }
+secret_stored() { keychain_has "$KEYCHAIN_PREFIX.$1"; }
 
-# Reads the value from stdin and stores it. 'security' asks for it twice when -w comes last,
-# so it is sent twice. The value never appears on a command line.
-store_secret_from_stdin() {
-  local item="$1" value
-  IFS= read -r value || true
-  if [ -z "$value" ]; then
-    look "Nothing entered, so $KEYCHAIN_PREFIX.$item was not changed"
-    return 3
-  fi
-  printf '%s\n%s\n' "$value" "$value" |
-    security add-generic-password -U -a "$USER" -s "$KEYCHAIN_PREFIX.$item" -l "$(secret_label "$item")" -w >/dev/null 2>&1
-  value=""
-  if secret_stored "$item"; then
-    ok "$KEYCHAIN_PREFIX.$item stored in the Keychain"
-    return 0
-  fi
-  bad "Couldn't store $KEYCHAIN_PREFIX.$item in the Keychain" \
-    "Run $CMD $item again. If it keeps failing, use the terminal command in the setup guide, section 5.1."
-  return 1
+store_secret_from_stdin_item() { # <item>
+  store_secret_from_stdin "$KEYCHAIN_PREFIX.$1" "$(secret_label "$1")" "$CMD $1"
 }
 
 gitlab_token_check() { # prints the username on success; return 0 ok, 1 rejected, 2 can't reach GitLab, 3 no token
@@ -152,32 +137,11 @@ gitlab_username_from_token() {
 }
 
 ask_secret() {
-  local item="$1" desc button value
+  local item="$1" desc rc
   desc="$(secret_description "$item")" || { bad "Unknown secret: $item" "Use one of: $KEYCHAIN_PERSONAL_ITEMS"; return 1; }
-
-  # 1. Heads-up, so the user can copy the value before the input box opens.
-  button="$(/usr/bin/osascript \
-    -e "display dialog \"Next: $desc.\" & return & return & \"Copy it now, then click Continue.\" with title \"closio-agent setup\" buttons {\"Skip\", \"Continue\"} default button \"Continue\"" \
-    -e 'button returned of result' 2>/dev/null)"
-  if [ "$button" != "Continue" ]; then
-    look "Skipped $KEYCHAIN_PREFIX.$item" "Add it later with: $CMD $item"
-    return 3
-  fi
-
-  # 2. Hidden input box. The value goes straight into the Keychain.
-  value="$(/usr/bin/osascript \
-    -e "display dialog \"Paste $desc here:\" with title \"closio-agent setup\" default answer \"\" with hidden answer buttons {\"Cancel\", \"Save\"} default button \"Save\"" \
-    -e 'text returned of result' 2>/dev/null)"
-  if [ $? -ne 0 ]; then
-    look "Cancelled, so $KEYCHAIN_PREFIX.$item was not changed" "Add it later with: $CMD $item"
-    value=""
-    return 3
-  fi
-  printf '%s\n' "$value" | store_secret_from_stdin "$item"
-  local rc=$?
-  value=""
+  ask_secret_dialog "$KEYCHAIN_PREFIX.$item" "$(secret_label "$item")" "$desc" "$CMD $item"
+  rc=$?
   [ "$rc" -eq 0 ] || return "$rc"
-
   if [ "$item" = "gitlab-token" ]; then
     gitlab_username_from_token
   fi
@@ -316,7 +280,7 @@ case "${1:-}" in
     ask_secret "$2" ;;
   store-secret-from-stdin)
     [ $# -eq 2 ] && valid_secret_item "$2" || { bad "Unknown secret: ${2:-none}" "Use one of: $KEYCHAIN_PERSONAL_ITEMS"; exit 1; }
-    store_secret_from_stdin "$2" ;;
+    store_secret_from_stdin_item "$2" ;;
   gitlab-username-from-token) gitlab_username_from_token ;;
   *)
     echo "Usage: bash scripts/configure-user.sh check-folder | show | set <item> <value> | secrets | secret <item> | gitlab-username-from-token"
