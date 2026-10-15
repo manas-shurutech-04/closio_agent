@@ -2,6 +2,20 @@
 
 Dated list of what changed in closio-agent. Newest first.
 
+## 2026-10-14
+
+- **Each repo runs on its own Node version** (rule A13 changed, [D52](design-decisions.md#d52)): `node_version` from the repo's Dockerfile; `nvm install <version>` if it's missing (`flow-doctor` and `flow-configure-repo` warn). Claude Code, Codex and closio-agent stay on Node 22. `AGENTS.md` rule 6 updated.
+- **Cloning stays manual** ([D53](design-decisions.md#d53)): the agent never clones; it gives you the `git clone` command. `AGENTS.md` rule 7. `flow-setup-repo` (F6) won't clone.
+- `commands.md`: new sections listing every helper script and the agents.
+- `flow-configure-repo`: step-by-step for adding a brand-new repo later (commands.md); repos that aren't Node can be added too (Go suggestions, others by your answers; new `language` field); new `… <repo> path <new path>` to change where a clone is.
+- `flow-doctor` and `flow-configure-repo`: a repo's missing dev keys now show ⚠️ (worth a look) instead of ❌; they're only needed to test that repo on dev.
+- **Every repo runs on Node 22 (rule A13):** the agent checks `node -v` and runs `nvm use v22` before running anything in a repo; `AGENTS.md` rule 6; each repo file records `node_version: 22`.
+- MR labels and reviewers: optional defaults in each repo file (`none` for now), confirmed or changed each time an MR is created.
+- **The 7 repos are registered** in `config/repos/` (base branch `develop`, web `development`; ports come from each repo's `.env`; health URL `/api/v1/health-checker` for every backend repo and `/` for the web app, now required for every repo; MR labels and reviewers none for now; dev database details to be added later).
+- **`flow-configure-repo` (F5):** registers a repo (the AI suggests the values from the repo, you confirm; shared file `config/repos/<repo>.yaml`) or sets it up on your Mac (clone path in `local/repos/`, dev keys in the Keychain: WS2 client ID/secret, optional dev database user/password, extra keys). `flow-doctor` has a new Repos section ([D51](design-decisions.md#d51)).
+- **Strict branch names (rule A12, [D50](design-decisions.md#d50)):** `SCRUM-<number>/<short-description>`, at most 5 words, same name in every repo; `scripts/branch-name.sh`. Added to `AGENTS.md` (rule 5).
+- Secret dialogs moved to `scripts/lib/secret-dialogs.sh`, shared by both setup commands.
+
 ## 2026-10-13
 
 - Jira check in `flow-doctor` and `flow-configure-user`: waits and retries up to 3 times (about 30 s) while the Atlassian connector loads, and the fix now says how to reconnect it (`/mcp`). New `scripts/wait-seconds.sh`.

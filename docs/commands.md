@@ -14,7 +14,7 @@ Before you start: open a terminal **in the closio-agent folder**, run `nvm use v
 - **Your user memory is applied ([D40](design-decisions.md#d40), rules A7/A8).** Every command first reads `local/memory/general.md` if it exists. Team rules always win.
 - **Shared logic lives in `scripts/`.** The command tells the AI which script to run, so both tools do the same thing.
 
-**Fewer approval prompts (Claude Code, [D49](design-decisions.md#d49)):** the shared file `.claude/settings.json` lets Claude Code run our own scripts without asking, but only the parts that just read or ask you themselves in a macOS dialog: `configure-user.sh` (not the git name/email change), `doctor.sh`, `vpn.sh`, and `wait-seconds.sh` (a short wait while Jira loads). Everything else still asks.
+**Fewer approval prompts (Claude Code, [D49](design-decisions.md#d49)):** the shared file `.claude/settings.json` lets Claude Code run our own scripts without asking, but only the parts that just read or ask you themselves in a macOS dialog: `configure-user.sh` (not the git name/email change), `configure-repo.sh` (all its steps), `branch-name.sh`, `doctor.sh`, `vpn.sh`, `wait-seconds.sh`, and writing files in `config/repos/`. Everything else still asks.
 
 ## Command list
 
@@ -24,6 +24,7 @@ Before you start: open a terminal **in the closio-agent folder**, run `nvm use v
 | [`flow-doctor`](#flow-doctor) | Checks your setup and tells you how to fix each problem | Built 2026-10-10 (F1, F2). Works in Claude Code and Codex. Later pieces add their own checks |
 | [`flow-vpn`](#flow-vpn) | Connects, checks or disconnects the Japfa VPN | Built 2026-10-11 (F3). Tested in Claude Code and Codex |
 | [`flow-configure-user`](#flow-configure-user) | Sets up your personal settings and your 5 secrets | Built 2026-10-12 (F4). Tested by the user |
+| [`flow-configure-repo`](#flow-configure-repo) | Registers a repo, or sets it up on your Mac (path, dev keys) | Built 2026-10-14 (F5). Live tests pending |
 
 ---
 
@@ -82,12 +83,13 @@ $flow-doctor      (Codex: approve running it with network access, so the GitLab 
 | | Old GitLab-only DNS file | ⚠️ "no longer needed" |
 | | VPN certificate pin still valid | ⚠️ in the last 30 days, ❌ after 2027-02-03 |
 | Personal settings | Jira account ID, GitLab username, workspace folder (exists), AI tools | Fix: `/flow-configure-user` ([D15](design-decisions.md#d15)) |
+| Repos | Each registered repo: clone exists and points at the right GitLab project; its Node version is installed in nvm; its dev keys are stored | ⚠️ for repos not set up on this Mac, and ⚠️ (not ❌) for missing dev keys: they're only needed to test on dev. Fix: `/flow-configure-repo <repo>` |
 | Keychain | The 5 personal items exist | Names only; values are never read ([D33](design-decisions.md#d33)). Fix: `/flow-configure-user <item>` |
 | Jira | The AI reads project SCRUM | Done by the AI, because only the AI tool has the Jira connection. The Jira connector can take a while to load when a session starts, so the AI waits and retries up to 3 times (about 30 s) before reporting ❌ |
 
 **In Codex:** Codex runs commands in a sandbox (a closed box). There, the GitLab checks and the Codex background service check may show ⚠️ "can't check from inside Codex's sandbox". The tip says what to do: approve network access, or run `bash scripts/doctor.sh` in a normal terminal. Everything else works the same in both tools (tested 2026-10-11).
 
-Checks for pieces not built yet are added by those pieces: repos, local paths and per-repo dev keys (F5), installed dependencies and local Redis/RabbitMQ (F6).
+Checks for pieces not built yet are added by those pieces: installed dependencies and local Redis/RabbitMQ/BullMQ (F6).
 
 The fixed values it uses (GitLab address, VPN gateway, certificate pin, Keychain names…) come from `config/project-settings.sh` ([D46](design-decisions.md#d46)).
 
@@ -204,3 +206,85 @@ Result: 1 to set up.
 ```
 
 **Files:** `.agents/skills/flow-configure-user/`, `scripts/configure-user.sh` (you can run `bash scripts/configure-user.sh show` in a terminal too).
+
+---
+
+### `flow-configure-repo`
+
+**Purpose:** the only way to add a repo to closio-agent ([D35](design-decisions.md#d35), [D51](design-decisions.md#d51)), and to set a registered repo up on your Mac. **The list of repos isn't fixed:** anyone can add a new repo at any time by giving the path of its clone; the 7 current repos are just the first ones.
+
+**Usage:**
+```
+/flow-configure-repo                                 list the repos and their status on this Mac
+/flow-configure-repo /full/path/to/a/clone           register a new repo for the whole team
+/flow-configure-repo nodejs-ws2closio                set up a registered repo on this Mac
+/flow-configure-repo nodejs-ws2closio key db-user    add or replace one dev key
+/flow-configure-repo nodejs-ws2closio path /new/path   change where the clone is (a clone of another project is refused)
+$flow-configure-repo …                               (Codex: approve the key steps outside the sandbox)
+```
+
+**Adding a brand-new repo later, step by step:**
+1. Clone it yourself (cloning is always manual, [D53](design-decisions.md#d53)): on the VPN (`/flow-vpn connect`), run `git clone <GitLab address> <your workspace folder>/<repo>`. Or use a clone you already have.
+2. Run `/flow-configure-repo <full path of that clone>`.
+3. Answer the questions (one message); check the file the AI shows you and confirm.
+4. Add your dev keys when it asks (optional ones can be skipped).
+5. Commit the new `config/repos/<repo>.yaml` so the team gets it. From then on it shows in `/flow-configure-repo`, in `/flow-doctor`, and every later phase can use it.
+
+Node repos get the most suggestions (read from `package.json`). Go repos get Go suggestions (`go mod download`, `go vet`, `go test`); any other kind of repo can still be added, with more answers typed by you.
+
+**Registering a repo (once, for the team):** the AI reads the clone and **suggests** values (it never reads what's inside `.env` files). It asks you, in one message, for what it can't know and shows its suggestion next to each question:
+- role, base branch (it can differ per repo), port and health URL (**required for every repo**; suggested from the repo's own health check)
+- run and check commands
+- migrations and seeders (the existing Sequelize pattern is kept; you say only if this repo differs)
+- queues, local services (Redis, RabbitMQ, BullMQ)
+- which repos it calls
+- MR target branch, and optional default labels and reviewers (you confirm or change them each time an MR is created)
+- dev keys, plus the optional dev database details
+
+It shows you the whole file `config/repos/<repo>.yaml` and saves it only after you confirm. Then commit that file, so the team gets it.
+
+**Setting it up on your Mac:** where your clone is (or "not cloned yet"), then the repo's dev keys. For each key, a macOS message first says which one is next ("Copy it now, then click Continue"), then a hidden box opens to paste it into. Optional keys can be skipped.
+
+| Dev key (Keychain: `closio-agent.<repo>.<key>.dev`) | For | Required? |
+|---|---|---|
+| `ws2-client-id`, `ws2-client-secret` | Calling a WS2 service directly on dev | Yes, for WS2 services |
+| `db-user`, `db-password` | Reading the repo's dev database (check migrations, write QA steps) | Optional |
+| Any extra named key (e.g. a partner API key) | Whatever the repo needs | As registered |
+
+**Each repo's own Node version (rule A13, [D52](design-decisions.md#d52)):** each repo file records `node_version` from the repo's Dockerfile (all 7 current repos: 22). The agent runs nothing in a repo before `nvm use <that version>`; if nvm doesn't have it, `flow-doctor` and `flow-configure-repo` show ⚠️ with `nvm install <version>`.
+
+**Cloning is manual ([D53](design-decisions.md#d53)):** the agent never clones. If a repo isn't on your Mac, it gives you the `git clone` command and, afterwards, `/flow-configure-repo <repo> path <folder>`.
+
+**Branch names** are one strict rule for every repo, not a repo setting (rule A12, [D50](design-decisions.md#d50)): `SCRUM-<number>/<short-description>`, at most 5 words. `bash scripts/branch-name.sh make SCRUM-519 "<card title>"` builds one; `check` checks one.
+
+**`flow-doctor`** now has a **Repos** section: each repo's clone exists and points at the right GitLab project, and its required dev keys are stored. Repos you haven't set up show ⚠️, not ❌ (you may not work on all of them).
+
+**Files:** `.agents/skills/flow-configure-repo/`, `scripts/configure-repo.sh`, `scripts/branch-name.sh`, `scripts/lib/secret-dialogs.sh` (shared with `flow-configure-user`), `config/repos/<repo>.yaml` (shared), `local/repos/<repo>.yaml` (yours).
+
+---
+
+## Helper scripts
+
+The commands run these scripts (in `scripts/`). You can run them yourself in a terminal from the closio-agent folder, after `nvm use v22`. Shared values come from `config/project-settings.sh`.
+
+| Script | What it does | Used by |
+|---|---|---|
+| `doctor.sh` | All the setup checks (reads only) | `flow-doctor` |
+| `vpn.sh connect \| status \| disconnect` | The VPN steps | `flow-vpn`, the `flow-connectivity` agent |
+| `vpn-admin-steps.sh` | The few VPN steps that need admin rights (one password dialog). Runs as admin: review changes carefully | `vpn.sh` |
+| `password-dialog.sh` | The macOS password dialog for those admin steps | `vpn.sh` |
+| `configure-user.sh check-folder \| show \| set \| secrets \| secret \| gitlab-username-from-token` | Personal settings and the 5 secrets | `flow-configure-user` |
+| `configure-repo.sh check-folder \| list \| detect \| validate \| set-path \| keys \| key \| show` | The repo registry, clone paths and dev keys | `flow-configure-repo` |
+| `branch-name.sh make <CARD-KEY> "<title>" \| check <name>` | Builds and checks branch names (strict rule A12) | Later phases (Phase 1); you can use it any time |
+| `link-claude-skills.sh` | Adds the Claude Code link for every command (run it after adding a command) | Setup; `flow-doctor` tells you when |
+| `wait-seconds.sh <1-30>` | Waits a few seconds (e.g. while Jira loads) | `flow-doctor`, `flow-configure-user` |
+| `lib/secret-dialogs.sh` | The heads-up and hidden box for secrets | `configure-user.sh`, `configure-repo.sh` |
+
+## Agents
+
+Agents are helpers that commands start; you don't type them.
+
+| Agent | What it does | Files |
+|---|---|---|
+| `flow-connectivity` | Connects the VPN if needed and checks GitLab, at the start of every phase that needs it (Phases 1–9, `flow-setup-repo`). Limits: 3 steps in Claude Code, 180 s for the SSO login ([D47](design-decisions.md#d47)) | `.claude/agents/flow-connectivity.md`, `.codex/agents/flow-connectivity.toml` |
+

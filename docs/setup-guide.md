@@ -1,8 +1,8 @@
 # Setup Guide — closio-agent for Japfa (Closio)
 
-> **Status (2026-10-10):** `closio-agent` is **in design.** Only the install checks `flow-ping` and `flow-doctor` exist so far ([commands.md](commands.md)). The setup commands (`flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`) will automate most of this guide later.
+> **Status (2026-10-14):** `closio-agent` is **in design.** The setup commands are built: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user` and `flow-configure-repo` ([commands.md](commands.md)). `flow-setup-repo` (clone, install, local services) is next.
 >
-> Until then, this guide explains how to prepare a Mac by hand. Steps marked **✅ verified** were tested on a real Mac on 2026-10-09 (macOS 26.6.2). Steps marked **🛠 planned** describe what the setup commands will do; they're here so you know what to expect.
+> **Use the commands first** (see "First-time setup, in order" below). The manual steps in this guide stay as a backup and explain what the commands do. Steps marked **✅ verified** were tested on a real Mac (macOS 26.6.2). Steps marked **🛠 planned** aren't built yet.
 >
 > **Golden rule:** never paste a password, token or secret into the Claude Code or Codex chat. Anything typed there is sent to the AI provider and stays in the session history. Secrets go into the **macOS Keychain** only, using the commands below in your **own terminal**.
 
@@ -27,7 +27,7 @@
 |---|---|---|
 | [Homebrew](https://brew.sh) | Installs the other tools | See brew.sh |
 | git | Repos | Comes with the Xcode command-line tools (`xcode-select --install`) |
-| [nvm](https://github.com/nvm-sh/nvm) + **Node.js v22** | The whole project uses Node v22 ([D41](design-decisions.md#d41)): Claude Code, closio-agent's scripts, and running the repos (their Docker images use `node:22`) | Install nvm, then `nvm install 22` |
+| [nvm](https://github.com/nvm-sh/nvm) + **Node.js v22** (+ any version a repo needs) | Claude Code, Codex and closio-agent's scripts run on Node 22 ([D41](design-decisions.md#d41)). Each code repo runs on the Node version it's built for ([D52](design-decisions.md#d52)); the 7 current repos all use 22 | Install nvm, then `nvm install 22`. If `flow-doctor` says a repo's version is missing: `nvm install <version>` |
 | Docker | Local **Redis** and **RabbitMQ** for backend tests ([D21](design-decisions.md#d21)) | Docker Desktop |
 | openfortivpn | VPN from the command line ([D14](design-decisions.md#d14)) | [Section 2](#2-vpn--verified) |
 | Claude Code | Runs `closio-agent` | **Inside Node v22 with npm**, see [below](#install-claude-code-and-codex-inside-node-v22--verified) |
@@ -90,9 +90,9 @@ claude        # or: codex
 ```
 
 - **Always start in the closio-agent folder** ([D42](design-decisions.md#d42), rule A10). The agent's commands only load from there. Don't start the tool inside a code repo: the agent adds the repos it needs as extra folders itself. (Today the folder is still called `AI Pipeline`.)
-- **Always run `nvm use v22` first** ([D41](design-decisions.md#d41), rule A9). The whole project uses Node v22.
-- 🛠 The setup commands will tell you this and check it.
-- 🛠 The Claude desktop app doesn't start from a terminal, so you can't run `nvm use v22` there first. How the agent handles this will be built with its scripts.
+- **Always run `nvm use v22` first** ([D41](design-decisions.md#d41), rule A9). closio-agent, Claude Code and Codex run on Node v22; each code repo runs on its own Node version, which the agent switches to itself (rule A13, [D52](design-decisions.md#d52)).
+- The setup commands (`flow-configure-user`, `flow-configure-repo`) remind you of this and stop if the session wasn't started in the closio-agent folder; `flow-doctor` checks it too.
+- 🛠 The Claude desktop app doesn't start from a terminal, so you can't run `nvm use v22` there first. `flow-doctor` shows it if Node isn't 22. When the agent runs anything in a code repo, it switches to that repo's Node version itself first (rule A13); that part comes with `flow-setup-repo` (F6).
 
 ### Approval prompts in Claude Code
 
@@ -105,7 +105,8 @@ The first time you start Claude Code in this folder, it asks whether you trust i
 3. `/flow-ping`: are the commands loaded?
 4. `/flow-doctor`: what's missing?
 5. `/flow-configure-user`: your personal settings and secrets.
-6. `/flow-vpn connect`, then `/flow-doctor` again: everything should be ✅ or ⚠️, apart from the parts still to come (repos).
+6. `/flow-configure-repo`: for each repo you work on, where your clone is and its dev keys.
+7. `/flow-vpn connect`, then `/flow-doctor` again: everything should be ✅ or ⚠️.
 
 ### Check that the flow commands work
 
@@ -268,6 +269,10 @@ security add-generic-password -U -a "$USER" -s "closio-agent.gitlab-token" -l "c
 | `closio-agent.ws1-login-password` | Your password for the WS1 login API | Same |
 | `closio-agent.<repo>.ws2-client-id.dev` | **Dev-environment** client ID of that WS2 service, one item per WS2 repo (e.g. `closio-agent.nodejs-ws2closio.ws2-client-id.dev`) | Direct WS2 tests on dev after merge ([D37](design-decisions.md#d37)) |
 | `closio-agent.<repo>.ws2-client-secret.dev` | **Dev-environment** client secret of that WS2 service | Same |
+| `closio-agent.<repo>.db-user.dev`, `closio-agent.<repo>.db-password.dev` | **Optional:** your dev database user and password for that repo | Checking migrations on dev, writing QA steps ([D51](design-decisions.md#d51)) |
+| `closio-agent.<repo>.<name>.dev` | Any extra key a repo needs (e.g. a partner API key) | As registered for the repo |
+
+The per-repo keys above are asked by `/flow-configure-repo <repo>` (heads-up, then hidden box); the 5 personal ones by `/flow-configure-user`.
 
 For each row, run the 5.1 command with that service name and a matching `-l` label.
 
@@ -296,7 +301,7 @@ How the WS1 session cookie is fetched (done by the agent, shown for reference):
 
 ## 6. Repositories
 
-Every repo is added to `closio-agent` through its **repository configuration command** (`flow-configure-repo`, not built yet). It is the only way to add a repo and records the full details for each one ([D35](design-decisions.md#d35)). The repos currently in scope ([D23](design-decisions.md#d23)) are below. Remotes are on `https://jcvs.japfacomfeed.co.id/` (VPN needed):
+Every repo is added to `closio-agent` through its **repository configuration command** (`flow-configure-repo`, built in F5; [commands.md](commands.md#flow-configure-repo)). For repos already registered, run `/flow-configure-repo <repo>` to tell it where your clone is and to add the repo's dev keys. It is the only way to add a repo and records the full details for each one ([D35](design-decisions.md#d35)). The repos currently in scope ([D23](design-decisions.md#d23)) are below. **All 7 are registered** (2026-10-14): their shared facts are in `config/repos/`. The list isn't fixed: add a new repo any time with `/flow-configure-repo <path of its clone>`. **Each repo runs on its own Node version** (`node_version` in its file; all 7 use 22): if you run anything in a repo yourself, run `nvm use <that version>` first (rule A13, [D52](design-decisions.md#d52)). **Cloning is manual** ([D53](design-decisions.md#d53)): clone a repo yourself on the VPN (`git clone <GitLab address> <folder>`), then tell closio-agent where it is with `/flow-configure-repo <repo> path <folder>`. Remotes are on `https://jcvs.japfacomfeed.co.id/` (VPN needed):
 
 | Repo | GitLab path | Type |
 |---|---|---|
@@ -308,17 +313,9 @@ Every repo is added to `closio-agent` through its **repository configuration com
 | `ws2jauth` | `genesis-framework/backend-node/ws2jauth` | BE |
 | `closio-web-v2` | `closio/frontend-web/closio-web-v2` | FE (Vue) |
 
-> 🛠 **Planned:** for each repo, current or new, `flow-configure-repo` records ([D35](design-decisions.md#d35)):
-> - name, local path, GitLab remote and project path
-> - FE/BE and its role
-> - base branch and branch-naming rule
-> - install, run and test commands
-> - test framework, file layout, patterns and coverage rules (or "no test suite")
-> - which `.env` to use
-> - local services needed
-> - rulesets
->
-> `flow-setup-repo` then connects the VPN, clones, installs dependencies, and starts local Redis/RabbitMQ.
+**What `flow-configure-repo` records for each repo** ([D51](design-decisions.md#d51)): GitLab address and path, FE/BE and role, base branch, language (node, go or other), Node version (from its Dockerfile), install/run/check/test commands, port and health URL, test format and coverage rules, migrations and seeders (existing Sequelize pattern), queues, local services (Redis, RabbitMQ, BullMQ), the repos it calls, the `.env` file name, which dev keys it needs, MR target branch and optional default labels and reviewers, rulesets. The shared part is in `config/repos/<repo>.yaml`; where the clone is on your Mac is in `local/repos/<repo>.yaml` (private). Branch names follow one strict rule for every repo: `SCRUM-<number>/<short-description>`, at most 5 words (rule A12).
+
+> 🛠 **Planned (F6):** `flow-setup-repo` will connect the VPN and, on a repo you've already cloned, install its dependencies under the repo's own Node version (installing that version with nvm if needed), start local Redis, RabbitMQ and BullMQ, and run its tests. It won't clone repos: cloning stays manual ([D53](design-decisions.md#d53)).
 
 ---
 
@@ -326,7 +323,7 @@ Every repo is added to `closio-agent` through its **repository configuration com
 
 Per [D21](design-decisions.md#d21):
 - **PostgreSQL:** the **dev database**, used directly (VPN needed). The credentials come from the repository's `.env` ([D34](design-decisions.md#d34)).
-- **Redis** (all uses, including BullMQ) and **RabbitMQ**: **local** instances.
+- **Redis** (all uses, including **BullMQ**, which runs on Redis) and **RabbitMQ**: **local** instances.
 - The repos' own `docker-compose.yml` files don't include Redis or RabbitMQ, so `flow-setup-repo` will provide them with Docker.
 
 ---

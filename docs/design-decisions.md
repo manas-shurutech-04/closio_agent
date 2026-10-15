@@ -53,7 +53,7 @@ Every decision taken while building the agent, including the options we rejected
 - **Date:** 2026-10-09
 - **Status:** Accepted
 - **Context:** Team documentation needs a fixed home and structure for existing and new team members.
-- **Decision:** `docs/` contains `README.md`, `setup-guide.md`, `commands.md`, `design-decisions.md`, `architecture.md` and `changelog.md`. Each file is created only once there is real content for it. `docs/README.md` lists all of them with their status.
+- **Decision:** `docs/` contains `README.md`, `setup-guide.md`, `commands.md`, `design-decisions.md`, `architecture.md` and `changelog.md` (all six exist since 2026-10-10). Each file is created only once there is real content for it. `docs/README.md` lists all of them with their status.
 - **Why:** These cover the required documentation (commands, design decisions, setup guide). `architecture.md` shows how the stages connect, and `changelog.md` lets existing users catch up without reading every doc.
 - **Rejected options:**
   - Creating empty placeholder files upfront: they could mislead colleagues into thinking content exists.
@@ -82,7 +82,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d8"></a>
 ### D8 — One shared skill format for Claude Code and Codex
 - **Date:** 2026-10-09
-- **Status:** Accepted. How commands are invoked in Codex is still open (see the note below). **Amended by [D44](#d44)**: one Claude-only line (`disable-model-invocation`) is added to every command file, if the F1 test shows Codex accepts it.
+- **Status:** Accepted. **Built and tested in F1 (2026-10-10):** one copy per command in `.agents/skills/`, a per-command link in `.claude/skills/`; works in Claude Code (CLI and desktop app) and Codex (`$name`). **Amended by [D44](#d44)**: one Claude-only line (`disable-model-invocation`) in every command file; tested, Codex accepts it.
 - **Context:** Every command must run in both Claude Code and Codex. Both tools support the Agent Skills open standard (a folder with a `SKILL.md`), but look in different places: Claude Code in `.claude/skills/`, Codex in `.agents/skills/`.
 - **Decision:** Keep one copy of each skill in `.agents/skills/<name>/SKILL.md` and make it visible to Claude Code through `.claude/skills/` (symbolic link, or a sync script if the link doesn't work). Use only the frontmatter fields both tools share (`name`, `description`). Put deterministic logic in `scripts/`.
 - **Why:** The instructions are maintained in one place and the two tools behave the same.
@@ -145,7 +145,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d14"></a>
 ### D14 — The agent connects to the VPN with openfortivpn using SAML (SSO) login
 - **Date:** 2026-10-09
-- **Status:** Accepted. **Tested end to end on 2026-10-09** (openfortivpn 1.24.1, macOS 26.6.2).
+- **Status:** Accepted. **Tested end to end on 2026-10-09** (openfortivpn 1.24.1, macOS 26.6.2). **Built into the agent in F3 (2026-10-11)** as `scripts/vpn.sh` and `flow-vpn` ([D30](#d30)); the per-host DNS file in step 3 below was replaced by one domain-wide file ([D27](#d27)).
 - **Context:** GitLab (`jcvs.japfacomfeed.co.id`) is only reachable over the VPN, and the agent must connect automatically (A2). The team's FortiClient connection is SSL-VPN, gateway `vpnwm.japfacomfeed.co.id:443/sso`, with SSO through an external browser (SAML) and no client certificate. There is no official FortiClient command line for macOS.
 - **Decision:** Use **openfortivpn** (open source, installed with Homebrew) with its `--saml-login` option.
 - **Why:** User decision. It's scriptable, so the agent can start the connection itself.
@@ -175,7 +175,7 @@ Every decision taken while building the agent, including the options we rejected
 
 **Verified results:** "Tunnel is up and running". Internal routes (10.x, 172.17.x) go through `ppp0`. With the resolver file: `curl https://jcvs.japfacomfeed.co.id` → HTTP 200, and `git ls-remote` against the GitLab repos works.
 
-**Still to design (when the agent's VPN step is built):** connect only when needed and detect an existing connection; handle a renewed certificate; whether other internal hosts need resolver files.
+**Designed and built in F3 (2026-10-11):** connects only when GitLab doesn't answer (any VPN client counts); a renewed certificate is reported with its new fingerprint to confirm with IT and put in `config/project-settings.sh`; one domain-wide DNS file covers every internal host ([D27](#d27), [D30](#d30)).
 
 <a id="d15"></a>
 ### D15 — What the per-user setup (`configure-user`) stores
@@ -284,7 +284,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d23"></a>
 ### D23 — Repositories in scope, each registered with `configure-repo`
 - **Date:** 2026-10-09
-- **Status:** Accepted; **extended by [D35](#d35)** (dedicated command to register any repo with the full set of details).
+- **Status:** Accepted; **extended by [D35](#d35)** (dedicated command to register any repo with the full set of details). **All 7 repos registered on 2026-10-14** in `config/repos/` ([D51](#d51)). **Not a fixed list** (user, 2026-10-14): more repos can be added at any time with `flow-configure-repo`.
 - **Context:** The local `japfa` folder contains more repos than the agent should work on.
 - **Decision:** In scope for now: `nodejs-ws1closio`, `nodejs-ws2closio`, `nodejs-ws2notification`, `nodejs-ws2pricingengine`, `nodejs-ws2targetsalesincentive`, `ws2jauth` (BE) and `closio-web-v2` (FE). Each repo is **registered with the repository setup command (`configure-repo`)**, which also records the repo's **test-case format** (framework, file layout, patterns, coverage rules).
 - **Why:** User decision.
@@ -315,7 +315,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d26"></a>
 ### D26 — `story-implementation-workflow.md` is the baseline for the Phase 2–6 rules (with Express 5)
 - **Date:** 2026-10-09
-- **Status:** Accepted
+- **Status:** Accepted. **To be refined later** (user, 2026-10-14), when the Phase 2–6 rulesets are written. Each backend repo's registry file points to it; the web app has no rulesets yet ([D51](#d51)).
 - **Context:** `backend/story-implementation-workflow.md` (from the SCRUM-517 session) already describes exploration, planning, implementation order, test patterns, curl checks and MR checklists for these repos.
 - **Decision:** Use it as the baseline when the Phase 2–6 rulesets are written. Correction: the repos use **Express 5** (`express ^5.1.0`), not Express 4 as the document says.
 - **Why:** User decision. It reflects how the team already works on these repos.
@@ -325,7 +325,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d27"></a>
 ### D27 — VPN DNS: one resolver file for the whole `japfacomfeed.co.id` domain, added on connect and removed on disconnect
 - **Date:** 2026-10-09
-- **Status:** Accepted. Not built yet (part of the agent's VPN step).
+- **Status:** Accepted. **Built in F3 (2026-10-11)**, see "Built" below.
 - **Context:** Besides GitLab, other internal hosts don't resolve on macOS over the VPN. Verified: the dev API `dev-closio-ws1-apiprivate.japfacomfeed.co.id`, which points to an internal AWS load balancer and is reachable over `ppp0`. The dev database and other dev hosts are probably the same. macOS ignores the DNS servers openfortivpn writes to `/etc/resolv.conf` (D14).
 - **Decision:** The agent's VPN connect step writes `/etc/resolver/japfacomfeed.co.id` (nameservers `10.90.0.53`, `10.190.0.55`) once the tunnel is up, and removes it on disconnect. It uses the same `sudo` prompt as openfortivpn.
 - **Why:** User decision. One file covers every internal host, so no per-host list to maintain.
@@ -364,12 +364,12 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d30"></a>
 ### D30 — A connectivity custom agent runs at the start of each phase that needs the VPN or GitLab
 - **Date:** 2026-10-09
-- **Status:** Accepted. Details confirmed by the user on 2026-10-09; **feasibility test pending**.
+- **Status:** Accepted. Details confirmed by the user on 2026-10-09; feasibility tests passed the same day. **Built and tested in F3 (2026-10-11)**: all 12 live tests passed in Claude Code and Codex. Limits added by [D47](#d47).
 - **Context:** GitLab, the dev API and the dev DB are only reachable over the VPN (D14, D27). The GitLab MCP server only connects if the VPN is up when Claude Code/Codex starts, and Claude Code can't reconnect a failed server without the user typing `/mcp` (D28).
 - **Decision:** A dedicated **custom agent (subagent)** runs at the **start of every phase that needs the VPN or GitLab**. It connects the VPN and checks that GitLab is reachable. (Originally it also checked the GitLab MCP server; that check was removed by [D32](#d32).) Where something can't be automated, it asks the user (manual intervention is acceptable); push and similar commands also involve the user.
 - **Why:** User decision. It keeps connection handling in one place and runs only when a phase needs it.
 - **Confirmed details (user, 2026-10-09):**
-  - **Phases:** it runs at the start of **every phase from Phase 1 to Phase 9**, and also within **`setup-repo`** in Phase 0, which clones the repos from GitLab.
+  - **Phases:** it runs at the start of **every phase from Phase 1 to Phase 9**, and also within **`setup-repo`** in Phase 0. (Originally because `setup-repo` would clone the repos; cloning is now manual, [D53](#d53), but `setup-repo` still needs GitLab and the dev servers.)
   - **Mac password:** entered in a **macOS password dialog** (`sudo -A` with an askpass helper). The password goes straight to `sudo` and never passes through the AI. Rejected: printing the command for the user to run in their own terminal.
   - **GitLab MCP not connected (Claude Code or Codex):** the agent **prompts the user to establish the connection and doesn't proceed** until the check passes.
 - **Rejected options:**
@@ -428,6 +428,7 @@ Every decision taken while building the agent, including the options we rejected
   - On 2026-10-08, full multi-line descriptions were set with the REST API and a personal access token, but the token was written in plain text in the command.
 - **Decision (option a):**
   - **Phase 7:** the single push per repo still **creates the MR and assigns it to the user** with push options (D31): create, target, title, assign.
+  - **Labels and reviewers** (user, 2026-10-14): the repo file holds optional defaults; the user confirms or changes them when the MR is created; labels are optional ([D51](#d51)).
   - **Right after the push:** a script sets the **full multi-line description** through the **GitLab REST API**: `PUT /api/v4/projects/:id/merge_requests/:merge_request_iid` with `description`.
   - **Token:** the script reads the user's **personal access token from the macOS Keychain** at run time. It's never typed into the AI chat, written to a file, or put on a command line where it would show up in transcripts or the process list.
   - **GitLab MCP is removed entirely:** from the design, the setup and the connectivity agent's checks.
@@ -442,7 +443,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d33"></a>
 ### D33 — Secrets in the macOS Keychain: one item per secret, named `closio-agent.<name>`
 - **Date:** 2026-10-09
-- **Status:** Accepted; amended by [D34](#d34) (shared `ws2-client-*` items removed; local values come from each repo's `.env`) and **by [D37](#d37)** (per-repo **dev** WS2 items added)
+- **Status:** Accepted; amended by [D34](#d34) (shared `ws2-client-*` items removed; local values come from each repo's `.env`), **by [D37](#d37)** (per-repo **dev** WS2 items added) and **by [D51](#d51)** (optional per-repo `db-user`/`db-password` and extra keys). Since F4/F5 the items are added by `flow-configure-user` and `flow-configure-repo` through a heads-up and a hidden macOS box ([D15](#d15)); the terminal command below stays as a backup.
 - **Context:** D15, D20 and D32 keep secrets (GitLab token, test logins, WS2 client credentials) in the macOS Keychain. A new team member needs exact, repeatable steps, and the agent's scripts need fixed names to read from.
 - **Decision:**
   - Each secret is a **generic password** in the user's **login Keychain**: **account** = the Mac username (`$USER`), **service** = `closio-agent.<name>`.
@@ -477,7 +478,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d35"></a>
 ### D35 — A dedicated command registers each repository with the full set of details
 - **Date:** 2026-10-09
-- **Status:** Accepted. Exact detail list drafted; command not built yet.
+- **Status:** Accepted. **Built in F5 (2026-10-14)** as `flow-configure-repo`; the details and format are in [D51](#d51).
 - **Context:** The 7 in-scope repos (D23) are listed in the docs for now, but the user wants every repo, current and future, **added through a dedicated command**, capturing the same full details documented for the current repos.
 - **Decision:** The repository configuration command (`configure-repo`, name is a placeholder) is **the only way to add a repo** to closio-agent. The 7 current repos are registered through it once it's built, and any new repo the same way. It records, per repo:
   - name, local path, GitLab remote URL and project path;
@@ -500,7 +501,7 @@ Every decision taken while building the agent, including the options we rejected
   - The skills, scripts, shared configuration, docs, build memory, the Playwright project (D24) and the **per-card run folders (`runs/<CARD-KEY>/`)** all live in this project folder.
   - Run folders are **committed and shared** through git, so a teammate who pulls can see, and continue, a card's history.
   - **Never-commit rule:** nothing in a run folder or any committed file may contain secrets or `.env` values (D33, D34, A6).
-  - Per-user settings (e.g. GitLab username, local repo paths) can't be shared. **Proposed:** a git-ignored per-user file inside the folder. To confirm when the skeleton is drafted.
+  - Per-user settings (e.g. GitLab username, local repo paths) can't be shared, so they go in the git-ignored `local/` folder (confirmed in [D39](#d39); built: `local/user-settings.sh` in F4, `local/repos/` in F5).
 - **Why:** User decision. One place for everything; new joiners get the full context by cloning.
 - **Rejected options:**
   - `~/.closio-agent/` per-user home folder (suggested by Claude): memory wouldn't travel with the clone.
@@ -510,6 +511,7 @@ Every decision taken while building the agent, including the options we rejected
 - **Date:** 2026-10-09
 - **Status:** Accepted
 - **Context:** The repos' `.env` files hold **local** credentials only (D34), but Phase 9 tests on the dev environment (D22).
+- **Extended by [D51](#d51) (2026-10-14):** each repo's registry file now lists which dev keys it needs, including optional dev database user and password and extra named keys, all named `closio-agent.<repo>.<key>.dev`.
 - **Decision (option b):** for each WS2 service, the **dev** client ID and secret are personal Keychain items named `closio-agent.<repo>.ws2-client-id.dev` and `closio-agent.<repo>.ws2-client-secret.dev`, added the same way as other secrets (D33). Phase 9 can then test both through dev WS1 (login cookie) and directly against each WS2 service.
 - **Why:** User decision. Allows direct WS2 checks on dev.
 - **Rejected options:**
@@ -529,7 +531,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d39"></a>
 ### D39 — Repository layout of closio-agent (foundation step F0)
 - **Date:** 2026-10-09
-- **Status:** Accepted (created 2026-10-09). Local-path handling **approved by the user on 2026-10-10**.
+- **Status:** Accepted (created 2026-10-09). Local-path handling **approved by the user on 2026-10-10**. First commit and push on 2026-10-11 (see below). Built since: `config/repos/<repo>.yaml` (F5); in `local/`: `user-settings.sh` (F4), `repos/` (F5), `vpn/` (the openfortivpn log, F3); `local/memory/` comes with F6b.
 - **Context:** Everything lives in this project folder, which the team clones (D36). The user approved `git init` and creating the structure.
 - **Decision:**
   - `git init` (branch `main`). **First commit and push on 2026-10-11** (user): remote **`https://github.com/manas-shurutech-04/closio_agent.git`** (private GitHub repo). Teammates clone it with `git clone https://github.com/manas-shurutech-04/closio_agent.git closio-agent`. Before the push, the chat transcript's WS1 login user ID was blanked out, like the GitLab token.
@@ -541,7 +543,7 @@ Every decision taken while building the agent, including the options we rejected
   - **Shared** facts per repo: `config/repos/<repo>.yaml` (committed).
   - **Personal** facts (workspace folder, and the path of each repo on that Mac): `local/` (git-ignored, never pushed), filled by `configure-user` and `configure-repo`.
   - **Default path:** `<workspace>/<repo>`. The person can point to an existing clone instead.
-  - If a repo's local path is missing (e.g. right after cloning closio-agent), `doctor` reports it and `setup-repo` clones it to the default path or asks for an existing one.
+  - If a repo's local path is missing (e.g. right after cloning closio-agent), `doctor` reports it. ~~`setup-repo` clones it to the default path~~: **cloning is manual** ([D53](#d53)); the user clones it and sets the path with `flow-configure-repo <repo> path <folder>`.
 - **Why:** Shared facts travel with the clone; personal paths never leak into the shared repo or break someone else's setup.
 - **Rejected options:** a per-user `~/.closio-agent/` home (rejected in D36).
 
@@ -587,13 +589,14 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d41"></a>
 ### D41 — Node.js v22 for the whole project; run `nvm use v22` before starting Claude Code
 - **Date:** 2026-10-10
-- **Status:** Accepted. Claude Code install method agreed and done on 2026-10-10 (see the install note below).
+- **Status:** Accepted. Claude Code install method agreed and done on 2026-10-10 (see the install note below). **Amended by [D52](#d52)** (2026-10-14): Node 22 stays for closio-agent itself and for Claude Code / Codex; each code repo runs on its own Node version.
 - **Context:**
   - The Mac has several Node versions through nvm. The default is v18.20.8; v22.14.0 is installed.
   - All 7 repos in scope build on `node:22-alpine` in their Dockerfiles (checked 2026-10-10).
   - Claude Code's docs say its npm package needs Node.js 22 or later.
 - **Decision:**
   - **Node v22 is used for the entire project**: Claude Code, closio-agent's scripts, the Playwright project, and installing, running and testing the code repos on the Mac.
+  - **Rule A13 (user, 2026-10-14), changed the same day by [D52](#d52):** ~~all the code repos run under Node 22~~ → each repo runs on **its own** Node version. Original wording: all the code repos run under Node 22 (nvm). **Before running anything in a repo** (install, run, test, lint, migrate, seed), the agent checks `node -v` and, if it isn't v22, runs `nvm use v22` first, in the same shell command. Written into `AGENTS.md` (rule 6); each repo's registry file records `node_version: 22`.
   - **Rule A9:** always run `nvm use v22` in the terminal **before starting Claude Code**. Because the whole project uses v22, the same goes for Codex: the commands it runs (npm, tests, git hooks) use whichever Node is active.
 - **Why:** User decision. It matches the Node version the repos ship with.
 - **Rejected options:** None considered.
@@ -606,7 +609,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d42"></a>
 ### D42 — Claude Code and Codex are always started in the closio-agent folder; code repos are added as extra folders
 - **Date:** 2026-10-10
-- **Status:** Accepted. How the repos get added (a launch option or a saved setting) is checked and drafted with the setup commands.
+- **Status:** Accepted. **Built:** `flow-configure-user`, `flow-configure-repo` and `flow-doctor` check that the session started in the closio-agent folder and stop with the fix if not (F2, F4, F5). **Still open:** how the code repos get added as extra folders (a launch option or a saved setting), decided with `flow-setup-repo` (F6).
 - **Context:**
   - The agent's commands are project skills, and both tools only load them when the session starts in the folder that holds them (or a folder inside it).
   - The code repos live somewhere else on each Mac (`<workspace>/<repo>`, [D39](#d39)).
@@ -640,7 +643,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d44"></a>
 ### D44 — Commands only run when the user types them
 - **Date:** 2026-10-10
-- **Status:** Accepted. Whether Codex accepts the Claude-only line is tested in F1.
+- **Status:** Accepted. **Tested in F1 (2026-10-10):** Codex accepts the Claude-only line. The typed-only check (T4) first failed because the AI did the steps by hand; fixed by `AGENTS.md` ([D45](#d45)) and passed on re-test.
 - **Context:** Both tools can start a command by themselves if they think it matches what the user said (e.g. "looks good, ship it" could start the push command). That is risky for commands that push code or move Jira cards.
 - **Decision:** every command is set so **only the user can start it**, by typing it:
   - Claude Code: the line `disable-model-invocation: true` in the command's `SKILL.md`.
@@ -682,6 +685,7 @@ Every decision taken while building the agent, including the options we rejected
   - Each value can be overridden from outside, which is how the scripts are tested without touching the Mac.
   - When a value changes (e.g. the VPN certificate is renewed), it's changed here once.
 - **Why:** User decision. One place to change a value, so scripts can't disagree.
+- **Added since:** `VPN_CONNECT_TIMEOUT` (F3, [D47](#d47)), `BRANCH_DESC_MAX_WORDS` (F5, [D50](#d50)).
 - **Rejected options:**
   - Writing the values into every script: they would drift apart.
   - A `.env`-style file: those names are git-ignored and the AI must not read them (A6), which would be confusing for a file that is meant to be shared.
@@ -724,6 +728,7 @@ Every decision taken while building the agent, including the options we rejected
     - `doctor.sh` (only reads)
     - `vpn.sh status`, `connect`, `disconnect` (connect and disconnect still need the Mac password in the macOS dialog)
     - `wait-seconds.sh` (waits 1–30 s; used while the Jira connector loads; added 2026-10-13)
+    - `configure-repo.sh` (all its steps), `branch-name.sh` (make, check), and writing files in `config/repos/` (`Edit(/config/repos/**)`) (added 2026-10-14, F5)
   - **Still asks:** changing the global git name or email (`set git-name`, `set git-email`) and every other command.
   - The commands must run the scripts exactly as written (`bash scripts/…`, no `cd`, nothing joined with `&&`), or the rules don't match.
   - Checked in Claude Code's docs (2026-10-13): a rule like `Bash(safe-cmd *)` doesn't approve `safe-cmd && other-cmd`, because each part of a joined command must match a rule on its own. Project allow rules only apply after the user trusts the folder.
@@ -732,3 +737,74 @@ Every decision taken while building the agent, including the options we rejected
   - Auto mode: the user doesn't want it.
   - `allowed-tools` inside the command file: Claude Code clears that permission when the user sends their next message, and `flow-configure-user` asks questions in between, so the prompts would come back.
 - **Not covered:** Codex's own way to pre-approve commands hasn't been checked yet.
+
+<a id="d50"></a>
+### D50 — One strict branch-naming rule for every repo
+- **Date:** 2026-10-14
+- **Status:** Accepted
+- **Context:** The existing branches don't follow one pattern (`SCRUM-101`, `SCRUM-126/add-filter-status`, `SCRUM-271-create-db-schema-…`, `scrum-512`). The user asked for a standard, kept as a strict rule, with a word limit on the description.
+- **Decision (rule A12):**
+  - Every branch the agent creates, in every repo, is named **`SCRUM-<number>/<short-description>`**, e.g. `SCRUM-519/add-filter-status`.
+  - The card key exactly as in Jira; the description is lowercase words joined by `-`, only a-z and 0-9, **at most 5 words** (`BRANCH_DESC_MAX_WORDS` in `config/project-settings.sh`).
+  - **The same branch name in every repo** the card touches.
+  - It's one rule for all repos, **not** a per-repo setting.
+  - `scripts/branch-name.sh make <CARD-KEY> "<title>"` builds a name from the card title (filler words like "the", "to" are dropped); `check <name>` says whether a name follows the rule and how to fix it.
+  - Written into `AGENTS.md` (rule 5), so both tools always follow it.
+- **Why:** User decision. Most existing branches already start with `SCRUM-<number>`, and the slash form keeps one card's branches together. If the Jira–GitLab link is on, Jira can also show branches containing the card key (not checked for Japfa).
+- **Rejected options:**
+  - A rule per repo: one rule is simpler and was asked to be strict.
+  - A character limit instead of words: the user asked for a word limit.
+
+<a id="d51"></a>
+### D51 — Repo registry: flat YAML files, detected values confirmed by the user, per-repo dev keys
+- **Date:** 2026-10-14
+- **Status:** Accepted. Built in F5.
+- **Context:** [D35](#d35) made one command the only way to add a repo; [D39](#d39) split shared and personal facts. The user asked for more details per repo, and for detected values to be only suggestions.
+- **Decision:**
+  - **Shared facts** in `config/repos/<repo>.yaml` (committed, no secrets), one `key: value` per line, lists comma-separated: name, GitLab URL and path, FE/BE, role, base branch (can differ per repo), install/dev/start commands, port, health URL, check commands (lint, circular), test command, framework, layout, coverage command, rules and where they're enforced, migration tool, folders, name patterns and commands, seed commands, queues, local services (Redis, RabbitMQ, **BullMQ**), the repos it calls, `.env` file **name**, dev keys (required and optional), optional dev database host/port/name/schema, MR target branch, labels and reviewers, rulesets (baseline [D26](#d26), **to be refined later**; FE: none yet), date registered.
+  - **Personal facts** in `local/repos/<repo>.yaml` (git-ignored): where the clone is on this Mac, or "not cloned yet".
+  - **Detection:** `scripts/configure-repo.sh detect` reads the clone (git remote, `package.json`, `.sequelizerc`, husky hooks, coverage config, the code for queues and health routes, and only the **names** of variables in `.env.example`; never what's inside `.env`). Everything it finds is a **suggestion**; the user confirms or corrects each value before the file is saved.
+  - **Migrations and seeders follow the existing pattern** (user, 2026-10-14): Sequelize CLI, `src/migrations` and `src/seeders` (from `.sequelizerc`), names `YYYYMMDDHHMMSS-<short-description>.js` (always `-`, never `_`), seeders `YYYYMMDDHHMMSS-seed-<name>.js`, the repo's `migrate`/`seed` scripts. No new pattern; the user is asked only whether a repo differs.
+  - **Dev keys per repo** (Keychain, `closio-agent.<repo>.<key>.dev`): `ws2-client-id`, `ws2-client-secret` for WS2 services ([D37](#d37)); **optional** `db-user`, `db-password` for repos with their own database (user, 2026-10-14), to check migrations on dev and write QA steps; and **extra named keys** when needed (e.g. a partner API key). Asked through the same heads-up and hidden box as `flow-configure-user`. WS1 uses the login cookie instead ([D20](#d20)).
+  - `validate` checks the format, required fields, that no token or password is written in, and that the base and MR branches exist.
+  - **Any kind of repo can be added later** (user, 2026-10-14): `detect` records `language` (node, go or other). Node repos get the most suggestions; Go repos get Go ones (`go mod download`, `go vet ./...`, `go test ./...`); other repos are added with the user's answers. `node_version` is required only for Node repos. A Node repo built for another Node version (e.g. `sfa-dashboard-web` uses `node:18`) keeps that version ([D52](#d52)); the check only warns if nvm doesn't have it installed.
+  - **Changing a clone's path:** `/flow-configure-repo <repo> path <new path>`; a clone of another GitLab project is refused and the old path is kept.
+  - **Missing dev keys show ⚠️, not ❌** (user, 2026-10-14), in `flow-doctor` and `flow-configure-repo`: they're only needed to test a repo on dev, so they don't block anything.
+  - **MR labels and reviewers are optional defaults** (user, 2026-10-14): stored in the repo file (`none` until set), and **finalised each time an MR is created** (Phase 7): the agent shows the defaults and the user confirms or changes them. Labels are optional.
+  - **`node_version`** per repo (from its Dockerfile; all 7 are `node:22`). Every repo runs on Node 22 (rule A13, [D41](#d41)).
+  - **Every repo must have a health URL** (user, 2026-10-14). `detect` reads it from the repo's own docker-compose health check, then from the routes; all 6 backend repos use `/api/v1/health-checker` (ws2closio also has `/api/v1/health-checker/external`). The web app has no health endpoint, so its dev server's start page `/` is used. `validate` refuses `none`.
+- **Why:** User decision. Easy for people, the AI and the scripts to read; suggestions save typing without guessing wrong.
+- **Rejected options:**
+  - Nested YAML: harder for the shell scripts to read without extra tools.
+  - Saving detected values without asking: some can't be detected (base branch, port), and some guesses can be wrong.
+
+<a id="d52"></a>
+### D52 — Each code repo runs on its own Node version; missing versions are installed with nvm
+- **Date:** 2026-10-14
+- **Status:** Accepted. Changes rule A13 (first written the same day as "every repo runs on Node 22").
+- **Context:** All 7 current repos are built on `node:22`, but `sfa-dashboard-web` (a repo that may be added later) is built on `node:18`. Forcing Node 22 on it could break it.
+- **Decision (rule A13, new wording):**
+  - **Every code repo runs on the Node version it is built for**: `node_version` in `config/repos/<repo>.yaml`, read from the repo's Dockerfile (or `.nvmrc`) when it's registered.
+  - Before running anything in a repo (install, run, test, lint, migrate, seed), the agent switches to that version in the same shell command: `nvm use <version>`.
+  - **If nvm doesn't have that version, it is installed** (`nvm install <version>`). `flow-doctor` and `flow-configure-repo` warn (⚠️) with that command; `flow-setup-repo` (F6) will install it.
+  - **closio-agent itself, Claude Code and Codex stay on Node 22** (rule A9, [D41](#d41)).
+  - Written into `AGENTS.md` (rule 6).
+- **Why:** User decision. A repo must run on the Node version it's built and deployed with.
+- **Rejected options:**
+  - Node 22 for every repo (the first wording of A13): could break repos built on another version.
+
+<a id="d53"></a>
+### D53 — Cloning a repo stays a manual step
+- **Date:** 2026-10-14
+- **Status:** Accepted
+- **Context:** The plan was for `flow-setup-repo` (F6) to clone repos that aren't on the Mac yet ([D39](#d39)), and Claude suggested also registering a repo straight from its GitLab address.
+- **Decision:**
+  - **The user always clones repos by hand** (on the VPN: `git clone <GitLab address> <folder>`). The agent never clones.
+  - The agent tells the user the exact `git clone` command (from the repo's registered GitLab address) and, afterwards, `flow-configure-repo <repo> path <folder>`.
+  - `flow-setup-repo` (F6) works on clones that already exist: install, local services, tests.
+  - Registering a new repo still starts from a local clone.
+  - Written into `AGENTS.md` (rule 7).
+- **Why:** User decision.
+- **Rejected options:**
+  - `flow-setup-repo` cloning missing repos (the earlier plan, D39).
+  - Registering a repo from its GitLab address with an automatic clone (suggested by Claude).
