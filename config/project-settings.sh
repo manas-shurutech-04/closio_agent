@@ -29,3 +29,7 @@ KEYCHAIN_PERSONAL_ITEMS="${KEYCHAIN_PERSONAL_ITEMS:-gitlab-token fe-login-id fe-
 
 # Node (D41)
 NODE_MAJOR="${NODE_MAJOR:-22}"
+
+# Branch names (D50, rule A12): SCRUM-<number>/<short-description>, the same name in every repo of a card.
+# The description: lowercase words joined by "-", only a-z and 0-9, at most BRANCH_DESC_MAX_WORDS words.
+BRANCH_DESC_MAX_WORDS="${BRANCH_DESC_MAX_WORDS:-5}"
