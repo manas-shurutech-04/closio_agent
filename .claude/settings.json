@@ -15,7 +15,18 @@
       "Bash(bash scripts/vpn.sh status)",
       "Bash(bash scripts/vpn.sh connect)",
       "Bash(bash scripts/vpn.sh disconnect)",
-      "Bash(bash scripts/wait-seconds.sh *)"
+      "Bash(bash scripts/wait-seconds.sh *)",
+      "Bash(bash scripts/configure-repo.sh check-folder)",
+      "Bash(bash scripts/configure-repo.sh list)",
+      "Bash(bash scripts/configure-repo.sh detect *)",
+      "Bash(bash scripts/configure-repo.sh validate *)",
+      "Bash(bash scripts/configure-repo.sh set-path *)",
+      "Bash(bash scripts/configure-repo.sh keys *)",
+      "Bash(bash scripts/configure-repo.sh key *)",
+      "Bash(bash scripts/configure-repo.sh show *)",
+      "Bash(bash scripts/branch-name.sh make *)",
+      "Bash(bash scripts/branch-name.sh check *)",
+      "Edit(/config/repos/**)"
     ]
   }
 }

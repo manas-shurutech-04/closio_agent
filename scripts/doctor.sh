@@ -5,7 +5,7 @@
 #   ✅ fine   ⚠️ worth a look (doesn't fail)   ❌ must fix (with the steps to fix it, rule A11)
 # Only reads: never changes anything, never asks for a password, never prints a secret.
 # Exit code 1 if anything must be fixed.
-# Checks for pieces not built yet are added by those pieces (F5 repos, F6 local services).
+# Checks for pieces not built yet are added by those pieces (F6 local services).
 
 set -u
 
@@ -318,6 +318,51 @@ else
   fi
   check_setting "$AI_TOOLS" "AI tools" ai-tools
 fi
+
+# ---------------------------------------------------------------- Repos (F5)
+section "Repos (config/repos/)"
+
+yaml_get() { # <file> <key>: value of a flat "key: value" line
+  [ -f "$1" ] || return 0
+  grep -m1 -E "^$2:" "$1" | sed -E "s/^$2:[[:space:]]*//; s/[[:space:]]+#.*$//; s/[[:space:]]+$//"
+}
+repo_count=0
+for repo_file in "$AGENT_ROOT"/config/repos/*.yaml; do
+  [ -f "$repo_file" ] || continue
+  repo_count=$((repo_count + 1))
+  repo="$(basename "$repo_file" .yaml)"
+  local_repo_file="$AGENT_ROOT/local/repos/$repo.yaml"
+  repo_path="$(yaml_get "$local_repo_file" local_path)"
+  if [ ! -f "$local_repo_file" ]; then
+    warn "$repo isn't set up on this Mac" "Run /flow-configure-repo $repo (only if you work on it)."
+    continue
+  elif [ -z "$repo_path" ]; then
+    warn "$repo isn't cloned on this Mac yet" "Cloning is manual (D53): on the VPN, git clone $(yaml_get "$repo_file" gitlab_url) <your workspace folder>/$repo, then run /flow-configure-repo $repo path <that folder>."
+  elif [ ! -d "$repo_path/.git" ]; then
+    fail "$repo: clone not found at $repo_path" "Run /flow-configure-repo $repo and give the new path."
+  else
+    want="$(yaml_get "$repo_file" gitlab_path)"
+    have="$(git -C "$repo_path" remote get-url origin 2>/dev/null | sed -E 's#://[^/@]*@#://#; s#^[a-z]+://[^/]+/##; s#^[^@]+@[^:]+:##; s#\.git$##')"
+    if [ "$want" = "$have" ]; then
+      pass "$repo: $repo_path"
+    else
+      fail "$repo: $repo_path is a clone of '${have:-no GitLab remote}', not '$want'" "Run /flow-configure-repo $repo and give the right clone."
+    fi
+  fi
+  # Each repo runs on its own Node version (rule A13, D52); it must be installed in nvm.
+  repo_node="$(yaml_get "$repo_file" node_version)"
+  case "$repo_node" in
+    ''|none) ;;
+    *) ls -d "$NVM_DIR/versions/node/v$repo_node."* >/dev/null 2>&1 ||
+         warn "Node $repo_node (what $repo is built for) isn't installed in nvm" "Run: nvm install $repo_node" ;;
+  esac
+  for k in $(yaml_get "$repo_file" dev_keys | tr ',' ' '); do
+    [ "$k" = "none" ] && continue
+    security find-generic-password -a "$USER" -s "$KEYCHAIN_PREFIX.$repo.$k.dev" >/dev/null 2>&1 ||
+      warn "$KEYCHAIN_PREFIX.$repo.$k.dev is missing (needed to test $repo on dev)" "Run /flow-configure-repo $repo (it asks for the key in a hidden macOS box)."
+  done
+done
+[ "$repo_count" -eq 0 ] && warn "No repos registered yet" "Run /flow-configure-repo with the full path of a local clone."
 
 # ---------------------------------------------------------------- Keychain
 section "Keychain (names only, values are never read)"
