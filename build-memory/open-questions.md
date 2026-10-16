@@ -12,7 +12,7 @@
 - **New-user test (F9):** user agreed to a separate macOS account and asked how big the setup is. Explained 2026-10-09 (incl. the Homebrew multi-user caveat).
 - **Jira in Codex:** works through the Atlassian app on the user's ChatGPT account (verified 2026-10-11). Still to write up: how a new user connects that app in ChatGPT (exact steps). The `codex mcp add` way is untested.
 - **Not yet seen:** doctor's ✅ for a stored Keychain item and a real GitLab token check (no items stored yet).
-- **F7 user tests (built 2026-10-17, D58):** `/flow-check-card` with a Jira key in Claude Code and in Codex (the Jira read, the saved `local/cards/<KEY>.md`, the type line for a Bug), with a `.md` file, and `/flow-doctor` still ✅.
+- **F8 user tests (built 2026-10-17, D60):** `/flow-help` and `/flow-help memory` in Claude Code and Codex; `/flow-doctor`'s new "Commands documented" section ✅; the Claude artifact opens and reads like `docs/user-guide.md`; the guide's language is simple enough.
 - **Dev database details in the repo files:** `dev_db_host`/`port`/`name`/`schema` are empty in `config/repos/`. The answer "okayy" (2026-10-14) was read as "add later".
 - **Watch:** Codex's updater process still runs with Node v18; if Codex falls back to v18 after an update, restart the service again (fallback: `nvm alias default 22`). How to restart the updater itself is not checked yet (documented as such in the setup guide).
 - **Backend allow list (security):** `japfa/backend/.claude/settings.local.json` allows `echo $GITLAB_TOKEN` / `echo $GITLAB_PRIVATE_TOKEN` without asking. Suggested removing them; user's call.
@@ -76,3 +76,6 @@
 - F7 final-draft readings confirmed (2026-10-17): ❌ gaps at pick-up wait for the dev to fix the card or explain; `## Out of Scope` stays optional. The user asked for a `flow-check-card` command after all (D58).
 - F7 final draft approved and built (2026-10-17, D58).
 - Example cards stay as they are (user, 2026-10-17): the ⚠️ on their SQL revert steps (no "Expect" line) are left; the examples doc says so.
+- F7 user tests passed (user, 2026-10-17: "F7 cases are tested already"). F7 complete.
+- F8 draft questions answered (2026-10-17): recorded as D60 (doc + published page with its link in the code; placeholders listed; `## Usage` blocks; hard rule R17 / rule 11 / doctor check).
+- F8 final draft approved and built (2026-10-17, D60).
