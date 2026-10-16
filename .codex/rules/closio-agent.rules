@@ -1,0 +1,12 @@
+# closio-agent: our own scripts run without an approval prompt in Codex too (D49, D56).
+# Codex "rules" are experimental. They load only when this project's .codex/ folder is trusted.
+# An allowed command runs outside Codex's sandbox (it needs the network, Homebrew, Docker, macOS dialogs, the Keychain).
+# Check a command with:  codex execpolicy check --pretty --rules .codex/rules/closio-agent.rules -- bash scripts/doctor.sh
+prefix_rule(pattern = ["bash", "scripts/configure-user.sh"], decision = "allow", justification = "closio-agent: personal settings (flow-configure-user)")
+prefix_rule(pattern = ["bash", "scripts/configure-repo.sh"], decision = "allow", justification = "closio-agent: repo registry (flow-configure-repo)")
+prefix_rule(pattern = ["bash", "scripts/setup-repo.sh"], decision = "allow", justification = "closio-agent: repo setup (flow-setup-repo)")
+prefix_rule(pattern = ["bash", "scripts/memory.sh"], decision = "allow", justification = "closio-agent: user memory (every flow command)")
+prefix_rule(pattern = ["bash", "scripts/doctor.sh"], decision = "allow", justification = "closio-agent: setup checks (flow-doctor)")
+prefix_rule(pattern = ["bash", "scripts/vpn.sh"], decision = "allow", justification = "closio-agent: VPN (flow-vpn, flow-connectivity)")
+prefix_rule(pattern = ["bash", "scripts/wait-seconds.sh"], decision = "allow", justification = "closio-agent: short wait while Jira loads")
+prefix_rule(pattern = ["bash", "scripts/branch-name.sh"], decision = "allow", justification = "closio-agent: branch names (rule A12)")
