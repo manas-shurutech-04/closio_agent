@@ -153,10 +153,12 @@ More docs may be added as the user specifies.
 | F7 | Jira card template | — |
 | F8 | Docs (setup guide on commands, `commands.md`, `changelog.md`) | — |
 | F9 | Completely-new-user test (separate macOS account) | — |
-| F6b | User memory **mechanism** (D40, rules A7/A8): dedicated `memory` command, loading in every command, created on first entry. The **content** starts empty and grows over time (may not exist at the first card) | Design approved (D40); **draft presented 2026-10-16**, waiting on approval |
+| F6b | User memory **mechanism** (D40, rules A7/A8): dedicated `memory` command, loading in every command, created on first entry. The **content** starts empty and grows over time (may not exist at the first card) | **Built 2026-10-16** (D56: `flow-memory`, `scripts/memory.sh`, automatic memory step in every command; all command scripts pre-approved in Claude Code and Codex, D57). My tests passed; **user tests passed 2026-10-16. F6b complete** |
 
 ## Answers (user, 2026-10-10)
 
+- F6b result (user, 2026-10-16): "F6b is done and tested". Asked how to clear the memory: explained `/flow-memory remove <id>` and deleting `local/memory/`; suggested a `/flow-memory clear` option (no answer yet).
+- F6b answers (user, 2026-10-16): loading "this works, make sure this script runs before every command without a miss"; "all the scripts written in the commands should run automatically without user permission"; name `flow-memory`; fields OK; phase names OK; conflicting entry: warn, save if still wanted (a); offered saves in `AGENTS.md` (became rule 9, since rule 8 is folder access); pre-approve `memory.sh`; hand edits allowed; doctor count line; "commit the F6 changes first, then build this" (7 commits, not pushed).
 - After F6 (user, 2026-10-16): yes to checking `.env` names against `.env.example` (built); new rule A15 (ask for folder access when it's missing); "first fix these then we will come to the drafts" (F6b draft waits).
 - F6 result (user, 2026-10-16): "all the commands are working we can move to the step F6b".
 - F6 first test (user, 2026-10-16, screenshot): `/flow-setup-repo ws2jauth` stopped at Claude Code's approval prompt; "can you please dont ask the user permission here" → `setup-repo.sh run *` pre-approved (D49, D54).

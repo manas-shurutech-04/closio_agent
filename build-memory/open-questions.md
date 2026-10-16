@@ -12,9 +12,8 @@
 - **New-user test (F9):** user agreed to a separate macOS account and asked how big the setup is. Explained 2026-10-09 (incl. the Homebrew multi-user caveat).
 - **Jira in Codex:** works through the Atlassian app on the user's ChatGPT account (verified 2026-10-11). Still to write up: how a new user connects that app in ChatGPT (exact steps). The `codex mcp add` way is untested.
 - **Not yet seen:** doctor's ✅ for a stored Keychain item and a real GitLab token check (no items stored yet).
+- **`/flow-memory clear` (suggestion, 2026-10-16):** show all entries, confirm, then remove them all (or one repo's). Today: `/flow-memory remove <id>` one by one, or delete `local/memory/` by hand. Waiting on the user.
 - **Dev database details in the repo files:** `dev_db_host`/`port`/`name`/`schema` are empty in `config/repos/`. The answer "okayy" (2026-10-14) was read as "add later".
-- **F6b draft (2026-10-16), waiting on the user:** user memory command and loading (D40); questions in the draft.
-- **Codex pre-approval:** not checked yet whether Codex can pre-approve our scripts like Claude Code (D49).
 - **Watch:** Codex's updater process still runs with Node v18; if Codex falls back to v18 after an update, restart the service again (fallback: `nvm alias default 22`). How to restart the updater itself is not checked yet (documented as such in the setup guide).
 - **Backend allow list (security):** `japfa/backend/.claude/settings.local.json` allows `echo $GITLAB_TOKEN` / `echo $GITLAB_PRIVATE_TOKEN` without asking. Suggested removing them; user's call.
 - **Split cards:** skipped for now (user, 2026-10-09). Come back to it later.
@@ -70,3 +69,5 @@
 - F6 final draft approved and built (2026-10-16, D54).
 - F6 live tests: passed (user, 2026-10-16: "all the commands are working"). The desktop app reads full paths from `additionalDirectories` (seen 2026-10-16). Not confirmed separately: the Docker path and a missing Node version.
 - `.env` names vs `.env.example` in `flow-setup-repo`: approved and built (2026-10-16, D54).
+- F6b draft answered and built (2026-10-16, D56). Codex pre-approval: done with a project rules file (D57).
+- F6b live tests: passed (user, 2026-10-16: "F6b is done and tested").
