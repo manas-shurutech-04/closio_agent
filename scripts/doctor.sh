@@ -5,14 +5,14 @@
 #   ✅ fine   ⚠️ worth a look (doesn't fail)   ❌ must fix (with the steps to fix it, rule A11)
 # Only reads: never changes anything, never asks for a password, never prints a secret.
 # Exit code 1 if anything must be fixed.
-# Checks for pieces not built yet are added by those pieces (F6 local services).
+# Checks for pieces not built yet are added by those pieces.
 
 set -u
 
 AGENT_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 . "$AGENT_ROOT/config/project-settings.sh"
 USER_SETTINGS_FILE="${USER_SETTINGS_FILE:-$AGENT_ROOT/local/user-settings.sh}"
-JIRA_ACCOUNT_ID=""; GITLAB_USERNAME=""; WORKSPACE_DIR=""; AI_TOOLS=""; VPN_USERNAME=""
+JIRA_ACCOUNT_ID=""; GITLAB_USERNAME=""; WORKSPACE_DIR=""; AI_TOOLS=""; VPN_USERNAME=""; LOCAL_REDIS_FROM=""; LOCAL_RABBITMQ_FROM=""
 [ -f "$USER_SETTINGS_FILE" ] && . "$USER_SETTINGS_FILE"
 NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 NODE_DIR_PREFIX="$NVM_DIR/versions/node/v$NODE_MAJOR."
@@ -216,13 +216,22 @@ else
   fail "openfortivpn is not installed" "Run 'brew install openfortivpn' (setup guide, section 2.1)."
 fi
 
-# Docker (local Redis and RabbitMQ for backend tests, D21)
+# Docker: only needed when you use Docker copies of Redis or RabbitMQ (D21, D54). flow-setup-repo can use Homebrew ones.
+uses_docker=""
+case " $LOCAL_REDIS_FROM $LOCAL_RABBITMQ_FROM " in *" docker "*) uses_docker="yes" ;; esac
 if ! command -v docker >/dev/null 2>&1; then
-  fail "Docker is not installed" "Install Docker Desktop from docker.com, then open it once."
+  if [ -n "$uses_docker" ]; then
+    fail "Docker is not installed, but you chose Docker for Redis or RabbitMQ" \
+      "Install Docker Desktop from docker.com, or choose Homebrew instead: /flow-setup-repo <repo> services"
+  else
+    pass "Docker isn't installed (only needed if you choose Docker for Redis or RabbitMQ)"
+  fi
 elif docker info >/dev/null 2>&1; then
   pass "Docker is installed and running"
+elif [ -n "$uses_docker" ]; then
+  warn "Docker is installed but not running, and you use it for Redis or RabbitMQ" "Open Docker Desktop before running backend tests."
 else
-  warn "Docker is installed but not running" "Open Docker Desktop before running backend tests."
+  pass "Docker is installed (not running; you don't use it for Redis or RabbitMQ)"
 fi
 
 # ---------------------------------------------------------------- VPN and GitLab
@@ -363,6 +372,56 @@ for repo_file in "$AGENT_ROOT"/config/repos/*.yaml; do
   done
 done
 [ "$repo_count" -eq 0 ] && warn "No repos registered yet" "Run /flow-configure-repo with the full path of a local clone."
+
+# ---------------------------------------------------------------- Repo setup (F6)
+section "Repo setup on this Mac (flow-setup-repo)"
+
+claude_settings="$AGENT_ROOT/.claude/settings.local.json"
+not_set_up=""; need_redis=""; need_rabbitmq=""; set_up_count=0
+for repo_file in "$AGENT_ROOT"/config/repos/*.yaml; do
+  [ -f "$repo_file" ] || continue
+  repo="$(basename "$repo_file" .yaml)"
+  local_repo_file="$AGENT_ROOT/local/repos/$repo.yaml"
+  repo_path="$(yaml_get "$local_repo_file" local_path)"
+  { [ -n "$repo_path" ] && [ -d "$repo_path/.git" ]; } || continue
+  setup_on="$(yaml_get "$local_repo_file" setup_on)"
+  if [ -z "$setup_on" ]; then not_set_up="$not_set_up $repo"; continue; fi
+  set_up_count=$((set_up_count + 1))
+  repo_lang="$(yaml_get "$repo_file" language)"
+  repo_install="$(yaml_get "$repo_file" install_command)"
+  if [ "${repo_lang:-node}" = "node" ] && [ -n "$repo_install" ] && [ "$repo_install" != "none" ] && [ ! -d "$repo_path/node_modules" ]; then
+    warn "$repo: its packages aren't installed any more" "Run /flow-setup-repo $repo"
+  else
+    pass "$repo: set up on $setup_on (tests: $(yaml_get "$local_repo_file" setup_tests))"
+  fi
+  if [ "$claude_need" != "unused" ] && ! jq -e --arg p "$repo_path" '(.permissions.additionalDirectories // []) | index($p)' "$claude_settings" >/dev/null 2>&1; then
+    warn "$repo: Claude Code can't use its folder yet" "Run /flow-setup-repo $repo (it adds the folder to your .claude/settings.local.json)."
+  fi
+  repo_services="$(yaml_get "$repo_file" local_services)"
+  case ", $repo_services," in *", redis,"* | *", bullmq,"*) need_redis="$need_redis $repo" ;; esac
+  case ", $repo_services," in *", rabbitmq,"*) need_rabbitmq="$need_rabbitmq $repo" ;; esac
+done
+[ -n "$not_set_up" ] && warn "Cloned but not set up yet:$not_set_up" "Run /flow-setup-repo <repo>, or /flow-setup-repo all."
+[ "$set_up_count" -eq 0 ] && [ -z "$not_set_up" ] && pass "No cloned repos to set up yet"
+
+if [ -n "$need_redis$need_rabbitmq" ] && [ "${CODEX_SANDBOX_NETWORK_DISABLED:-}" = "1" ]; then
+  warn "Can't check the local Redis and RabbitMQ from inside Codex's sandbox" "Run 'bash scripts/doctor.sh' in a normal terminal."
+else
+  if [ -n "$need_redis" ]; then
+    if [ "$(printf 'PING\r\n' | nc -G 2 -w 2 127.0.0.1 "$LOCAL_REDIS_PORT" 2>/dev/null | tr -d '\r' | head -1)" = "+PONG" ]; then
+      pass "Local Redis answers on port $LOCAL_REDIS_PORT${LOCAL_REDIS_FROM:+ ($LOCAL_REDIS_FROM)}"
+    else
+      warn "Local Redis doesn't answer on port $LOCAL_REDIS_PORT (needed by:$need_redis)" "Run /flow-setup-repo$(echo "$need_redis" | awk '{print " " $1}') (it finds or starts it)."
+    fi
+  fi
+  if [ -n "$need_rabbitmq" ]; then
+    if nc -z -G 2 127.0.0.1 "$LOCAL_RABBITMQ_PORT" >/dev/null 2>&1; then
+      pass "Local RabbitMQ answers on port $LOCAL_RABBITMQ_PORT${LOCAL_RABBITMQ_FROM:+ ($LOCAL_RABBITMQ_FROM)}"
+    else
+      warn "Local RabbitMQ doesn't answer on port $LOCAL_RABBITMQ_PORT (needed by:$need_rabbitmq)" "Run /flow-setup-repo$(echo "$need_rabbitmq" | awk '{print " " $1}') (it finds or starts it)."
+    fi
+  fi
+fi
 
 # ---------------------------------------------------------------- Keychain
 section "Keychain (names only, values are never read)"
