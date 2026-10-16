@@ -340,6 +340,20 @@ else
   check_setting "$AI_TOOLS" "AI tools" ai-tools
 fi
 
+# ---------------------------------------------------------------- User memory (F6b)
+section "User memory (local/memory/, private)"
+
+# Absence is normal: the memory is created on the first saved entry (D40). Never a ❌.
+memory_count="$(bash "$AGENT_ROOT/scripts/memory.sh" count 2>/dev/null)"
+memory_problems="$(bash "$AGENT_ROOT/scripts/memory.sh" problems 2>/dev/null | grep -c '^⚠️')"
+if [ "${memory_count:-0}" -gt 0 ] 2>/dev/null; then
+  pass "User memory: $memory_count $( [ "$memory_count" -eq 1 ] && echo entry || echo entries ) (see them with /flow-memory)"
+else
+  pass "User memory: none yet (that's normal; add entries with /flow-memory add <text>)"
+fi
+[ "${memory_problems:-0}" -gt 0 ] && warn "$memory_problems line(s) in your memory files aren't in the memory format, so they're ignored" \
+  "Run /flow-memory to see which lines, then fix or remove them."
+
 # ---------------------------------------------------------------- Repos (F5)
 section "Repos (config/repos/)"
 
