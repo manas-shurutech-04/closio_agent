@@ -1,6 +1,6 @@
 ---
 name: flow-connectivity
-description: Makes sure the Japfa VPN is connected and GitLab is reachable. Use it at the start of every flow phase that needs GitLab or the dev servers (Phases 1–9 and flow-setup-repo), or when the user asks to use the flow-connectivity agent. Not for anything else.
+description: Makes sure the Japfa VPN is connected and GitLab is reachable. Use it at the start of every flow phase that needs GitLab or the dev servers (Phases 1–9), or when the user asks to use the flow-connectivity agent. Not for anything else.
 tools: Bash
 maxTurns: 3
 ---
