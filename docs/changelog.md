@@ -2,8 +2,22 @@
 
 Dated list of what changed in closio-agent. Newest first.
 
+## 2026-10-16
+
+- `flow-setup-repo` also compares the variable names in a repo's `.env` with `.env.example` (never the values) and lists the missing ones, with the file opened for you.
+- **New rule A15** ([D55](design-decisions.md#d55), `AGENTS.md` rule 8): before working in a code repo, the AI checks it can use the repo's folder; if not, it asks you to give access and waits.
+- `flow-setup-repo` tested by the user; working.
+- `flow-setup-repo` runs without an approval prompt in Claude Code (`bash scripts/setup-repo.sh run …` pre-approved in `.claude/settings.json`).
+- **`flow-setup-repo` (F6):** gets a repo you've cloned ready to work on: the repo's own Node version (installed with nvm if missing), packages (only when needed), the local Redis and RabbitMQ (checks both Homebrew and Docker; one → used, both → you choose once and the other is stopped, none → it suggests one), a check that the repo's `.env` points to them (never showing a value; it opens the file with the lines to set), the tests once (15-minute limit, log in `local/logs/`), and folder access for Claude Code (Codex: a start command). `all` does every cloned repo. No VPN needed; it never changes branches ([D54](design-decisions.md#d54)).
+- `flow-doctor`: new "Repo setup" section (packages, folder access, local Redis/RabbitMQ answering). Docker is no longer required: it's only checked if you chose Docker for Redis or RabbitMQ.
+- New shared file `config/local-services.yml` (Docker copies of Redis 7 and RabbitMQ 4) and new settings in `config/project-settings.sh` (time limits, local ports).
+- `flow-configure-user` keeps your saved Redis/RabbitMQ choice when it rewrites `local/user-settings.sh`.
+
 ## 2026-10-15
 
+- `closio-web-v2` repo file: test command `npm test -- --run` (one run, never watch mode) and env file `.env.development` ([D54](design-decisions.md#d54)).
+- `flow-setup-repo` (F6) designed ([D54](design-decisions.md#d54)); the `flow-connectivity` agent no longer runs in it (no VPN needed).
+- `flow-configure-repo` tested by the user; working.
 - New [agent-rules.md](agent-rules.md): every rule the agent follows (git rules G1–G4, behaviour rules A1–A14) in one place, each with its decision, its `AGENTS.md` number and where it's applied today.
 
 ## 2026-10-14

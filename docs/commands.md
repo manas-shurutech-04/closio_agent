@@ -15,7 +15,7 @@ Before you start: open a terminal **in the closio-agent folder**, run `nvm use v
 - **Shared logic lives in `scripts/`.** The command tells the AI which script to run, so both tools do the same thing.
 - **Every command follows the agent rules** in [agent-rules.md](agent-rules.md), e.g. every problem comes with the steps to fix it (A11).
 
-**Fewer approval prompts (Claude Code, [D49](design-decisions.md#d49)):** the shared file `.claude/settings.json` lets Claude Code run our own scripts without asking, but only the parts that just read or ask you themselves in a macOS dialog: `configure-user.sh` (not the git name/email change), `configure-repo.sh` (all its steps), `branch-name.sh`, `doctor.sh`, `vpn.sh`, `wait-seconds.sh`, and writing files in `config/repos/`. Everything else still asks.
+**Fewer approval prompts (Claude Code, [D49](design-decisions.md#d49)):** the shared file `.claude/settings.json` lets Claude Code run our own scripts without asking, but only the parts that just read or ask you themselves in a macOS dialog: `configure-user.sh` (not the git name/email change), `configure-repo.sh` (all its steps), `branch-name.sh`, `setup-repo.sh` (all its steps, including the setup run, which installs packages and runs tests: user, 2026-10-16), `doctor.sh`, `vpn.sh`, `wait-seconds.sh`, and writing files in `config/repos/`. Everything else still asks.
 
 ## Command list
 
@@ -25,7 +25,8 @@ Before you start: open a terminal **in the closio-agent folder**, run `nvm use v
 | [`flow-doctor`](#flow-doctor) | Checks your setup and tells you how to fix each problem | Built 2026-10-10 (F1, F2). Works in Claude Code and Codex. Later pieces add their own checks |
 | [`flow-vpn`](#flow-vpn) | Connects, checks or disconnects the Japfa VPN | Built 2026-10-11 (F3). Tested in Claude Code and Codex |
 | [`flow-configure-user`](#flow-configure-user) | Sets up your personal settings and your 5 secrets | Built 2026-10-12 (F4). Tested by the user |
-| [`flow-configure-repo`](#flow-configure-repo) | Registers a repo, or sets it up on your Mac (path, dev keys) | Built 2026-10-14 (F5). Live tests pending |
+| [`flow-configure-repo`](#flow-configure-repo) | Registers a repo, or sets it up on your Mac (path, dev keys) | Built 2026-10-14 (F5). Tested by the user (2026-10-15) |
+| [`flow-setup-repo`](#flow-setup-repo) | Gets a repo ready to work on: Node version, packages, local Redis/RabbitMQ, `.env` check, tests, folder access | Built 2026-10-16 (F6). Tested by the user (2026-10-16) |
 
 ---
 
@@ -77,7 +78,7 @@ $flow-doctor      (Codex: approve running it with network access, so the GitLab 
 | | Codex installed inside Node 22, no other copy | Required only if your AI tools setting includes Codex; otherwise ⚠️ or "you don't use it" |
 | | Codex background service runs on Node 22 | Only when it's running |
 | | openfortivpn installed | [D14](design-decisions.md#d14) |
-| | Docker installed (and running) | ⚠️ if not running: only needed for backend tests |
+| | Docker installed (and running) | Only needed if you chose Docker for Redis or RabbitMQ ([D54](design-decisions.md#d54)): then ❌ if missing, ⚠️ if not running. Otherwise ✅ either way |
 | VPN and GitLab | VPN on and GitLab reachable | "On" means GitLab answers, through openfortivpn **or** another VPN client such as the FortiClient app. ⚠️ if off: fine until you need GitLab |
 | | GitLab token works (shows your GitLab username) | Only when the VPN is on. The token is read from the Keychain by the script and never shown |
 | | VPN DNS file: present when openfortivpn is on, **gone** when the VPN is off | A leftover file stops the next connection ([D27](design-decisions.md#d27)) |
@@ -85,12 +86,13 @@ $flow-doctor      (Codex: approve running it with network access, so the GitLab 
 | | VPN certificate pin still valid | ⚠️ in the last 30 days, ❌ after 2027-02-03 |
 | Personal settings | Jira account ID, GitLab username, workspace folder (exists), AI tools | Fix: `/flow-configure-user` ([D15](design-decisions.md#d15)) |
 | Repos | Each registered repo: clone exists and points at the right GitLab project; its Node version is installed in nvm; its dev keys are stored | ⚠️ for repos not set up on this Mac, and ⚠️ (not ❌) for missing dev keys: they're only needed to test on dev. Fix: `/flow-configure-repo <repo>` |
+| Repo setup | Each repo set up with `flow-setup-repo`: packages still installed, Claude Code can use its folder; one ⚠️ listing cloned repos not set up yet; the local Redis and RabbitMQ answer (when a set-up repo needs them) | Fix: `/flow-setup-repo <repo>` |
 | Keychain | The 5 personal items exist | Names only; values are never read ([D33](design-decisions.md#d33)). Fix: `/flow-configure-user <item>` |
 | Jira | The AI reads project SCRUM | Done by the AI, because only the AI tool has the Jira connection. The Jira connector can take a while to load when a session starts, so the AI waits and retries up to 3 times (about 30 s) before reporting ❌ |
 
 **In Codex:** Codex runs commands in a sandbox (a closed box). There, the GitLab checks and the Codex background service check may show ⚠️ "can't check from inside Codex's sandbox". The tip says what to do: approve network access, or run `bash scripts/doctor.sh` in a normal terminal. Everything else works the same in both tools (tested 2026-10-11).
 
-Checks for pieces not built yet are added by those pieces: installed dependencies and local Redis/RabbitMQ/BullMQ (F6).
+Later pieces add their own checks when they're built.
 
 The fixed values it uses (GitLab address, VPN gateway, certificate pin, Keychain names…) come from `config/project-settings.sh` ([D46](design-decisions.md#d46)).
 
@@ -160,7 +162,7 @@ $flow-vpn connect | status | disconnect      (Codex: approve running it outside 
 
 **Files:** `.agents/skills/flow-vpn/`, `scripts/vpn.sh` (you can also run it in a terminal: `bash scripts/vpn.sh connect`), `scripts/vpn-admin-steps.sh` (the only part that runs with admin rights; review changes to it carefully), `scripts/password-dialog.sh`. The openfortivpn log is `local/vpn/openfortivpn.log` (private, git-ignored).
 
-**The connectivity agent:** `flow-connectivity` (`.claude/agents/flow-connectivity.md`, `.codex/agents/flow-connectivity.toml`) runs the same `connect` at the start of every phase that needs GitLab (Phases 1–9, `flow-setup-repo`) and reports one line ([D30](design-decisions.md#d30)). You don't call it yourself.
+**The connectivity agent:** `flow-connectivity` (`.claude/agents/flow-connectivity.md`, `.codex/agents/flow-connectivity.toml`) runs the same `connect` at the start of every phase that needs GitLab (Phases 1–9) and reports one line ([D30](design-decisions.md#d30)). You don't call it yourself.
 
 ---
 
@@ -264,6 +266,67 @@ It shows you the whole file `config/repos/<repo>.yaml` and saves it only after y
 
 ---
 
+### `flow-setup-repo`
+
+**Purpose:** gets a registered repo ready to work on, on your Mac ([D54](design-decisions.md#d54)). It works only on a clone you made yourself (cloning is manual, [D53](design-decisions.md#d53)). It never switches branches, pulls, stashes or changes tracked files: the card phases do that. It needs no VPN.
+
+**Usage:**
+```
+/flow-setup-repo                             each repo's setup state on this Mac
+/flow-setup-repo nodejs-ws2closio            set up one repo
+/flow-setup-repo all                         every repo cloned on this Mac, one after another
+/flow-setup-repo nodejs-ws2closio install    the same, but always reinstall the packages
+/flow-setup-repo nodejs-ws2closio services   choose Homebrew or Docker again for Redis and RabbitMQ
+$flow-setup-repo …                           (Codex: approve running it outside the sandbox)
+```
+
+**What it does for each repo:**
+
+| Step | What happens |
+|---|---|
+| Clone | Checks the clone is where you said, and is the right GitLab project. Shows its branch and uncommitted changes (only shows them) |
+| Node | Switches to the repo's own Node version (`node_version`), and installs it with nvm if it's missing (rule A13). The script does this itself, so it also works in the Claude desktop app |
+| Env file | Checks the repo's env file is there, by name only. If it's missing: where to get it, and the `cp .env.example …` way to start one. Then compares its variable **names** with `.env.example` (never the values): any missing ones are shown, the file opens in your editor, and you add them with the values from your team |
+| Packages | Installs them (`install_command`) only when needed: no `node_modules`, or `package-lock.json` changed since the last install. `install` forces it |
+| Redis, RabbitMQ | For repos that need them. Checks **both** a Homebrew and a Docker copy (starts Docker Desktop to look if it isn't running). One copy → uses it and tells you. Both → asks you once in a macOS dialog (the choice is saved in `local/user-settings.sh`) and stops the other one by itself. None → suggests Docker (`config/local-services.yml`; Homebrew if there's no Docker) and starts it only after your yes. For BullMQ repos it also checks Redis's `noeviction` memory setting |
+| `.env` check | Reads `REDIS_HOST` / `REDIS_PORT` / `REDIS_USE_TLS` or `RABBITMQ_URL` from the repo's `.env` **itself** and says only whether they point to this Mac and whether that answers; **never a value**. If something doesn't match, it opens the file in your text editor and shows the exact lines to set. You change the file yourself ([setup guide §7](setup-guide.md#7-local-services-for-backend-tests)) |
+| Tests | Runs the repo's test command once (not the coverage check), with a 15-minute limit (`SETUP_TEST_TIMEOUT`). Full output in `local/logs/setup-<repo>.log`; you see a short summary. Skipped for repos without tests ([D25](design-decisions.md#d25)) |
+| Folder access | Adds the repo folder to your personal `.claude/settings.local.json` (`permissions.additionalDirectories`), so Claude Code can work in it. For Codex it shows the start command: `codex --add-dir "<repo>" …`. Then the AI checks that this session can really use the folder; if not, it asks you to give access (`/add-dir <folder>`, a new session, or Codex's start command) and waits (rule A15) |
+| Result | Saved in your private `local/repos/<repo>.yaml` (date and test result), so the status list shows it |
+
+At the end, if it started Docker Desktop only to look and nothing uses it, it quits Docker again.
+
+**Output example (shortened):**
+```
+━━ nodejs-ws2closio
+✅ Clone: /Users/you/work/nodejs-ws2closio
+   Branch: develop · 0 uncommitted change(s). Left as they are: the card phases handle branches.
+✅ Node v22.14.0 (what nodejs-ws2closio is built for: 22)
+✅ Env file: .env is there (its values are never shown)
+✅ Packages already installed and up to date
+✅ Local Redis: using Homebrew Redis 7.2.7, answering on port 6379
+⚠️ nodejs-ws2closio/.env: REDIS_HOST points somewhere else, not to this Mac
+   How to fix it (you change the file yourself; the AI never sees it):
+   1. It's open in your text editor now: /Users/you/work/nodejs-ws2closio/.env
+   2. Note down the old values first, if you'll need them again (e.g. for the dev server).
+   3. Set these lines for your local copies:
+        REDIS_HOST=127.0.0.1
+        REDIS_PORT=6379
+        REDIS_USER=
+        REDIS_PASSWORD=
+   4. Save, then run /flow-setup-repo nodejs-ws2closio again.
+✅ Tests passed
+   412 passing
+✅ Claude Code can now use /Users/you/work/nodejs-ws2closio (added to your personal .claude/settings.local.json)
+Result for nodejs-ws2closio: 0 to fix, 1 to look at.
+```
+
+**In Claude Code** it runs in the background, because it can take longer than the 10-minute limit of one command, and without an approval prompt (pre-approved, [D49](design-decisions.md#d49)). **In Codex**, approve it outside the sandbox (network for packages, Homebrew, Docker, macOS dialogs).
+
+**Files:** `.agents/skills/flow-setup-repo/`, `scripts/setup-repo.sh` (you can run `bash scripts/setup-repo.sh list` in a terminal too), `config/local-services.yml` (Docker copies), settings in `config/project-settings.sh` (time limits, ports).
+
+---
+
 ## Helper scripts
 
 The commands run these scripts (in `scripts/`). You can run them yourself in a terminal from the closio-agent folder, after `nvm use v22`. Shared values come from `config/project-settings.sh`.
@@ -276,6 +339,7 @@ The commands run these scripts (in `scripts/`). You can run them yourself in a t
 | `password-dialog.sh` | The macOS password dialog for those admin steps | `vpn.sh` |
 | `configure-user.sh check-folder \| show \| set \| secrets \| secret \| gitlab-username-from-token` | Personal settings and the 5 secrets | `flow-configure-user` |
 | `configure-repo.sh check-folder \| list \| detect \| validate \| set-path \| keys \| key \| show` | The repo registry, clone paths and dev keys | `flow-configure-repo` |
+| `setup-repo.sh check-folder \| list \| run <repo\|all> [install\|services]` | Gets repos ready to work on (Node, packages, local Redis/RabbitMQ, `.env` check, tests, folder access) | `flow-setup-repo` |
 | `branch-name.sh make <CARD-KEY> "<title>" \| check <name>` | Builds and checks branch names (strict rule A12) | Later phases (Phase 1); you can use it any time |
 | `link-claude-skills.sh` | Adds the Claude Code link for every command (run it after adding a command) | Setup; `flow-doctor` tells you when |
 | `wait-seconds.sh <1-30>` | Waits a few seconds (e.g. while Jira loads) | `flow-doctor`, `flow-configure-user` |
@@ -287,5 +351,5 @@ Agents are helpers that commands start; you don't type them.
 
 | Agent | What it does | Files |
 |---|---|---|
-| `flow-connectivity` | Connects the VPN if needed and checks GitLab, at the start of every phase that needs it (Phases 1–9, `flow-setup-repo`). Limits: 3 steps in Claude Code, 180 s for the SSO login ([D47](design-decisions.md#d47)) | `.claude/agents/flow-connectivity.md`, `.codex/agents/flow-connectivity.toml` |
+| `flow-connectivity` | Connects the VPN if needed and checks GitLab, at the start of every phase that needs it (Phases 1–9). Limits: 3 steps in Claude Code, 180 s for the SSO login ([D47](design-decisions.md#d47)) | `.claude/agents/flow-connectivity.md`, `.codex/agents/flow-connectivity.toml` |
 

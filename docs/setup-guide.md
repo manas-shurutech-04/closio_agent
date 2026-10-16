@@ -1,6 +1,6 @@
 # Setup Guide — closio-agent for Japfa (Closio)
 
-> **Status (2026-10-14):** `closio-agent` is **in design.** The setup commands are built: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user` and `flow-configure-repo` ([commands.md](commands.md)). `flow-setup-repo` (clone, install, local services) is next.
+> **Status (2026-10-16):** `closio-agent` is **in design.** The setup commands are built: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo` and `flow-setup-repo` ([commands.md](commands.md)). The card phases (1–9) come next.
 >
 > **Use the commands first** (see "First-time setup, in order" below). The manual steps in this guide stay as a backup and explain what the commands do. Steps marked **✅ verified** were tested on a real Mac (macOS 26.6.2). Steps marked **🛠 planned** aren't built yet.
 >
@@ -28,7 +28,7 @@
 | [Homebrew](https://brew.sh) | Installs the other tools | See brew.sh |
 | git | Repos | Comes with the Xcode command-line tools (`xcode-select --install`) |
 | [nvm](https://github.com/nvm-sh/nvm) + **Node.js v22** (+ any version a repo needs) | Claude Code, Codex and closio-agent's scripts run on Node 22 ([D41](design-decisions.md#d41)). Each code repo runs on the Node version it's built for ([D52](design-decisions.md#d52)); the 7 current repos all use 22 | Install nvm, then `nvm install 22`. If `flow-doctor` says a repo's version is missing: `nvm install <version>` |
-| Docker | Local **Redis** and **RabbitMQ** for backend tests ([D21](design-decisions.md#d21)) | Docker Desktop |
+| Docker **or** Homebrew copies | Local **Redis** and **RabbitMQ** for backend tests ([D21](design-decisions.md#d21), [D54](design-decisions.md#d54)). `flow-setup-repo` uses whichever you have (section 7) | Docker Desktop, or `brew install redis rabbitmq` |
 | openfortivpn | VPN from the command line ([D14](design-decisions.md#d14)) | [Section 2](#2-vpn--verified) |
 | Claude Code | Runs `closio-agent` | **Inside Node v22 with npm**, see [below](#install-claude-code-and-codex-inside-node-v22--verified) |
 | Codex (optional) | Runs `closio-agent` | **Inside Node v22 with npm**, see [below](#install-claude-code-and-codex-inside-node-v22--verified) |
@@ -92,7 +92,7 @@ claude        # or: codex
 - **Always start in the closio-agent folder** ([D42](design-decisions.md#d42), rule A10). The agent's commands only load from there. Don't start the tool inside a code repo: the agent adds the repos it needs as extra folders itself. (Today the folder is still called `AI Pipeline`.)
 - **Always run `nvm use v22` first** ([D41](design-decisions.md#d41), rule A9). closio-agent, Claude Code and Codex run on Node v22; each code repo runs on its own Node version, which the agent switches to itself (rule A13, [D52](design-decisions.md#d52)). All agent rules: [agent-rules.md](agent-rules.md).
 - The setup commands (`flow-configure-user`, `flow-configure-repo`) remind you of this and stop if the session wasn't started in the closio-agent folder; `flow-doctor` checks it too.
-- 🛠 The Claude desktop app doesn't start from a terminal, so you can't run `nvm use v22` there first. `flow-doctor` shows it if Node isn't 22. When the agent runs anything in a code repo, it switches to that repo's Node version itself first (rule A13); that part comes with `flow-setup-repo` (F6).
+- The Claude desktop app doesn't start from a terminal, so you can't run `nvm use v22` there first. `flow-doctor` shows it if Node isn't 22. When the agent runs anything in a code repo (`flow-setup-repo`), its script switches to that repo's Node version itself first (rule A13), so that works in the desktop app too ([D54](design-decisions.md#d54)).
 
 ### Approval prompts in Claude Code
 
@@ -106,7 +106,8 @@ The first time you start Claude Code in this folder, it asks whether you trust i
 4. `/flow-doctor`: what's missing?
 5. `/flow-configure-user`: your personal settings and secrets.
 6. `/flow-configure-repo`: for each repo you work on, where your clone is and its dev keys.
-7. `/flow-vpn connect`, then `/flow-doctor` again: everything should be ✅ or ⚠️.
+7. `/flow-setup-repo all`: gets every repo you've cloned ready (Node version, packages, local Redis and RabbitMQ, `.env` check, tests, folder access).
+8. `/flow-vpn connect`, then `/flow-doctor` again: everything should be ✅ or ⚠️.
 
 ### Check that the flow commands work
 
@@ -315,16 +316,27 @@ Every repo is added to `closio-agent` through its **repository configuration com
 
 **What `flow-configure-repo` records for each repo** ([D51](design-decisions.md#d51)): GitLab address and path, FE/BE and role, base branch, language (node, go or other), Node version (from its Dockerfile), install/run/check/test commands, port and health URL, test format and coverage rules, migrations and seeders (existing Sequelize pattern), queues, local services (Redis, RabbitMQ, BullMQ), the repos it calls, the `.env` file name, which dev keys it needs, MR target branch and optional default labels and reviewers, rulesets. The shared part is in `config/repos/<repo>.yaml`; where the clone is on your Mac is in `local/repos/<repo>.yaml` (private). Branch names follow one strict rule for every repo: `SCRUM-<number>/<short-description>`, at most 5 words (rule A12).
 
-> 🛠 **Planned (F6):** `flow-setup-repo` will connect the VPN and, on a repo you've already cloned, install its dependencies under the repo's own Node version (installing that version with nvm if needed), start local Redis, RabbitMQ and BullMQ, and run its tests. It won't clone repos: cloning stays manual ([D53](design-decisions.md#d53)).
+**Getting a repo ready to work on (built, F6, [D54](design-decisions.md#d54)):** `/flow-setup-repo <repo>` (or `all`), on a repo you've already cloned: switches to the repo's own Node version (installing it with nvm if needed), installs its packages when needed, finds or starts the local Redis and RabbitMQ (section 7), says whether the repo's `.env` points to them and opens it with the lines to set (you change the values yourself), runs its tests once, and gives Claude Code access to the repo folder (Codex: it shows the start command with `--add-dir`). It needs no VPN, never changes branches, and won't clone repos: cloning stays manual ([D53](design-decisions.md#d53)). Details: [commands.md](commands.md#flow-setup-repo).
 
 ---
 
-## 7. Local services for backend tests 🛠 planned
+## 7. Local services for backend tests
 
 Per [D21](design-decisions.md#d21):
 - **PostgreSQL:** the **dev database**, used directly (VPN needed). The credentials come from the repository's `.env` ([D34](design-decisions.md#d34)).
 - **Redis** (all uses, including **BullMQ**, which runs on Redis) and **RabbitMQ**: **local** instances.
-- The repos' own `docker-compose.yml` files don't include Redis or RabbitMQ, so `flow-setup-repo` will provide them with Docker.
+- The repos' own `docker-compose.yml` files don't include Redis or RabbitMQ. `flow-setup-repo` checks for both a **Homebrew** and a **Docker** copy before choosing (it starts Docker Desktop if it isn't running, to look, and quits it again if it isn't used): if there's one, it uses it and tells you; if there are both, it asks you once which to use (saved in your `local/user-settings.sh`; `/flow-setup-repo <repo> services` asks again) and stops the other one by itself; if there's none, it suggests one and starts it only after your yes ([D54](design-decisions.md#d54)). Versions: Redis 7 (BullMQ needs 6.2 or newer, with the `noeviction` memory setting) and RabbitMQ 4. The shared Docker file is `config/local-services.yml`.
+
+**Missing variables:** `flow-setup-repo` also compares the variable **names** in the repo's env file with its `.env.example` (never the values). If some are missing, it opens the file and lists the lines to add; you fill in the values from your team.
+
+**What a repo's `.env` needs for the local copies** (`flow-setup-repo` checks it without showing any value, and shows these lines when something doesn't match; you change the file yourself):
+
+| Repos | Lines |
+|---|---|
+| Redis: `nodejs-ws1closio`, `nodejs-ws2closio`, `nodejs-ws2targetsalesincentive` | `REDIS_HOST=127.0.0.1`, `REDIS_PORT=6379`, `REDIS_USER=` and `REDIS_PASSWORD=` empty (a local Redis has no password), and for targetsales `REDIS_USE_TLS=false` |
+| RabbitMQ: `nodejs-ws2notification` | `RABBITMQ_URL=amqp://guest:guest@127.0.0.1:5672` (guest / guest is a local RabbitMQ's built-in login and only works from this Mac) |
+
+With a Docker copy you made yourself (not from `config/local-services.yml`), use its port and the user and password you gave it. Note down the old values before changing them, if you'll need them again.
 
 ---
 

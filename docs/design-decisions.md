@@ -264,7 +264,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d21"></a>
 ### D21 — Local test environment: local Redis and RabbitMQ, dev PostgreSQL
 - **Date:** 2026-10-09
-- **Status:** Accepted; **amended by [D34](#d34)** (dev PostgreSQL credentials come from the repository's `.env`).
+- **Status:** Accepted; **amended by [D34](#d34)** (dev PostgreSQL credentials come from the repository's `.env`). How the local Redis and RabbitMQ are found or started (Homebrew or Docker) is set by [D54](#d54) (2026-10-15).
 - **Context:** BE tests and local runs need PostgreSQL, Redis (also used by BullMQ) and RabbitMQ.
 - **Decision:** **All Redis use** (BullMQ and anything else) points to a **local Redis**. **RabbitMQ** runs **locally**. **PostgreSQL** is the **dev database**, used directly.
 - **Why:** User decision.
@@ -364,12 +364,12 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d30"></a>
 ### D30 — A connectivity custom agent runs at the start of each phase that needs the VPN or GitLab
 - **Date:** 2026-10-09
-- **Status:** Accepted. Details confirmed by the user on 2026-10-09; feasibility tests passed the same day. **Built and tested in F3 (2026-10-11)**: all 12 live tests passed in Claude Code and Codex. Limits added by [D47](#d47).
+- **Status:** Accepted. Details confirmed by the user on 2026-10-09; feasibility tests passed the same day. **Built and tested in F3 (2026-10-11)**: all 12 live tests passed in Claude Code and Codex. Limits added by [D47](#d47). **Amended by [D54](#d54) (2026-10-15):** it no longer runs in `flow-setup-repo`, which needs no VPN.
 - **Context:** GitLab, the dev API and the dev DB are only reachable over the VPN (D14, D27). The GitLab MCP server only connects if the VPN is up when Claude Code/Codex starts, and Claude Code can't reconnect a failed server without the user typing `/mcp` (D28).
 - **Decision:** A dedicated **custom agent (subagent)** runs at the **start of every phase that needs the VPN or GitLab**. It connects the VPN and checks that GitLab is reachable. (Originally it also checked the GitLab MCP server; that check was removed by [D32](#d32).) Where something can't be automated, it asks the user (manual intervention is acceptable); push and similar commands also involve the user.
 - **Why:** User decision. It keeps connection handling in one place and runs only when a phase needs it.
 - **Confirmed details (user, 2026-10-09):**
-  - **Phases:** it runs at the start of **every phase from Phase 1 to Phase 9**, and also within **`setup-repo`** in Phase 0. (Originally because `setup-repo` would clone the repos; cloning is now manual, [D53](#d53), but `setup-repo` still needs GitLab and the dev servers.)
+  - **Phases:** it runs at the start of **every phase from Phase 1 to Phase 9**. ~~It also ran within `setup-repo` in Phase 0~~, because `setup-repo` would clone the repos; cloning is now manual ([D53](#d53)), installing uses the public npm registry and the tests don't seem to need the dev servers, so **`flow-setup-repo` doesn't use it** ([D54](#d54), user 2026-10-15). If a repo's tests do need the dev database, the fix says `/flow-vpn connect`.
   - **Mac password:** entered in a **macOS password dialog** (`sudo -A` with an askpass helper). The password goes straight to `sudo` and never passes through the AI. Rejected: printing the command for the user to run in their own terminal.
   - **GitLab MCP not connected (Claude Code or Codex):** the agent **prompts the user to establish the connection and doesn't proceed** until the check passes.
 - **Rejected options:**
@@ -478,7 +478,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d35"></a>
 ### D35 — A dedicated command registers each repository with the full set of details
 - **Date:** 2026-10-09
-- **Status:** Accepted. **Built in F5 (2026-10-14)** as `flow-configure-repo`; the details and format are in [D51](#d51).
+- **Status:** Accepted. **Built in F5 (2026-10-14)** as `flow-configure-repo`, tested by the user on 2026-10-15; the details and format are in [D51](#d51).
 - **Context:** The 7 in-scope repos (D23) are listed in the docs for now, but the user wants every repo, current and future, **added through a dedicated command**, capturing the same full details documented for the current repos.
 - **Decision:** The repository configuration command (`configure-repo`, name is a placeholder) is **the only way to add a repo** to closio-agent. The 7 current repos are registered through it once it's built, and any new repo the same way. It records, per repo:
   - name, local path, GitLab remote URL and project path;
@@ -531,7 +531,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d39"></a>
 ### D39 — Repository layout of closio-agent (foundation step F0)
 - **Date:** 2026-10-09
-- **Status:** Accepted (created 2026-10-09). Local-path handling **approved by the user on 2026-10-10**. First commit and push on 2026-10-11 (see below). Built since: `config/repos/<repo>.yaml` (F5); in `local/`: `user-settings.sh` (F4), `repos/` (F5), `vpn/` (the openfortivpn log, F3); `local/memory/` comes with F6b.
+- **Status:** Accepted (created 2026-10-09). Local-path handling **approved by the user on 2026-10-10**. First commit and push on 2026-10-11 (see below). Built since: `config/repos/<repo>.yaml` (F5); in `local/`: `user-settings.sh` (F4), `repos/` (F5), `vpn/` (the openfortivpn log, F3), `logs/` (setup and test output, F6); `local/memory/` comes with F6b.
 - **Context:** Everything lives in this project folder, which the team clones (D36). The user approved `git init` and creating the structure.
 - **Decision:**
   - `git init` (branch `main`). **First commit and push on 2026-10-11** (user): remote **`https://github.com/manas-shurutech-04/closio_agent.git`** (private GitHub repo). Teammates clone it with `git clone https://github.com/manas-shurutech-04/closio_agent.git closio-agent`. Before the push, the chat transcript's WS1 login user ID was blanked out, like the GitLab token.
@@ -603,13 +603,13 @@ Every decision taken while building the agent, including the options we rejected
 - **Note (checked 2026-10-09 and 2026-10-10):** `nvm use v22` on its own does **not** change which Claude Code runs. Today `claude` is the Homebrew install (2.1.85) whatever Node is active, and Node v22 has no working Claude Code inside it. The npm package's `claude` doesn't use Node when it runs. So how Claude Code gets installed under v22 had to be agreed.
 - **Install (user, 2026-10-10):** Claude Code is installed **inside Node v22 with npm** (`npm install -g @anthropic-ai/claude-code`; Claude's docs say this package needs Node 22 or later), and the **Homebrew copy was removed**, so there is only one Claude Code. Done on this Mac: version 2.1.296 at `~/.nvm/versions/node/v22.14.0/bin/claude`. **Codex the same way** (user, 2026-10-10): `npm install -g @openai/codex` inside Node v22 (0.162.1), Homebrew copy removed. Steps in [setup-guide.md](setup-guide.md#install-claude-code-and-codex-inside-node-v22--verified). Rejected: upgrading the Homebrew copy (it doesn't follow Node v22, and two copies cause confusion).
 - **Note (checked 2026-10-10):** on this Mac the shell's PATH lists the `bin` folder of every nvm Node version, so `claude` is found even without `nvm use v22`. But Node itself then stays at the default v18, so the commands the session runs would use the wrong Node. That's why A9 still matters.
-- **Note:** the Claude desktop app doesn't start from a terminal, so nobody can type `nvm use v22` first there. The agent's scripts will have to switch to v22 themselves. This is handled when the scripts are built.
+- **Note:** the Claude desktop app doesn't start from a terminal, so nobody can type `nvm use v22` first there. The agent's scripts will have to switch Node themselves. **Done for the code repos in F6** (2026-10-16): `flow-setup-repo` switches to each repo's version itself ([D54](#d54)).
 - **Finding (F1 test T3, 2026-10-10): Codex ignores `nvm use v22`.** Codex runs its commands through a **background service** (`codex app-server` daemon) that keeps running between sessions. On this Mac it was started at 12:48 with Node v18 first in its PATH, while the `codex` window itself had v22. So `$flow-doctor` reported v18 even after `nvm use v22`. **Fixed (user, 2026-10-10):** Codex was reinstalled **with npm inside Node v22** (`@openai/codex` 0.162.1), the Homebrew copy was removed, and the background service was restarted from a Node v22 terminal (`codex app-server daemon restart`). `$flow-doctor` in Codex then showed Node v22 ✅. Checked: the service now has Node v22 first in its PATH. Its separate updater process (running since 2026-10-09) still has v18, so if Codex ever falls back to v18 (e.g. after it updates itself), restart the service again. Not done: making Node 22 the Mac's default (`nvm alias default 22`), because it changes Node for every other project; kept as a fallback.
 
 <a id="d42"></a>
 ### D42 — Claude Code and Codex are always started in the closio-agent folder; code repos are added as extra folders
 - **Date:** 2026-10-10
-- **Status:** Accepted. **Built:** `flow-configure-user`, `flow-configure-repo` and `flow-doctor` check that the session started in the closio-agent folder and stop with the fix if not (F2, F4, F5). **Still open:** how the code repos get added as extra folders (a launch option or a saved setting), decided with `flow-setup-repo` (F6).
+- **Status:** Accepted. **Built:** `flow-configure-user`, `flow-configure-repo` and `flow-doctor` check that the session started in the closio-agent folder and stop with the fix if not (F2, F4, F5). **Extra folders decided in [D54](#d54) (2026-10-15):** `flow-setup-repo` adds each repo it sets up to Claude Code's personal `.claude/settings.local.json` (`permissions.additionalDirectories`) and shows Codex's start command with `--add-dir`. **Built in F6 (2026-10-16).**
 - **Context:**
   - The agent's commands are project skills, and both tools only load them when the session starts in the folder that holds them (or a folder inside it).
   - The code repos live somewhere else on each Mac (`<workspace>/<repo>`, [D39](#d39)).
@@ -685,7 +685,7 @@ Every decision taken while building the agent, including the options we rejected
   - Each value can be overridden from outside, which is how the scripts are tested without touching the Mac.
   - When a value changes (e.g. the VPN certificate is renewed), it's changed here once.
 - **Why:** User decision. One place to change a value, so scripts can't disagree.
-- **Added since:** `VPN_CONNECT_TIMEOUT` (F3, [D47](#d47)), `BRANCH_DESC_MAX_WORDS` (F5, [D50](#d50)).
+- **Added since:** `VPN_CONNECT_TIMEOUT` (F3, [D47](#d47)), `BRANCH_DESC_MAX_WORDS` (F5, [D50](#d50)), and for `flow-setup-repo` (F6, [D54](#d54)): `SETUP_INSTALL_TIMEOUT`, `SETUP_TEST_TIMEOUT`, `DOCKER_START_TIMEOUT`, `SERVICE_START_TIMEOUT`, `LOCAL_REDIS_PORT`, `LOCAL_RABBITMQ_PORT`.
 - **Rejected options:**
   - Writing the values into every script: they would drift apart.
   - A `.env`-style file: those names are git-ignored and the AI must not read them (A6), which would be confusing for a file that is meant to be shared.
@@ -729,6 +729,7 @@ Every decision taken while building the agent, including the options we rejected
     - `vpn.sh status`, `connect`, `disconnect` (connect and disconnect still need the Mac password in the macOS dialog)
     - `wait-seconds.sh` (waits 1–30 s; used while the Jira connector loads; added 2026-10-13)
     - `configure-repo.sh` (all its steps), `branch-name.sh` (make, check), and writing files in `config/repos/` (`Edit(/config/repos/**)`) (added 2026-10-14, F5)
+    - `setup-repo.sh check-folder`, `list` and `run *` (added 2026-10-16, F6, [D54](#d54)). The setup run was first left to ask once; the user asked the same day for no prompt there. It installs the repo's packages (their install scripts run) and runs the repo's tests, which are the team's own repos
   - **Still asks:** changing the global git name or email (`set git-name`, `set git-email`) and every other command.
   - The commands must run the scripts exactly as written (`bash scripts/…`, no `cd`, nothing joined with `&&`), or the rules don't match.
   - Checked in Claude Code's docs (2026-10-13): a rule like `Bash(safe-cmd *)` doesn't approve `safe-cmd && other-cmd`, because each part of a joined command must match a rule on its own. Project allow rules only apply after the user trusts the folder.
@@ -758,7 +759,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d51"></a>
 ### D51 — Repo registry: flat YAML files, detected values confirmed by the user, per-repo dev keys
 - **Date:** 2026-10-14
-- **Status:** Accepted. Built in F5.
+- **Status:** Accepted. Built in F5; tested by the user on 2026-10-15.
 - **Context:** [D35](#d35) made one command the only way to add a repo; [D39](#d39) split shared and personal facts. The user asked for more details per repo, and for detected values to be only suggestions.
 - **Decision:**
   - **Shared facts** in `config/repos/<repo>.yaml` (committed, no secrets), one `key: value` per line, lists comma-separated: name, GitLab URL and path, FE/BE, role, base branch (can differ per repo), install/dev/start commands, port, health URL, check commands (lint, circular), test command, framework, layout, coverage command, rules and where they're enforced, migration tool, folders, name patterns and commands, seed commands, queues, local services (Redis, RabbitMQ, **BullMQ**), the repos it calls, `.env` file **name**, dev keys (required and optional), optional dev database host/port/name/schema, MR target branch, labels and reviewers, rulesets (baseline [D26](#d26), **to be refined later**; FE: none yet), date registered.
@@ -786,7 +787,7 @@ Every decision taken while building the agent, including the options we rejected
 - **Decision (rule A13, new wording):**
   - **Every code repo runs on the Node version it is built for**: `node_version` in `config/repos/<repo>.yaml`, read from the repo's Dockerfile (or `.nvmrc`) when it's registered.
   - Before running anything in a repo (install, run, test, lint, migrate, seed), the agent switches to that version in the same shell command: `nvm use <version>`.
-  - **If nvm doesn't have that version, it is installed** (`nvm install <version>`). `flow-doctor` and `flow-configure-repo` warn (⚠️) with that command; `flow-setup-repo` (F6) will install it.
+  - **If nvm doesn't have that version, it is installed** (`nvm install <version>`). `flow-doctor` and `flow-configure-repo` warn (⚠️) with that command; `flow-setup-repo` installs it (built 2026-10-16, [D54](#d54)).
   - **closio-agent itself, Claude Code and Codex stay on Node 22** (rule A9, [D41](#d41)).
   - Written into `AGENTS.md` (rule 6).
 - **Why:** User decision. A repo must run on the Node version it's built and deployed with.
@@ -808,3 +809,63 @@ Every decision taken while building the agent, including the options we rejected
 - **Rejected options:**
   - `flow-setup-repo` cloning missing repos (the earlier plan, D39).
   - Registering a repo from its GitLab address with an automatic clone (suggested by Claude).
+
+<a id="d54"></a>
+### D54 — How `flow-setup-repo` (F6) prepares a repo
+- **Date:** 2026-10-15
+- **Status:** Accepted (user's answers to the F6 draft, 2026-10-15 and 2026-10-16). **Built 2026-10-16** after the user's yes to the final draft (incl. the `.env` help steps, opening the `.env` in the editor, and quitting Docker again). My tests passed; **the user's tests passed on 2026-10-16** (all repos set up; the Claude desktop app picked up the repo folders from `.claude/settings.local.json`). Amends [D30](#d30), settles the open part of [D42](#d42), adds to [D21](#d21).
+- **Context:** F6 gets a registered repo ready to work on, on a clone the user made ([D53](#d53)). The checks on 2026-10-15 found: Homebrew Redis 7.2.7 and RabbitMQ 4.0.7 already running on the first Mac, Docker installed but not running; every repo installs from the public npm registry; the backend tests use stubs; the web app's `npm test` stays in watch mode in a terminal; the web app has `.env.development` but no `.env`.
+- **Decision:**
+  - **Usage:** `/flow-setup-repo` (each repo's setup state), `/flow-setup-repo <repo>` (one repo), `/flow-setup-repo all` (every repo cloned on this Mac, one after another).
+  - **No VPN step:** the connectivity agent doesn't run in `flow-setup-repo` ([D30](#d30) amended; agent rule A5).
+  - **Branches stay with the card phases** (user, 2026-10-16): `flow-setup-repo` never switches branches, pulls, stashes or changes tracked files. The agent does those in the card phases: Phase 1 pulls the base branch and creates the card's branch, Phase 3 changes the code, Phase 7 does stash → rebase → stash pop → atomic commits → one push (G1–G4).
+  - **Node:** the script switches to the repo's `node_version` itself and installs it with nvm if missing ([D52](#d52)), so it also works in the Claude desktop app.
+  - **Env file:** checked by name only; if missing, the user is told to get it from the team. Never created or read by the AI (A6).
+  - **`.env` points to this Mac?** The script reads `REDIS_HOST` / `RABBITMQ_URL` from the repo's `.env` itself and says only "points to this Mac" or "points somewhere else", never a value. The user changes the values themselves. **With step-by-step help** (user, 2026-10-16): when something doesn't match, the setup shows which file to open, the exact lines to set for the local copy in use, and to run the setup again (details in the final draft, waiting on approval).
+  - **Missing variables** (user, 2026-10-16): the script compares the variable **names** in the repo's env file with `.env.example` (or `.env.sample`), never the values. Missing names → ⚠️, the file opens in the editor, and the lines to add are listed (the user fills in the values). Found after `nodejs-ws2closio`'s tests stopped on a missing `SERVICE_CREDENTIALS`.
+  - **Install only when needed:** no `node_modules`, or `package-lock.json` changed since the last install. `/flow-setup-repo <repo> install` forces it.
+  - **Local Redis and RabbitMQ** (user's rules, 2026-10-15 and 2026-10-16), for each service the repo needs:
+    - **Check both before choosing:** a **Homebrew** copy (installed with Homebrew) and a **Docker** copy (a container made from the official `redis` or `rabbitmq` image). If Docker Desktop is installed but not running, the setup starts it so it can look.
+    - **Only one copy:** use it and tell the user.
+    - **Both:** ask the user which to use, once (the choice is saved in `local/user-settings.sh`; `/flow-setup-repo <repo> services` asks again). If the other copy is running, the setup **stops it by itself** and says so (`brew services stop …` or `docker stop …`; no password needed). No other user step.
+    - **None:** suggest Docker (one shared file in closio-agent, same versions for everyone), or Homebrew if Docker isn't installed. Install or start only after the user's yes.
+    - A stopped copy is started only when it's the one being used.
+    - Versions: Redis 7 and RabbitMQ 4 (the dev servers' versions aren't known; BullMQ needs Redis 6.2 or newer).
+  - **Tests once at setup:** the repo's test command, not the coverage check (that's Phase 6); time limit 15 minutes (a shared setting); full output in a private log in `local/logs/`; the AI shows a short summary. Skipped for repos without a test suite ([D25](#d25)).
+  - **Folder access ([D42](#d42)):** Claude Code: the repo's folder is added to the personal `.claude/settings.local.json` (`permissions.additionalDirectories`; file access only, the repo's own Claude files don't load). Codex: the setup shows the start command `codex --add-dir <repo paths>`.
+  - **Approval prompts ([D49](#d49)):** in Claude Code the whole command is pre-approved, the setup run included (user, 2026-10-16: "dont ask the user permission here"; first decided as "only the status list"). In Codex the user still approves it outside the sandbox.
+  - **Web app repo file:** test command `npm test -- --run` (one run, never watch mode) and env file `.env.development` (changed 2026-10-15).
+- **Why:** User decisions.
+- **Rejected options:**
+  - Running the connectivity agent in `flow-setup-repo` (the earlier D30 plan).
+  - Always running `npm ci` (slower; reinstalls every time).
+  - Running the coverage check at setup, or no tests at setup.
+  - Start commands for Claude Code, or typing `/add-dir` by hand.
+  - Always starting our own Docker copies of Redis and RabbitMQ (suggested option c), or only using whatever already answers (Claude's first suggestion, before the user's rule).
+  - Pre-approving only the status list, so the setup run asks once (chosen first on 2026-10-15, replaced on 2026-10-16).
+  - Asking the user before stopping the other copy of Redis or RabbitMQ (user: no user step there).
+  - The setup switching to the base branch and pulling it (option b, 2026-10-16).
+- **Built (F6, 2026-10-16):** `scripts/setup-repo.sh` (`check-folder`, `list`, `run <repo|all> [install|services]`) and the `flow-setup-repo` command.
+  - Choices between two copies are asked in a **macOS dialog** (closed or unanswered after 5 minutes = no choice), so the setup stays one script run with one approval.
+  - Docker copy = a container whose image is the official `redis` / `rabbitmq` one (any tag). Docker Desktop is started with `open -g -a Docker` (up to 90 s) only to look, and quit again at the end if no service uses it.
+  - Stopping the other copy: `docker stop <container>` or `brew services stop <name>` (no password). Starting: `brew services start` / `docker start`, or `docker compose -f config/local-services.yml up -d <service>` for a new Docker copy (`redis:7-alpine`, `rabbitmq:4-management`, ports bound to 127.0.0.1).
+  - The saved choices are `LOCAL_REDIS_FROM` / `LOCAL_RABBITMQ_FROM` in `local/user-settings.sh`; `flow-configure-user` keeps them when it rewrites that file. A choice is saved only when both copies exist (so a later second copy still triggers the question).
+  - `.env` check: the script parses the lines itself (never `source`), checks host, port, TLS, and whether what the file points to answers (Redis `PING`, RabbitMQ port), and on a mismatch opens the file with `open -t` and prints the lines to set. Values are never printed or logged.
+  - Installing and tests run in the repo folder on the repo's Node version, in their own process group with a time limit (install 15 min, tests 15 min); output goes to `local/logs/setup-<repo>.log`.
+  - Claude Code folder access: `jq` adds the path to `permissions.additionalDirectories` in `.claude/settings.local.json`, keeping everything else; a broken file is left untouched (❌ with the fix).
+  - `flow-doctor`: new "Repo setup" section; Docker is no longer ❌ when missing unless you chose Docker.
+  - Added 2026-10-16: the `.env` names check (above), and the folder-access check in the command file (rule A15, [D55](#d55)). The env file opens at most once per repo.
+
+<a id="d55"></a>
+### D55 — Ask for folder access before working in a code repo
+- **Date:** 2026-10-16
+- **Status:** Accepted. Built into `flow-setup-repo` (its command file) and `AGENTS.md` rule 8; the card phases will follow it too.
+- **Context:** `flow-setup-repo` gives Claude Code access to each repo folder through `.claude/settings.local.json`, and shows Codex's start command with `--add-dir` ([D42](#d42), [D54](#d54)). On 2026-10-16 the Claude desktop app picked the folders up by itself. But a session can still lack access, e.g. Codex started without `--add-dir`, or a setting that hasn't been picked up yet.
+- **Decision (rule A15, user 2026-10-16: "if the access is not there for the folders then you need to ask the user about the access and then move forward"):**
+  - Before working in a code repo, the AI checks that this session can use the repo's folder (it's one of the session's folders, or reading a file in it works).
+  - If it can't, it **stops and asks the user to give access**, with the exact way: Claude Code: `/add-dir <folder>`, or a new session; Codex: start again with `codex --add-dir <folder>`, or approve Codex's request.
+  - It goes on only after the user has given access.
+  - Written into `AGENTS.md` (rule 8), so both tools follow it in every session.
+- **Why:** User decision. The agent never works around missing access, and the user always knows why it stopped.
+- **Rejected options:** None considered.
+
