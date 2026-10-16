@@ -6,7 +6,7 @@
 
 **Pick up the JIRA card → … → MR (Merge Request) review → Deployment doc creation**
 
-> Status: in design. The phases are approved (see [architecture.md](architecture.md)). Commands built so far: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, see [commands.md](commands.md).
+> Status: in design. The phases are approved (see [architecture.md](architecture.md)). Commands built so far: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card`, see [commands.md](commands.md).
 
 > **New to closio-agent?** Start with [setup-guide.md](setup-guide.md) to prepare your Mac (VPN, GitLab token, Keychain secrets, repos), then read [architecture.md](architecture.md).
 >
@@ -18,9 +18,11 @@
 |-----|----------------|--------|
 | [design-decisions.md](design-decisions.md) | Every decision taken, including the options we rejected and why | Available |
 | [setup-guide.md](setup-guide.md) | Access needed, installation, configuration, first run | Available: setup with the commands (`flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`), with the manual steps kept as a backup |
-| [commands.md](commands.md) | Every agent command: purpose, usage, inputs, outputs, example | Available: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory` |
+| [commands.md](commands.md) | Every agent command: purpose, usage, inputs, outputs, example | Available: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card` |
 | [architecture.md](architecture.md) | How the pipeline stages connect and what each one takes in and produces | Available (phases approved; first commands built) |
-| [agent-rules.md](agent-rules.md) | Every rule the agent follows when it runs (G1–G4, A1–A15), each with its decision and where it's applied today | Available (added 2026-10-15) |
+| [agent-rules.md](agent-rules.md) | Every rule the agent follows when it runs (G1–G4, A1–A16), each with its decision and where it's applied today | Available (added 2026-10-15) |
+| [jira-card-template.md](jira-card-template.md) | What a Jira card looks like: the sections, the AC and QA rules, code alignment, how a card is drafted, the ready checklist | Available (added 2026-10-17, F7) |
+| [jira-card-examples.md](jira-card-examples.md) | Two real cards (SCRUM-559, SCRUM-567) in the template's shape | Available (added 2026-10-17, F7) |
 | [changelog.md](changelog.md) | Dated list of what changed in the agent | Available |
 
 ## Repository layout
@@ -36,6 +38,6 @@ This project folder is the `closio-agent` repository that the team clones ([D36]
 | `scripts/` | Helper scripts the commands run | ✅ |
 | `e2e/` | Playwright project ([D24](design-decisions.md#d24)) | ✅ (dependencies and outputs ignored) |
 | `runs/<CARD-KEY>/` | The agent's own memory per card; shared ([D36](design-decisions.md#d36), [D38](design-decisions.md#d38)) | ✅ |
-| `local/` | Personal settings, local repo paths ([D39](design-decisions.md#d39)) and the **user memory** `local/memory/` ([D40](design-decisions.md#d40)) | ❌ git-ignored |
+| `local/` | Personal settings, local repo paths ([D39](design-decisions.md#d39)), the **user memory** `local/memory/` ([D40](design-decisions.md#d40)) and the text of cards checked with `flow-check-card` (`local/cards/`, [D58](design-decisions.md#d58)) | ❌ git-ignored |
 | `docs/` | Team documentation (this folder) | ✅ |
 | `build-memory/` | Working memory used while building the agent | ✅ |

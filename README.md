@@ -4,7 +4,7 @@ An AI agent for the Japfa **Closio** team. It takes a Jira card from **SCRUM** t
 
 It runs as commands inside **Claude Code** (`/flow-start`) and **Codex** (`$flow-start`). Every command starts with `flow-` and only runs when you type it ([D43](docs/design-decisions.md#d43), [D44](docs/design-decisions.md#d44)).
 
-> **Status:** in design. The foundation (setup commands) is being built first; see the build plan in [build-memory/project-context.md](build-memory/project-context.md). Commands so far: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory` ([docs/commands.md](docs/commands.md)).
+> **Status:** in design. The foundation (setup commands) is being built first; see the build plan in [build-memory/project-context.md](build-memory/project-context.md). Commands so far: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card` ([docs/commands.md](docs/commands.md)).
 
 ## Start here
 
@@ -12,7 +12,7 @@ It runs as commands inside **Claude Code** (`/flow-start`) and **Codex** (`$flow
 
 0. **Get it (one-time):** `git clone https://github.com/manas-shurutech-04/closio_agent.git closio-agent`. The repo is private, so ask Manas for access first. The `closio-agent` at the end names the folder the way the docs expect.
 1. **Set up your Mac:** [docs/setup-guide.md](docs/setup-guide.md) (VPN, GitLab token, Keychain secrets, repos).
-2. **Understand the flow:** [docs/architecture.md](docs/architecture.md), and the rules the agent always follows: [docs/agent-rules.md](docs/agent-rules.md).
+2. **Understand the flow:** [docs/architecture.md](docs/architecture.md), the rules the agent always follows: [docs/agent-rules.md](docs/agent-rules.md), and what a Jira card must look like: [docs/jira-card-template.md](docs/jira-card-template.md).
 3. **Check it works:** type `/flow-ping`, then `/flow-doctor` (Codex: `$flow-ping`, `$flow-doctor`). See [docs/commands.md](docs/commands.md).
 4. **Why things are the way they are:** [docs/design-decisions.md](docs/design-decisions.md).
 
@@ -28,7 +28,7 @@ It runs as commands inside **Claude Code** (`/flow-start`) and **Codex** (`$flow
 | `scripts/` | Helper scripts the commands run (VPN, Keychain, Git, …) | ✅ |
 | `e2e/` | Playwright project for front-end end-to-end tests, kept outside the code repos ([D24](docs/design-decisions.md#d24)) | ✅ (dependencies and outputs ignored) |
 | `runs/<CARD-KEY>/` | The agent's memory per Jira card: history, plan, state. Shared, so a teammate can pick up a paused card ([D36](docs/design-decisions.md#d36), [D38](docs/design-decisions.md#d38)) | ✅ |
-| `local/` | **Your** personal settings, where the repos are cloned on **your** Mac, and **your user memory** (`local/memory/`: your preferences and corrections, which every command loads and applies; [D40](docs/design-decisions.md#d40)) | ❌ never (git-ignored) |
+| `local/` | **Your** personal settings, where the repos are cloned on **your** Mac, and **your user memory** (`local/memory/`: your preferences and corrections, which every command loads and applies; [D40](docs/design-decisions.md#d40)), and the text of the cards you checked with `flow-check-card` (`local/cards/`) | ❌ never (git-ignored) |
 | `docs/` | Team documentation | ✅ |
 | `build-memory/` | Working memory used while building the agent | ✅ |
 

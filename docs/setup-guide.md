@@ -1,6 +1,6 @@
 # Setup Guide — closio-agent for Japfa (Closio)
 
-> **Status (2026-10-16):** `closio-agent` is **in design.** The setup commands are built: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo` and `flow-memory` ([commands.md](commands.md)). The card phases (1–9) come next.
+> **Status (2026-10-16):** `closio-agent` is **in design.** The setup commands are built: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory` and `flow-check-card` ([commands.md](commands.md)). The card phases (1–9) come next.
 >
 > **Use the commands first** (see "First-time setup, in order" below). The manual steps in this guide stay as a backup and explain what the commands do. Steps marked **✅ verified** were tested on a real Mac (macOS 26.6.2). Steps marked **🛠 planned** aren't built yet.
 >

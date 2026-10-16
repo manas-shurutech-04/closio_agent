@@ -15,7 +15,7 @@ Before you start: open a terminal **in the closio-agent folder**, run `nvm use v
 - **Shared logic lives in `scripts/`.** The command tells the AI which script to run, so both tools do the same thing.
 - **Every command follows the agent rules** in [agent-rules.md](agent-rules.md), e.g. every problem comes with the steps to fix it (A11).
 
-**No approval prompts for our own scripts ([D49](design-decisions.md#d49), [D57](design-decisions.md#d57)):** every script the commands run (`configure-user.sh`, `configure-repo.sh`, `setup-repo.sh`, `memory.sh`, `doctor.sh`, `vpn.sh`, `wait-seconds.sh`, `branch-name.sh`, all their steps) runs without asking. **Claude Code:** the shared file `.claude/settings.json` (it applies once you've trusted the folder). **Codex:** the shared file `.codex/rules/closio-agent.rules` (Codex's "rules", still experimental; they apply when Codex trusts this folder, and the scripts then run outside its sandbox). Anything else still asks.
+**No approval prompts for our own scripts ([D49](design-decisions.md#d49), [D57](design-decisions.md#d57)):** every script the commands run (`configure-user.sh`, `configure-repo.sh`, `setup-repo.sh`, `memory.sh`, `doctor.sh`, `vpn.sh`, `wait-seconds.sh`, `branch-name.sh`, `card-check.sh`, all their steps) runs without asking, and so does saving a card's text to `local/cards/` for `flow-check-card`. **Claude Code:** the shared file `.claude/settings.json` (it applies once you've trusted the folder). It also pre-approves the **read-only Jira tools** the commands use through Claude's Atlassian connector (read a project or an issue, search issues, your account), so `flow-doctor`, `flow-configure-user` and `flow-check-card` don't ask each session. Those rules name the connector as claude.ai registers it (`mcp__claude_ai_Atlassian_MCP__…`, setup guide section 3); anything that changes Jira still asks. **Codex:** the shared file `.codex/rules/closio-agent.rules` (Codex's "rules", still experimental; they apply when Codex trusts this folder, and the scripts then run outside its sandbox). Anything else still asks.
 
 ## Command list
 
@@ -28,6 +28,7 @@ Before you start: open a terminal **in the closio-agent folder**, run `nvm use v
 | [`flow-configure-repo`](#flow-configure-repo) | Registers a repo, or sets it up on your Mac (path, dev keys) | Built 2026-10-14 (F5). Tested by the user (2026-10-15) |
 | [`flow-setup-repo`](#flow-setup-repo) | Gets a repo ready to work on: Node version, packages, local Redis/RabbitMQ, `.env` check, tests, folder access | Built 2026-10-16 (F6). Tested by the user (2026-10-16) |
 | [`flow-memory`](#flow-memory) | Shows and manages your user memory: the preferences and corrections every command follows | Built 2026-10-16 (F6b). Tested by the user (2026-10-16) |
+| [`flow-check-card`](#flow-check-card) | Checks a Jira card (or a card in a `.md` file) against the team's card template and shows what to fix | Built 2026-10-17 (F7). Not yet tested by the user |
 
 ---
 
@@ -339,10 +340,14 @@ Result for nodejs-ws2closio: 0 to fix, 1 to look at.
 /flow-memory edit M3 <new text>                change an entry's text
 /flow-memory edit M3 phases plan,develop       change where it applies
 /flow-memory remove M3                         remove an entry
+/flow-memory clear                             remove all your entries (shows them and asks first)
+/flow-memory clear nodejs-ws2closio            remove only that repo's entries
 $flow-memory …                                 (Codex)
 ```
 
 When you add an entry, the AI asks once which **phases** it applies to (`all`, or some of `setup`, `pick-up`, `plan`, `develop`, `review`, `ac-check`, `testing`, `ship`, `mr`, `after-merge`) and the **card** it came from, if any, with a suggestion you can just confirm. If the entry goes against a team rule, it tells you which one and saves it only if you still want it (it never overrides the rule). Anything that looks like a secret is refused.
+
+**Clearing:** `clear` first lists every entry it would remove and asks "Remove these N entries? This can't be undone." Only after your yes does it remove them (the files are deleted). Having no memory is normal; your next `add` starts it again.
 
 **How it's stored:** `local/memory/general.md` (everywhere) and `local/memory/repos/<repo>.md` (one repo), one entry per line:
 ```
@@ -355,6 +360,52 @@ You can also edit these files by hand; lines that aren't in this format are show
 **Offered saves:** when you correct the AI during a flow command, it offers once to save the correction to your memory, and saves it only after your yes (`AGENTS.md` rule 9).
 
 **Files:** `.agents/skills/flow-memory/`, `scripts/memory.sh` (you can run `bash scripts/memory.sh list` in a terminal too), `local/memory/` (yours).
+
+---
+
+### `flow-check-card`
+
+**Purpose:** checks one Jira card against the team's card template ([jira-card-template.md](jira-card-template.md), [D58](design-decisions.md#d58)), so a card can be fixed before the agent picks it up. It only reads; it never changes the card in Jira.
+
+**Usage:**
+```
+/flow-check-card SCRUM-567                  the card from Jira                      (Claude Code)
+/flow-check-card local/cards/my-draft.md    a card that isn't in Jira yet (any .md file)
+$flow-check-card …                          (Codex)
+```
+
+**What it does:**
+1. Reads the card from Jira (key, summary, type, status, description) with the AI's Jira tools and saves its text, unchanged, to `local/cards/<CARD-KEY>.md` (private, never pushed). With a file, it uses the file as it is. No prompt in Claude Code: the Jira read tools, the script and the card file are pre-approved ([D57](design-decisions.md#d57)). In Codex, Jira is read through the Atlassian app on your ChatGPT account.
+2. Runs `bash scripts/card-check.sh` on it and shows the result. Every ❌ comes with its fix (rule A11):
+
+| ❌ not ready (the agent's pick-up stops and waits) | ⚠️ worth a look |
+|---|---|
+| `## Context`, `## How QA can test this` or `## Acceptance Criteria` missing | a QA step without "Expect" |
+| no ACs; an AC heading not `**AC 1 — Title**`; AC numbers not 1, 2, 3… | deploy, migrate or restart steps in the QA section |
+| an AC without Given, When and Then | "test after SCRUM-… lands"-style wording |
+| an "Assumption:" line, `⟦…⟧`, TODO or TBD | a literal `\n` in the text |
+| a "Files changed" or "AC self-check" table | out-of-scope lines outside `## Out of Scope` |
+| QA section with no numbered steps; anything that looks like a secret | |
+
+3. Adds one line for the card type: a Spike isn't picked up by the agent; for a Bug, missing sections are fine (you explain them at pick-up); a Subtask is picked up like a Story or Task.
+4. Ends with "Ready", "Ready, with N things worth a look" or "Not ready: fix the ❌ lines above".
+
+What the script can't judge (alignment with the code, the WS1 rules, ACs inside the card's scope, real boundary values, every AC covered by a QA step) is checked by the AI when the card is picked up and planned (Phase 2, rule A16). Cards are written by people, later also by a separate pipeline; closio-agent never creates them.
+
+**Output example (shortened):**
+```
+card-check — local/cards/SCRUM-567.md (208 lines)
+✅ Required sections are there: Context, How QA can test this, Acceptance Criteria
+✅ 8 acceptance criteria, numbered 1–8, each with Given / When / Then
+⚠️ QA step 8 has no "Expect" (line 98)
+   Tip: Say what QA should see after this step: "Expect …".
+✅ No assumptions, placeholders, forbidden tables or secrets
+
+Result: 0 to fix, 1 to look at.
+Ready, with 1 thing worth a look.
+```
+
+**Files:** `.agents/skills/flow-check-card/`, `scripts/card-check.sh` (you can run `bash scripts/card-check.sh <file>` in a terminal too; exit code 0 when there's no ❌), [jira-card-template.md](jira-card-template.md), [jira-card-examples.md](jira-card-examples.md), `local/cards/` (yours).
 
 ---
 
@@ -371,8 +422,9 @@ The commands run these scripts (in `scripts/`). You can run them yourself in a t
 | `configure-user.sh check-folder \| show \| set \| secrets \| secret \| gitlab-username-from-token` | Personal settings and the 5 secrets | `flow-configure-user` |
 | `configure-repo.sh check-folder \| list \| detect \| validate \| set-path \| keys \| key \| show` | The repo registry, clone paths and dev keys | `flow-configure-repo` |
 | `setup-repo.sh check-folder \| list \| run <repo\|all> [install\|services]` | Gets repos ready to work on (Node, packages, local Redis/RabbitMQ, `.env` check, tests, folder access) | `flow-setup-repo` |
-| `memory.sh for <phase> [words] \| list \| add \| edit \| set-phases \| remove \| count \| problems` | Your user memory: the entries for a command, and managing them | Every command (first step), `flow-memory`, `flow-doctor` |
+| `memory.sh for <phase> [words] \| list \| add \| edit \| set-phases \| remove \| clear-preview \| clear \| count \| problems` | Your user memory: the entries for a command, and managing them | Every command (first step), `flow-memory`, `flow-doctor` |
 | `branch-name.sh make <CARD-KEY> "<title>" \| check <name>` | Builds and checks branch names (strict rule A12) | Later phases (Phase 1); you can use it any time |
+| `card-check.sh <card file>` | Checks a card's text against the card template: ❌ not ready (with the fix), ⚠️ worth a look; exit code 0 when there's no ❌ | `flow-check-card`; Phase 1 later |
 | `link-claude-skills.sh` | Adds the Claude Code link for every command (run it after adding a command) | Setup; `flow-doctor` tells you when |
 | `wait-seconds.sh <1-30>` | Waits a few seconds (e.g. while Jira loads) | `flow-doctor`, `flow-configure-user` |
 | `lib/secret-dialogs.sh` | The heads-up and hidden box for secrets | `configure-user.sh`, `configure-repo.sh` |

@@ -2,8 +2,16 @@
 
 Dated list of what changed in closio-agent. Newest first.
 
+## 2026-10-17
+
+- **New rule A16** ([D59](design-decisions.md#d59), `AGENTS.md` rule 10): error codes, statuses and messages always come from the code. Before developing a card, the agent reads the existing ones in every repo involved, checks the card's error reference against them, points out every difference and never invents new ones.
+- **Jira card template (F7, [D58](design-decisions.md#d58)):** new [jira-card-template.md](jira-card-template.md), the single place for the card rules (the sections, the AC and QA rules, code alignment, how a card is drafted, the ready checklist), and [jira-card-examples.md](jira-card-examples.md) (SCRUM-559 and SCRUM-567 in full). Cards are written by people, later also by a separate pipeline; closio-agent never creates them.
+- **`flow-check-card` (F7):** checks a Jira card, or a card in a `.md` file, against the template with the new `scripts/card-check.sh` (❌ not ready, ⚠️ worth a look, every ❌ with its fix), and tells you about Spikes (not picked up) and Bugs (missing sections are explained at pick-up). It only reads; the card's text is saved privately in `local/cards/`. Pre-approved in both tools ([D57](design-decisions.md#d57)).
+- **No prompts for Jira reads in Claude Code:** the shared `.claude/settings.json` now also pre-approves the read-only Jira tools the commands use (a project, an issue, a search, your account), so `flow-doctor`, `flow-configure-user` and `flow-check-card` don't ask each session ([D57](design-decisions.md#d57)). Changing Jira still asks.
+
 ## 2026-10-16
 
+- `flow-memory clear` (all your entries) and `flow-memory clear <repo>` (one repo's): it lists what it would remove and asks before removing anything.
 - `flow-memory` tested by the user; working.
 - Fixed: `/flow-memory` (and every command, once you had a memory entry) stopped with "Shell command failed" because the memory step broke on the space in the folder name. It now works with any folder name and never stops a command: a problem shows as ⚠️ and the command goes on.
 - **`flow-memory` (F6b):** your private user memory (`local/memory/`): list, add (everywhere or for one repo), edit, change phases, remove. Every command now starts with the memory step, which Claude Code runs by itself when the command loads (Codex: the first step); the AI says which entries it used and offers to save your corrections ([D56](design-decisions.md#d56), `AGENTS.md` rule 9).

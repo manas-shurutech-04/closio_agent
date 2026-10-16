@@ -51,9 +51,9 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d5"></a>
 ### D5 — Layout of `docs/`, with files created only once they have real content
 - **Date:** 2026-10-09
-- **Status:** Accepted. **`agent-rules.md` added on 2026-10-15** (user): every agent rule (G1–G4, A1–A14) in one table, so colleagues find them in one place.
+- **Status:** Accepted. **`agent-rules.md` added on 2026-10-15** (user): every agent rule (G1–G4, A1–A14) in one table, so colleagues find them in one place. **`jira-card-template.md` and `jira-card-examples.md` added on 2026-10-17** (F7, [D58](#d58)).
 - **Context:** Team documentation needs a fixed home and structure for existing and new team members.
-- **Decision:** `docs/` contains `README.md`, `setup-guide.md`, `commands.md`, `design-decisions.md`, `architecture.md` and `changelog.md` (all six exist since 2026-10-10), plus `agent-rules.md` (since 2026-10-15). Each file is created only once there is real content for it. `docs/README.md` lists all of them with their status.
+- **Decision:** `docs/` contains `README.md`, `setup-guide.md`, `commands.md`, `design-decisions.md`, `architecture.md` and `changelog.md` (all six exist since 2026-10-10), plus `agent-rules.md` (since 2026-10-15), `jira-card-template.md` and `jira-card-examples.md` (since 2026-10-17). Each file is created only once there is real content for it. `docs/README.md` lists all of them with their status.
 - **Why:** These cover the required documentation (commands, design decisions, setup guide). `architecture.md` shows how the stages connect, and `changelog.md` lets existing users catch up without reading every doc.
 - **Rejected options:**
   - Creating empty placeholder files upfront: they could mislead colleagues into thinking content exists.
@@ -531,7 +531,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d39"></a>
 ### D39 — Repository layout of closio-agent (foundation step F0)
 - **Date:** 2026-10-09
-- **Status:** Accepted (created 2026-10-09). Local-path handling **approved by the user on 2026-10-10**. First commit and push on 2026-10-11 (see below). Built since: `config/repos/<repo>.yaml` (F5); in `local/`: `user-settings.sh` (F4), `repos/` (F5), `vpn/` (the openfortivpn log, F3), `logs/` (setup and test output, F6), `memory/` (user memory, F6b, created on the first entry).
+- **Status:** Accepted (created 2026-10-09). Local-path handling **approved by the user on 2026-10-10**. First commit and push on 2026-10-11 (see below). Built since: `config/repos/<repo>.yaml` (F5); in `local/`: `user-settings.sh` (F4), `repos/` (F5), `vpn/` (the openfortivpn log, F3), `logs/` (setup and test output, F6), `memory/` (user memory, F6b, created on the first entry), `cards/` (the text of cards checked with `flow-check-card`, F7).
 - **Context:** Everything lives in this project folder, which the team clones (D36). The user approved `git init` and creating the structure.
 - **Decision:**
   - `git init` (branch `main`). **First commit and push on 2026-10-11** (user): remote **`https://github.com/manas-shurutech-04/closio_agent.git`** (private GitHub repo). Teammates clone it with `git clone https://github.com/manas-shurutech-04/closio_agent.git closio-agent`. Before the push, the chat transcript's WS1 login user ID was blanked out, like the GitLab token.
@@ -657,7 +657,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d45"></a>
 ### D45 — One shared rules file, `AGENTS.md`, for both tools
 - **Date:** 2026-10-10
-- **Status:** Accepted. **F1 T4 re-tested by the user on 2026-10-10 in new sessions: passed** in Claude Code and Codex (asked "check my setup", the AI pointed to the command instead of running the steps). Rules 5–9 added since: branch names ([D50](#d50)), repo Node versions ([D52](#d52)), manual cloning ([D53](#d53)), folder access ([D55](#d55)), user memory ([D56](#d56)).
+- **Status:** Accepted. **F1 T4 re-tested by the user on 2026-10-10 in new sessions: passed** in Claude Code and Codex (asked "check my setup", the AI pointed to the command instead of running the steps). Rules 5–10 added since: branch names ([D50](#d50)), repo Node versions ([D52](#d52)), manual cloning ([D53](#d53)), folder access ([D55](#d55)), user memory ([D56](#d56)), error codes from the code ([D59](#d59)).
 - **Context:**
   - In F1 test T4, both tools did `flow-doctor`'s steps by hand when the user asked "check my setup" without typing the command ([D44](#d44)).
   - Codex reads `AGENTS.md` from the project root at the start of every session. Claude Code reads `AGENTS.md` too, **as long as there is no `CLAUDE.md`** in the folder or above it (both checked in the official docs on 2026-10-10).
@@ -878,10 +878,11 @@ Every decision taken while building the agent, including the options we rejected
 - **Decision:**
   - **Command `flow-memory`** (list, add, add for one repo, edit, change phases, remove). All changes go through `scripts/memory.sh`, which keeps the format and refuses anything that looks like a secret.
   - **Files:** `local/memory/general.md` and `local/memory/repos/<repo>.md`, created on the first entry. One entry per line: `- [M3] 2026-10-16 · phases: plan, develop · from: SCRUM-519 · <text>`. IDs `M1`, `M2`… are unique across the files.
-  - **Phases:** `all`, or some of `setup`, `pick-up`, `plan`, `develop`, `review`, `ac-check`, `testing`, `ship`, `mr`, `after-merge`. The setup commands use `setup`.
+  - **Phases:** `all`, or some of `setup`, `pick-up`, `plan`, `develop`, `review`, `ac-check`, `testing`, `ship`, `mr`, `after-merge`. The setup commands use `setup`; `flow-check-card` uses `pick-up`.
   - **Loading, never skipped:** every command's step 1 holds `!`bash scripts/memory.sh for setup all``. **Claude Code runs it by itself when the command loads** (its "dynamic context injection": before the command reaches the AI, never prompts, checked against the permission rules). Codex has no such feature, so the same step tells the AI to run it first, and `AGENTS.md` rule 9 repeats it. The output lists general entries and every repo's entries (labelled), and the AI applies the repo ones only for the repos the command works on (so no arguments are needed in the command line, which Claude Code doesn't document for this feature). The AI says in one line which entries it used.
   - **Team rules win (A8):** when an entry conflicts, the AI says so and follows the team rule. When a new entry goes against a team rule, `flow-memory` warns and saves it only if the user still wants it.
   - **Offered saves:** `AGENTS.md` rule 9: when the user corrects the AI during a flow command, it offers once to save it, and saves only after a clear yes.
+  - **Clearing** (user, 2026-10-16): `/flow-memory clear` (everything) or `/flow-memory clear <repo>`: the AI shows what would be removed (`memory.sh clear-preview`), asks "Remove these N entries? This can't be undone.", and only after a yes runs `memory.sh clear <all|repo> confirmed` (without `confirmed` the script refuses). The files are deleted; an empty memory is normal.
   - **Hand edits allowed:** lines that aren't in the format are shown as ⚠️ (in the memory step, `/flow-memory` and `flow-doctor`) and ignored.
   - **`flow-doctor`:** one ✅ line with the entry count, or "none yet (that's normal)"; ⚠️ only for lines in the wrong format.
   - **The memory step never fails** (fixed 2026-10-16, after the user's first `/flow-memory` stopped with "Shell command failed"): the script read the memory files with a loop that broke on the space in the folder name (`AI Pipeline`) and ended with an error, and Claude Code stops the whole command when this step fails. Now the files are read safely, and `memory.sh for …` always ends without an error: any problem is shown as a ⚠️ line and the command goes on.
@@ -894,10 +895,10 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d57"></a>
 ### D57 — Every script the flow commands run is pre-approved, in Claude Code and in Codex
 - **Date:** 2026-10-16
-- **Status:** Accepted. Changes [D49](#d49).
+- **Status:** Accepted. Changes [D49](#d49). **Extended 2026-10-17:** `card-check.sh`, the `local/cards/` card files and the read-only Jira tools (see the decision).
 - **Context:** [D49](#d49) pre-approved only the safe parts of our scripts in Claude Code (not the git name/email change), and Codex's way wasn't checked. The user: "all the scripts written in the commands should run automatically without user permission".
 - **Decision:**
-  - **Claude Code:** `.claude/settings.json` allows every action of each script the commands use: `Bash(bash scripts/<script>.sh *)` for `configure-user.sh`, `configure-repo.sh`, `setup-repo.sh`, `memory.sh`, `doctor.sh`, `vpn.sh`, `wait-seconds.sh`, `branch-name.sh` (the rule also matches the script with no arguments), plus writing files in `config/repos/`.
+  - **Claude Code:** `.claude/settings.json` allows every action of each script the commands use: `Bash(bash scripts/<script>.sh *)` for `configure-user.sh`, `configure-repo.sh`, `setup-repo.sh`, `memory.sh`, `doctor.sh`, `vpn.sh`, `wait-seconds.sh`, `branch-name.sh`, `card-check.sh` (added 2026-10-17, F7) (the rule also matches the script with no arguments), plus writing files in `config/repos/` and, for `flow-check-card`, the card files in `local/cards/`. **Added 2026-10-17** (user: the scripts must never ask for permission each time): the **read-only Jira tools** the commands use through Claude's Atlassian connector: `mcp__claude_ai_Atlassian_MCP__getAccessibleAtlassianResources`, `…atlassianUserInfo`, `…searchJiraIssuesUsingJql`, `…getJiraIssue`. Until then only the search tool was allowed, and only in the user's personal settings, so the account lookup (`flow-configure-user`) and any issue read asked in every session. Tools that change Jira (transition, edit, create, comment) are **not** pre-approved; Phase 1 decides those when it's built. The names follow the claude.ai connector ("claude.ai Atlassian MCP"); someone who connects Atlassian another way gets the prompts.
   - **Codex:** a committed rules file, `.codex/rules/closio-agent.rules`, with one `prefix_rule(pattern = ["bash", "scripts/<script>.sh"], decision = "allow")` per script. Codex's rules are experimental; they load only when Codex trusts this folder (it does on the first Mac), and an allowed command runs outside Codex's sandbox. Checked with `codex execpolicy check`: our scripts → allow, anything else → no rule (Codex asks as usual).
   - The commands still run the scripts exactly as written (`bash scripts/…`, no `cd`, nothing joined with `&&`), or the rules don't match.
 - **Why:** User decision. No interruptions for our own scripts in either tool.
@@ -905,3 +906,60 @@ Every decision taken while building the agent, including the options we rejected
   - Keeping the git name/email change behind a prompt (the [D49](#d49) choice).
   - Auto mode / a looser Codex approval policy for everything: it would also approve commands that aren't ours.
 
+
+<a id="d58"></a>
+### D58 — Jira card template (F7): a template doc, two example cards, a structure checker and a `flow-check-card` command
+- **Date:** 2026-10-17
+- **Status:** Accepted (the user's answers to the F7 draft and to the final draft, both 2026-10-17). **Built 2026-10-17** after the user's yes; my tests passed (see "Built" below); **the user's tests are pending**.
+- **Context:** Phase 1 checks each card against a template ([architecture.md](architecture.md#phase-1--pick-up-the-card-flow-start-card-key)). On 2026-10-17 the user pasted the card rules collected from their past chats (`build-memory/jira-card-rules-input.md`): the sections, the AC and QA rules, the code-alignment rules and two full example cards (SCRUM-559, SCRUM-567). Cards are written by people, and later by a separate pipeline; **closio-agent never creates cards**.
+- **Decision:**
+  - **Purpose (user):** closio-agent knows what a card looks like, so the development phases work in the right format, and it checks that a picked-up card follows the template with little deviation. The template and the examples are stored in the team docs.
+  - **`docs/jira-card-template.md`** is the single place for the card rules: the skeleton (sections in order), the rules for each section, the drafting process, the Jira fields and the ready checklist. **`docs/jira-card-examples.md`** holds SCRUM-559 and SCRUM-567 in full.
+  - **Required sections:** `## Context`, `## How QA can test this`, `## Acceptance Criteria` (every AC as `**AC 1 — Title**` with Given / When / Then). **Optional:** `## Scope`, `### Dev notes`, `### Data cleanup`, `## Error responses`, the `**Error reference**` table, `## Out of Scope` (stays optional: confirmed by the user, 2026-10-17).
+  - **Out of scope** goes in one `## Out of Scope` section and nowhere else in the ticket (no `**Not in scope:**` lines inside Context).
+  - **Context formatting:** bold labels (`**Current gap:**`, `**What changes:**`, `**Why:**`…) and `###` sub-headings may both be there; the agent reads what's present. No check.
+  - **Title:** no rule and no check.
+  - **Story vs Task:** no rule; the same template for both.
+  - **Bug cards:** no fixed shape (on the board they are screenshots plus a line or two). The dev explains the gaps when the card is picked up. The same goes for a gap in any other card.
+  - **Spike:** not picked up; `flow-start` refuses it with a message. **Subtask:** picked up (same format, or the dev explains).
+  - **Jira fields:** the agent sets only the status and the assignee ([D11](#d11), Phase 1). Labels, story points, sprint, epic and priority stay with people.
+  - **Error codes:** the `**Error reference**` table stays optional in the card, because the code is the source of truth for error codes, statuses and messages ([D59](#d59), rule A16).
+  - **`scripts/card-check.sh`:** a structure check a script can do reliably on a card's text. ❌ = not ready, ⚠️ = worth a look. Pre-approved like every other script ([D57](#d57)).
+
+    | ❌ not ready | ⚠️ worth a look |
+    |---|---|
+    | `## Context`, `## How QA can test this` or `## Acceptance Criteria` missing | a QA step without "Expect" |
+    | no ACs; an AC heading not `**AC 1 — Title**`; AC numbers not 1, 2, 3… | deploy, migrate or restart steps in the QA section |
+    | an AC without Given, When and Then | "test after SCRUM-… lands"-style wording |
+    | an "Assumption:" line, `⟦…⟧`, TODO or TBD | a literal `\n` in the text |
+    | a "Files changed" or "AC self-check" table | out-of-scope lines outside `## Out of Scope` (e.g. `**Not in scope:**` inside Context) |
+    | QA section with no numbered steps; anything that looks like a secret | |
+
+    `<SP_ID>`-style placeholders in the QA steps are fine. What a script can't judge (alignment with the code, the WS1 rules, ACs staying in scope, real boundary values, every AC covered by a QA step) is left to the AI in Phase 2.
+  - **Command `flow-check-card <CARD-KEY or file>`** (user, 2026-10-17: "create one command for someone to test the card against the template"; their first answer the same day was no command): the AI reads the card from Jira (Claude Code: the Atlassian connector; Codex: the Atlassian app), saves its text to the private `local/cards/<CARD-KEY>.md`, runs `bash scripts/card-check.sh` on it and shows the result with the fix for each line (rule A11). It also names the issue type: a Spike isn't picked up by the agent; for a Bug, missing sections are fine (the dev explains them at pick-up). A path to a `.md` file works too, for a card that isn't in Jira yet. Its memory step uses the phase `pick-up`. Phase 1 (`flow-start`) runs the same check when it's built.
+  - **Gaps at pick-up** (confirmed by the user, 2026-10-17): on ❌ the agent doesn't go on by itself: it lists the gaps, and the dev fixes the card or explains in chat; the explanation is saved with the card in its run folder, then the pick-up goes on.
+  - The user's personal `~/.claude/CLAUDE.md` and project memories are **not** changed for this (user, 2026-10-17).
+- **Why:** User decisions.
+- **Rejected options:**
+  - No command at all (the user's first answer on 2026-10-17): replaced the same day by `flow-check-card`, so card writers can test a card before it's picked up.
+  - The template doc only, without the checker: the user wants the deviation from the template checked.
+  - A title format rule with a ⚠️ check (suggested by Claude): not required.
+  - Required sections for Bug cards: the dev explains the gaps instead.
+  - Refusing Subtasks like Spikes: Subtasks are picked up.
+  - Short out-of-scope notes inside Context: one `## Out of Scope` section only.
+  - A pointer to the template in the user's personal `CLAUDE.md` (suggested by Claude): nothing there changes for now.
+- **Built (F7, 2026-10-17):** `docs/jira-card-template.md`, `docs/jira-card-examples.md` (Example A also got its `**Not in scope:**` line moved into a `## Out of Scope` section, to match this decision; the dev note from the same line stays in Context), `scripts/card-check.sh` and the `flow-check-card` command (+ its Codex policy file and Claude Code link). The script runs in the Mac's own bash 3.2, reads the file once and never prints a line it takes for a secret. Its secret patterns are the ones of `scripts/memory.sh` plus a `key: value` form; the long-run pattern is letters and digits only, because constant names (`SLAB_NOT_ALLOWED_FOR_DEDUCTION_COMPONENT`) and API paths are normal in a card (the first version flagged them). Tests: both example cards → 0 ❌ and 2 ⚠️ each (the SQL revert steps and one check step have no "Expect"); one broken card per ❌ and ⚠️ line, all caught; a value in `<angle brackets>` is not taken for a secret; empty file, missing file and no argument → the right message and exit code; a path with a space works. Pre-approved: `Bash(bash scripts/card-check.sh *)` plus `Write`/`Edit` of `local/cards/**` in `.claude/settings.json`, and a Codex prefix rule ([D57](#d57); `codex execpolicy check` → allow). `flow-doctor`'s link check sees the new command. The command's memory step uses the phase `pick-up` ([D56](#d56)). Hardened the same day (user: no permission prompts, ever): the card file is written with the file-writing tool, never with `mkdir`, and the read-only Jira tools are pre-approved too ([D57](#d57)).
+
+<a id="d59"></a>
+### D59 — Error codes, statuses and messages always come from the code (rule A16)
+- **Date:** 2026-10-17
+- **Status:** Accepted (a hard rule from the user, 2026-10-17). Written into `AGENTS.md` (rule 10). Applied by Phases 2 and 3 once they're built; the card checker ([D58](#d58)) can't check it.
+- **Context:** The F7 draft asked whether the card's `**Error reference**` table should be required. The user's answer: the table stays optional, because before developing, the agent must look at the error codes that exist in the code anyway. In their words: "if not present then the development card should first check the existing error codes available and then should start developing. That should be a hard rule. If the error codes are present, then also it should first check whether these codes are available in the code or they are differing from what is present. The exact errors are used for the right conditions."
+- **Decision (rule A16):** before developing a card (the plan in Phase 2, the code in Phase 3), in every repo the card touches:
+  1. **No error reference in the card:** the agent first reads the error codes, HTTP statuses, messages and error-body shapes that already exist in the code (constants, utils, controllers, middlewares, the WS1 locale files) and uses those.
+  2. **The card lists error codes:** the agent checks each one against the code: does it exist, and do its status, message and details match? Any difference is pointed out to the user before development, and **the code's exact errors and messages are used for the right conditions**.
+  3. **Nothing new is invented:** no new error code, status, message, field or constant unless the user approves it as new.
+- **Why:** User decision ("that should be a hard rule"). It matches the code-alignment rules the user already follows for cards (`build-memory/jira-card-rules-input.md`, section 7).
+- **Rejected options:**
+  - Taking the card's error table as the truth: cards and code can disagree; the code wins.
+  - Making the `**Error reference**` table required in every card: not needed once the agent always checks the code.

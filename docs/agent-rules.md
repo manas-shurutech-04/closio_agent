@@ -3,12 +3,12 @@
 Every rule closio-agent follows when it runs, in one place. **Every rule is strict.** Each one links to the decision that explains why, and says where it's applied today.
 
 - **Git rules (G1–G4):** how the agent uses git.
-- **Behaviour rules (A1–A15):** everything else.
+- **Behaviour rules (A1–A16):** everything else.
 - **`AGENTS.md` column:** the rules the AI must follow in every session are also written in [`AGENTS.md`](../AGENTS.md), which Claude Code and Codex read at the start of every session ([D45](design-decisions.md#d45)). The number is the rule's number there.
 - **Your user memory never overrides these rules** (A8). If one of your memory entries disagrees with a rule, the agent tells you and follows the rule.
 - The rules for **building** closio-agent (R1–R16) are a different list, in [build-memory/rules.md](../build-memory/rules.md).
 
-> Status (2026-10-16): the setup commands are built (incl. `flow-setup-repo`); the card phases (1–9) aren't yet. "Not built yet" below means the rule is decided and will be applied by that phase.
+> Status (2026-10-17): the setup commands are built (incl. `flow-setup-repo`, `flow-memory` and `flow-check-card`); the card phases (1–9) aren't yet. "Not built yet" below means the rule is decided and will be applied by that phase.
 
 ## Git rules
 
@@ -38,6 +38,7 @@ Every rule closio-agent follows when it runs, in one place. **Every rule is stri
 | A13 | Each code repo runs on **the Node version it's built for** (`node_version` in `config/repos/<repo>.yaml`, from its Dockerfile). Before running anything in a repo: `nvm use <version>`, and `nvm install <version>` first if it's missing. | [D52](design-decisions.md#d52) | 6 | `flow-setup-repo` switches to that version before running anything in a repo, and installs it with nvm if missing; `flow-doctor` and `flow-configure-repo` warn when it isn't installed |
 | A14 | **Cloning a repo is always manual.** The agent never clones; it gives you the `git clone` command. | [D53](design-decisions.md#d53) | 7 | `flow-doctor`, `flow-configure-repo` and `flow-setup-repo` give the clone command when a repo isn't on your Mac |
 | A15 | **Ask for folder access first.** Before working in a code repo, check that this session can use its folder. If it can't, stop and ask the user to give access, with the exact way (Claude Code: `/add-dir <folder>` or a new session; Codex: restart with `codex --add-dir <folder>` or approve its request), and go on only after they have. | [D55](design-decisions.md#d55) | 8 | `flow-setup-repo` checks it for every repo it sets up. The card phases will check it before touching a repo |
+| A16 | **Error codes, HTTP statuses and messages always come from the code.** Before developing a card, read the ones that already exist in every repo it touches. If the card lists error codes, check each one against the code and point out every difference; use the code's exact errors and messages for the right conditions. Never invent a new one without the user's approval. | [D59](design-decisions.md#d59) | 10 | Not built yet: Phases 2 and 3. The card checker ([D58](design-decisions.md#d58)) can't check this; it stays with the AI |
 
 ## When a rule changes
 
