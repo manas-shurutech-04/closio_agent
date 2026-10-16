@@ -6,12 +6,16 @@ disable-model-invocation: true
 
 # flow-configure-repo
 
-The only way to add a repo to closio-agent (D35). Usage:
+The only way to add a repo to closio-agent (D35).
+
+## Usage
+
 - `/flow-configure-repo`: list the registered repos and their status on this Mac.
 - `/flow-configure-repo <repo-name>`: set up a registered repo on this Mac (local path, dev keys).
 - `/flow-configure-repo <full path of a local clone>`: register a new repo for the whole team.
 - `/flow-configure-repo <repo-name> key <name>`: add or replace one dev key (e.g. `db-password`, or an extra key).
 - `/flow-configure-repo <repo-name> path <full path | not-cloned>`: change where the repo is on this Mac (e.g. after moving the clone).
+- Codex: `$flow-configure-repo …` (approve the key steps outside the sandbox).
 
 In Codex: the key steps open macOS dialogs and write to the Keychain. Ask the user to approve running those commands outside the sandbox.
 

@@ -8,6 +8,15 @@ disable-model-invocation: true
 
 Connects, checks or disconnects the Japfa VPN. The VPN stays on until the user disconnects it.
 
+## Usage
+
+- `/flow-vpn connect`: connect (one macOS password dialog, then the SSO login in your browser if it asks). Does nothing if GitLab already answers.
+- `/flow-vpn status`: on (and through which client), off, or a problem with its fix. Only reads.
+- `/flow-vpn disconnect`: disconnect (one password dialog) and remove the VPN DNS file.
+- Codex: `$flow-vpn connect | status | disconnect` (approve running it outside the sandbox).
+
+## Steps
+
 1. **User memory (rule A7), never skipped:** your memory entries for this command are loaded here automatically:
 
    !`bash scripts/memory.sh for setup all`

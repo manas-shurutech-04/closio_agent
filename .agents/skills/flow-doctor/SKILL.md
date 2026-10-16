@@ -10,6 +10,13 @@ Checks the user's setup and shows how to fix each problem. It only reads; it nev
 
 Symbols: ✅ fine, ⚠️ worth a look (doesn't fail), ❌ must fix. Every ⚠️ and ❌ comes with the steps to fix it (rule A11).
 
+## Usage
+
+- `/flow-doctor`: check this Mac's setup (project, tools, VPN and GitLab, personal settings, user memory, commands documented, repos, repo setup, Keychain names, Jira) and show how to fix each problem.
+- Codex: `$flow-doctor` (approve running it with network access, so the GitLab checks can run).
+
+## Steps
+
 1. **User memory (rule A7), never skipped:** your memory entries for this command are loaded here automatically:
 
    !`bash scripts/memory.sh for setup all`

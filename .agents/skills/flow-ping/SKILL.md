@@ -8,6 +8,14 @@ disable-model-invocation: true
 
 Answers one question: are the flow commands loaded in this tool? It changes nothing; the only thing it runs is the memory step (step 1).
 
+## Usage
+
+- `/flow-ping`: are the flow commands loaded in this tool?
+- `/flow-ping <any text>`: the same; the text is only echoed back, to show that typed text reaches the command.
+- Codex: `$flow-ping …`
+
+## Steps
+
 1. **User memory (rule A7), never skipped:** your memory entries for this command are loaded here automatically:
 
    !`bash scripts/memory.sh for setup all`

@@ -12,6 +12,12 @@ Item names: `jira-account-id`, `gitlab-username`, `workspace-dir`, `ai-tools`, `
 
 In Codex: the secret steps open macOS dialogs and write to the Keychain, and the GitLab check needs the network. Ask the user to approve running those commands outside the sandbox.
 
+## Usage
+
+- `/flow-configure-user`: set up everything that's still missing (personal settings, git name and email, the 5 secrets).
+- `/flow-configure-user <item>`: just one item, e.g. `/flow-configure-user gitlab-token` after renewing your token. Items: `jira-account-id`, `gitlab-username`, `workspace-dir`, `ai-tools`, `vpn-username`, `git-name`, `git-email`, `gitlab-token`, `fe-login-id`, `fe-login-password`, `ws1-login-userid`, `ws1-login-password`.
+- Codex: `$flow-configure-user …` (approve the secret steps outside the sandbox).
+
 ## Steps
 
 1. **User memory (rule A7), never skipped:** your memory entries for this command are loaded here automatically:

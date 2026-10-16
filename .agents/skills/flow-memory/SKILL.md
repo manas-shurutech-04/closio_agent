@@ -6,7 +6,10 @@ disable-model-invocation: true
 
 # flow-memory
 
-Your user memory (F6b, D40, D56): short entries the agent follows in every flow command (rule A7). It's private: it lives in `local/memory/` on this Mac and is never pushed. Team rules always win over it (rule A8). It starts empty and is created with the first entry; having none is normal. Usage:
+Your user memory (F6b, D40, D56): short entries the agent follows in every flow command (rule A7). It's private: it lives in `local/memory/` on this Mac and is never pushed. Team rules always win over it (rule A8). It starts empty and is created with the first entry; having none is normal.
+
+## Usage
+
 - `/flow-memory`: list all your entries.
 - `/flow-memory add <text>`: add one that applies everywhere.
 - `/flow-memory add <repo> <text>`: add one for one repo only (e.g. `nodejs-ws2closio`).
@@ -15,6 +18,7 @@ Your user memory (F6b, D40, D56): short entries the agent follows in every flow 
 - `/flow-memory remove <id>`: remove an entry.
 - `/flow-memory clear`: remove all your entries (it shows them and asks first).
 - `/flow-memory clear <repo>`: remove only that repo's entries.
+- Codex: `$flow-memory …`
 
 ## Steps
 

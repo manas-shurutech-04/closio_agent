@@ -6,12 +6,16 @@ disable-model-invocation: true
 
 # flow-setup-repo
 
-Gets a registered repo ready to work on, on this Mac (F6, D54). Usage:
+Gets a registered repo ready to work on, on this Mac (F6, D54).
+
+## Usage
+
 - `/flow-setup-repo`: each repo's setup state on this Mac.
 - `/flow-setup-repo <repo-name>`: set up one repo.
 - `/flow-setup-repo all`: set up every repo cloned on this Mac, one after another.
 - `/flow-setup-repo <repo-name|all> install`: the same, but always reinstall the packages.
 - `/flow-setup-repo <repo-name|all> services`: the same, but choose Homebrew or Docker again for Redis and RabbitMQ.
+- Codex: `$flow-setup-repo …` (approve running it outside the sandbox).
 
 It works only on clones the user made (cloning is manual, D53). It never switches branches, pulls, stashes or changes tracked files: the card phases do that. It needs no VPN.
 

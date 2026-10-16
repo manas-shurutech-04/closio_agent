@@ -6,9 +6,13 @@ disable-model-invocation: true
 
 # flow-check-card
 
-Checks one card against the Jira card template (`docs/jira-card-template.md`, F7, D58): the required sections, the AC format, the QA steps, placeholders, forbidden tables, secrets. ❌ = not ready (the agent's pick-up would stop here and wait), ⚠️ = worth a look. It only reads; it never changes the card in Jira. Usage:
+Checks one card against the Jira card template (`docs/jira-card-template.md`, F7, D58): the required sections, the AC format, the QA steps, placeholders, forbidden tables, secrets. ❌ = not ready (the agent's pick-up would stop here and wait), ⚠️ = worth a look. It only reads; it never changes the card in Jira.
+
+## Usage
+
 - `/flow-check-card SCRUM-567`: the card from Jira.
 - `/flow-check-card local/cards/my-draft.md`: a card that isn't in Jira yet (any `.md` file with the card's text).
+- Codex: `$flow-check-card …`
 
 ## Steps
 
