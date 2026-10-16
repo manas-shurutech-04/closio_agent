@@ -39,7 +39,7 @@ These are the rules for the **agent** (closio-agent when it runs). The team copy
 - A2: Any GitLab operation (pull, fetch, push, MR) connects to the VPN **automatically** if it isn't connected. The user never connects manually. They only type the `sudo` password, plus the SSO login if the browser session has expired.
 - A3: The agent never moves a card to **Blocked**. That status is for QA only.
 - A4: Every command must run in **both Claude Code and Codex**, and **explicit command invocation is mandatory** in both.
-- A5: At the **start of each phase that needs it**, a **custom agent (subagent)** runs the commands to connect the **VPN**, then checks GitLab is reachable (the GitLab MCP check was removed by D32) (user, clarified 2026-10-09). **Manual intervention is acceptable** where needed (e.g. password, SSO login, MCP reconnect); push and similar commands also need manual intervention. Runs at the start of Phases 1–9 and in setup-repo; Mac password via a macOS dialog. See D30 (GitLab MCP check removed by D32).
+- A5: At the **start of each phase that needs it**, a **custom agent (subagent)** runs the commands to connect the **VPN**, then checks GitLab is reachable (the GitLab MCP check was removed by D32) (user, clarified 2026-10-09). **Manual intervention is acceptable** where needed (e.g. password, SSO login, MCP reconnect); push and similar commands also need manual intervention. Runs at the start of Phases 1–9 (no longer in `flow-setup-repo`, which needs no VPN: user, 2026-10-15, D54); Mac password via a macOS dialog. See D30 (GitLab MCP check removed by D32).
 - A6: Scripts and apps load `.env` themselves; **the AI never reads or prints `.env` values in the conversation** (user: "hold onto this rule for now", 2026-10-09, read as adopted provisionally; to be confirmed and revisited).
 - A7: **Every time any closio-agent command runs, the current user's memory (user-specific runtime context memory, D40) must be loaded and taken into account. If it's present, the agent's actions depend on it.** (user, 2026-10-10)
 - A8: **Team rules always take priority over user memory.** On conflict, the agent points it out and follows the team rule. (user, 2026-10-10)
@@ -49,6 +49,7 @@ These are the rules for the **agent** (closio-agent when it runs). The team copy
 - A12: **Branch names strictly follow `SCRUM-<number>/<short-description>`** (lowercase words joined by `-`, only a-z/0-9, **at most 5 words**, same name in every repo of a card). Stored as a rule (user, 2026-10-14): `AGENTS.md` rule 5, D50, `scripts/branch-name.sh`.
 - A13: **Each code repo runs on the Node version it is built for** (`node_version` from its Dockerfile, in `config/repos/<repo>.yaml`); before running anything in a repo, `nvm use <version>`, and `nvm install <version>` if nvm doesn't have it (user, 2026-10-14; first written the same day as "all repos on Node 22"). closio-agent, Claude Code and Codex stay on 22 (A9). `AGENTS.md` rule 6, D52.
 - A14: **Cloning a repo is always manual** (user, 2026-10-14). The agent never clones; it gives the `git clone` command. `AGENTS.md` rule 7, D53.
+- A15: **Ask for folder access first** (user, 2026-10-16: "if the access is not there for the folders then you need to ask the user about the access and then move forward"). Before working in a code repo, check that the session can use its folder; if not, stop, ask the user to give access (with the exact way), and go on only after they have. `AGENTS.md` rule 8, D55.
 
 ## Rough Steps (user's original list, 2026-10-09)
 
@@ -122,7 +123,7 @@ These are the rules for the **agent** (closio-agent when it runs). The team copy
 | `docs/setup-guide.md` | Access, installation, configuration, first run | Setup changes (created 2026-10-09 with the VPN section) |
 | `docs/commands.md` | Every agent command | A command is added or changed (created 2026-10-10 with `flow-ping`, `flow-doctor`) |
 | `docs/architecture.md` | How the stages connect, inputs and outputs | Stages change (created 2026-10-09) |
-| `docs/agent-rules.md` | Every agent rule (G1–G4, A1–A14): decision, `AGENTS.md` number, where it's applied today | A rule is added or changed, or a command starts applying one (created 2026-10-15) |
+| `docs/agent-rules.md` | Every agent rule (G1–G4, A1–A15): decision, `AGENTS.md` number, where it's applied today | A rule is added or changed, or a command starts applying one (created 2026-10-15) |
 | `docs/changelog.md` | Dated changes to the agent | Every change to the agent (created 2026-10-10) |
 | `README.md` (top level) | Entry point for the repo: status, start here, folder table, commands so far | Any command, folder or status change |
 | `AGENTS.md` | Rules both AI tools read every session | A rule for the agent is added or changed |
@@ -147,15 +148,23 @@ More docs may be added as the user specifies.
 | F2 | Rest of `flow-doctor` (tools, Codex service, VPN state, GitLab + token, Keychain names, Jira via the AI); shared settings file (D46) | **Built 2026-10-10, tested by the user 2026-10-11** in Claude Code and Codex (only the 5 Keychain items missing, as expected). One Codex-sandbox fix. **F2 complete** |
 | F3 | Connectivity script + agent (D30): `scripts/vpn.sh` (connect/status/disconnect, one password dialog), `flow-connectivity` agent for both tools, `flow-vpn` command | **Built and tested 2026-10-11** (all 12 live tests passed in Claude Code and Codex). **F3 complete** |
 | F4 | `flow-configure-user`: personal settings in `local/user-settings.sh` + 5 Keychain secrets via heads-up + hidden macOS dialogs; doctor check; agent limits (D47) | **Built 2026-10-12; user tests passed 2026-10-13** (plus D49 fewer prompts, Jira wait-and-retry). **F4 complete** |
-| F5 | `flow-configure-repo` (shared registry `config/repos/<repo>.yaml` + personal `local/repos/<repo>.yaml`, auto-detect then confirm, per-repo dev WS2 keys, doctor checks) | **Built 2026-10-14.** My tests passed; **7 repos registered** (`config/repos/`, local paths set on this Mac). **Committed and pushed 2026-10-15** (atomic commits, with its docs). Next: user confirms the files and runs live tests (dev keys) |
-| F6 | `flow-setup-repo` (VPN; on a clone the user already made: install under the repo's own Node version, `nvm install` if missing (A13, D52), local Redis/RabbitMQ/BullMQ, run tests; how repos are added as extra folders, D42). **No cloning** (D53) | Next, after F5 tests |
+| F5 | `flow-configure-repo` (shared registry `config/repos/<repo>.yaml` + personal `local/repos/<repo>.yaml`, auto-detect then confirm, per-repo dev WS2 keys, doctor checks) | **Built 2026-10-14.** My tests passed; **7 repos registered** (`config/repos/`, local paths set on this Mac). **Committed and pushed 2026-10-15** (atomic commits, with its docs). User tests passed 2026-10-15. **F5 complete** |
+| F6 | `flow-setup-repo` (on a clone the user already made: Node switch + `nvm install` (A13, D52), install only when needed, local Redis/RabbitMQ from Homebrew or Docker, `.env` points-to-this-Mac check, tests once, folder access for Claude Code + Codex start command, `all` option; **no VPN step, no cloning**; D54) | **Built 2026-10-16** after the user's yes (D54). My tests passed (pretend Homebrew/Docker states, temp repos, real `npm ci` on a throwaway copy of ws2jauth). **User tests passed 2026-10-16. F6 complete** |
 | F7 | Jira card template | — |
 | F8 | Docs (setup guide on commands, `commands.md`, `changelog.md`) | — |
 | F9 | Completely-new-user test (separate macOS account) | — |
-| F6b | User memory **mechanism** (D40, rules A7/A8): dedicated `memory` command, loading in every command, created on first entry. The **content** starts empty and grows over time (may not exist at the first card) | Design approved; **position after F6 confirmed by user 2026-10-10** |
+| F6b | User memory **mechanism** (D40, rules A7/A8): dedicated `memory` command, loading in every command, created on first entry. The **content** starts empty and grows over time (may not exist at the first card) | Design approved (D40); **draft presented 2026-10-16**, waiting on approval |
 
 ## Answers (user, 2026-10-10)
 
+- After F6 (user, 2026-10-16): yes to checking `.env` names against `.env.example` (built); new rule A15 (ask for folder access when it's missing); "first fix these then we will come to the drafts" (F6b draft waits).
+- F6 result (user, 2026-10-16): "all the commands are working we can move to the step F6b".
+- F6 first test (user, 2026-10-16, screenshot): `/flow-setup-repo ws2jauth` stopped at Claude Code's approval prompt; "can you please dont ask the user permission here" → `setup-repo.sh run *` pre-approved (D49, D54).
+- F6 approval (user, 2026-10-16): "Yes, build F6 with the .env help steps, opening the .env file in my editor, and quitting Docker again when it was only started to look."
+- F6 request (user, 2026-10-16): on the `.env` check, "Can we also have steps which can help assisting the user to setup things here" → drafted step-by-step help (file to open, lines to set, check again), recorded in D54.
+- F6 answers 2 (user, 2026-10-16): setup leaves branches to the card phases (option a); Redis/RabbitMQ: start a stopped copy only if the user goes with it, check both Homebrew and Docker before proceeding, stop the other copy without user intervention, none → suggest Docker ("sure").
+- F6 draft answers (user, 2026-10-15): on "setup never switches branches, pulls, stashes or changes tracked files": "i will need the agent to perform all these things" (asked whether setup should do them or the later phases, as planned); local services: look for both Homebrew and Docker copies, one → use it and say so, none → suggest one, both → ask which; dev server versions unknown; folder access (a), install when needed (a), tests once (a), web repo file fix yes (done), `.env` check yes (user changes values themselves), pre-approve status only, `all` yes, drop the VPN step yes (D30/A5 amended). Recorded as D54.
+- F5 result (user, 2026-10-15): "F5 results are fine"; asked for the F6 draft.
 - Agent rules doc (user, 2026-10-15): yes to `docs/agent-rules.md` (all agent rules in one table, linked to their decisions); "keep the documents updated with each command" (added to R15). Then: "point me to the right files only" → yes to making it rule R16.
 - `local/` approach for local repo paths: **approved** (D39).
 - Git remote: **pushed 2026-10-11** to the private GitHub repo `https://github.com/manas-shurutech-04/closio_agent.git` (user). Clone with `... closio-agent` as the folder name.

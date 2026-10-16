@@ -12,12 +12,11 @@
 - **New-user test (F9):** user agreed to a separate macOS account and asked how big the setup is. Explained 2026-10-09 (incl. the Homebrew multi-user caveat).
 - **Jira in Codex:** works through the Atlassian app on the user's ChatGPT account (verified 2026-10-11). Still to write up: how a new user connects that app in ChatGPT (exact steps). The `codex mcp add` way is untested.
 - **Not yet seen:** doctor's ✅ for a stored Keychain item and a real GitLab token check (no items stored yet).
-- **F5 live tests + confirm the 7 registry files (user):** review `config/repos/*.yaml`; `/flow-configure-repo` list; `/flow-configure-repo <ws2 repo>` for dev keys; register flow with a decline at the confirm step; `/flow-doctor`. Open: dev DB details (later). MR labels/reviewers: optional defaults, finalised at MR creation (decided). The answer "okayy" to dev DB details was read as "add later".
+- **Dev database details in the repo files:** `dev_db_host`/`port`/`name`/`schema` are empty in `config/repos/`. The answer "okayy" (2026-10-14) was read as "add later".
+- **F6b draft (2026-10-16), waiting on the user:** user memory command and loading (D40); questions in the draft.
 - **Codex pre-approval:** not checked yet whether Codex can pre-approve our scripts like Claude Code (D49).
 - **Watch:** Codex's updater process still runs with Node v18; if Codex falls back to v18 after an update, restart the service again (fallback: `nvm alias default 22`). How to restart the updater itself is not checked yet (documented as such in the setup guide).
 - **Backend allow list (security):** `japfa/backend/.claude/settings.local.json` allows `echo $GITLAB_TOKEN` / `echo $GITLAB_PRIVATE_TOKEN` without asking. Suggested removing them; user's call.
-- **Desktop app + Node v22 (D41, A13):** the desktop app doesn't start from a terminal. `flow-doctor` shows a wrong Node; when the agent runs anything in a code repo it must switch to Node 22 itself (rule A13). Build the switch with F6.
-- **Adding code repos as extra folders (D42):** launch option (`--add-dir`) vs a saved setting, for both tools. Decide and build with F6 (the start-folder check itself is built).
 - **Split cards:** skipped for now (user, 2026-10-09). Come back to it later.
 
 ## Resolved
@@ -64,4 +63,10 @@
 - `flow-configure-repo <repo> path <new path>`: approved and built (2026-10-14).
 - Repos on another Node version: each repo runs on its own version, installed with nvm if missing (D52, 2026-10-14).
 - Cloning: always manual; no registering from a GitLab address with an automatic clone (D53, 2026-10-14).
+- F5 live tests and the 7 registry files: passed / confirmed by the user (2026-10-15). F5 complete.
 - One team doc for all agent rules: `docs/agent-rules.md`, approved and added (D5, 2026-10-15).
+- F6 draft questions answered (2026-10-15): D54. Also settles: desktop app + Node (the setup script switches Node itself) and how code repos are added as extra folders (D42).
+- F6 two points (2026-10-16): setup leaves branches to the card phases; Redis/RabbitMQ details settled (D54).
+- F6 final draft approved and built (2026-10-16, D54).
+- F6 live tests: passed (user, 2026-10-16: "all the commands are working"). The desktop app reads full paths from `additionalDirectories` (seen 2026-10-16). Not confirmed separately: the Docker path and a missing Node version.
+- `.env` names vs `.env.example` in `flow-setup-repo`: approved and built (2026-10-16, D54).
