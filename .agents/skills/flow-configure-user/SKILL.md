@@ -14,7 +14,11 @@ In Codex: the secret steps open macOS dialogs and write to the Keychain, and the
 
 ## Steps
 
-1. **User memory (rule A7):** if `local/memory/general.md` exists, read it and apply any entry meant for this command. Team rules always win (rule A8). If the file doesn't exist, carry on; that's normal.
+1. **User memory (rule A7), never skipped:** your memory entries for this command are loaded here automatically:
+
+   !`bash scripts/memory.sh for setup all`
+
+   Apply what's above: the general entries, and repo entries only for the repo(s) this command works on. Say in one line which entries you used (e.g. "Using your memory: M2, M3"); say nothing if none apply. Team rules always win (rule A8): if an entry conflicts with one, say so and follow the team rule. **If the block above still shows the command instead of its output** (e.g. in Codex, which doesn't run it by itself), run `bash scripts/memory.sh for setup all` yourself first, before anything else.
 2. **Start folder (strict rule, D42):** tell the user in one line: "Always start Claude Code or Codex in the closio-agent folder, after `nvm use v22`." Then run `bash scripts/configure-user.sh check-folder`. If it fails, or the script isn't found, show the fix and **stop**.
 3. Run `bash scripts/configure-user.sh show` and show its output exactly.
 4. If the user typed an item name after the command (in Claude Code it may also appear as `ARGUMENTS: …`), do **only that item** (step 5), then go to step 6. Otherwise do every item shown with ❌, in this order:

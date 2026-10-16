@@ -8,7 +8,11 @@ disable-model-invocation: true
 
 Connects, checks or disconnects the Japfa VPN. The VPN stays on until the user disconnects it.
 
-1. **User memory (rule A7):** if `local/memory/general.md` exists, read it and apply any entry meant for this command. Team rules always win (rule A8). If the file doesn't exist, carry on; that's normal.
+1. **User memory (rule A7), never skipped:** your memory entries for this command are loaded here automatically:
+
+   !`bash scripts/memory.sh for setup all`
+
+   Apply what's above: the general entries, and repo entries only for the repo(s) this command works on. Say in one line which entries you used (e.g. "Using your memory: M2, M3"); say nothing if none apply. Team rules always win (rule A8): if an entry conflicts with one, say so and follow the team rule. **If the block above still shows the command instead of its output** (e.g. in Codex, which doesn't run it by itself), run `bash scripts/memory.sh for setup all` yourself first, before anything else.
 2. The word typed after the command is the action: `connect`, `status` or `disconnect`. In Claude Code it may also appear as `ARGUMENTS: …` at the end of these instructions. If it's missing or something else, show `Usage: /flow-vpn connect | status | disconnect` (Codex: `$flow-vpn …`) and stop.
 3. From the folder this session started in, run: `bash scripts/vpn.sh <action>`
    - For `connect` and `disconnect`, first tell the user in one line: "A macOS password dialog will appear. Type your Mac password there (for connect, then finish the SSO login in your browser if it asks)."

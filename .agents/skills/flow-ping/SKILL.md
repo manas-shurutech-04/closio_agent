@@ -6,10 +6,14 @@ disable-model-invocation: true
 
 # flow-ping
 
-Answers one question: are the flow commands loaded in this tool? It changes nothing and runs no commands.
+Answers one question: are the flow commands loaded in this tool? It changes nothing; the only thing it runs is the memory step (step 1).
 
-1. **User memory (rule A7):** if `local/memory/general.md` exists, read it and apply any entry meant for this command. Team rules always win (rule A8). If the file doesn't exist, carry on; that's normal.
-2. Reply with exactly these two lines and nothing else:
+1. **User memory (rule A7), never skipped:** your memory entries for this command are loaded here automatically:
+
+   !`bash scripts/memory.sh for setup all`
+
+   Apply what's above: the general entries, and repo entries only for the repo(s) this command works on. Say in one line which entries you used (e.g. "Using your memory: M2, M3"); say nothing if none apply. Team rules always win (rule A8): if an entry conflicts with one, say so and follow the team rule. **If the block above still shows the command instead of its output** (e.g. in Codex, which doesn't run it by itself), run `bash scripts/memory.sh for setup all` yourself first, before anything else.
+2. Reply with exactly these two lines (after the one memory line from step 1, if any entry applies) and nothing else:
 
 ```
 flow commands are loaded in <the tool you are running in: Claude Code or Codex>

@@ -17,7 +17,11 @@ It works only on clones the user made (cloning is manual, D53). It never switche
 
 ## Steps
 
-1. **User memory (rule A7):** if `local/memory/general.md` exists, read it and apply any entry meant for this command. Team rules always win (rule A8). If it doesn't exist, carry on; that's normal.
+1. **User memory (rule A7), never skipped:** your memory entries for this command are loaded here automatically:
+
+   !`bash scripts/memory.sh for setup all`
+
+   Apply what's above: the general entries, and repo entries only for the repo(s) this command works on. Say in one line which entries you used (e.g. "Using your memory: M2, M3"); say nothing if none apply. Team rules always win (rule A8): if an entry conflicts with one, say so and follow the team rule. **If the block above still shows the command instead of its output** (e.g. in Codex, which doesn't run it by itself), run `bash scripts/memory.sh for setup all` yourself first, before anything else.
 2. **Start folder (strict rule, D42):** run `bash scripts/setup-repo.sh check-folder`. If it fails, or the script isn't found, show the fix and **stop**.
 3. Read what the user typed after the command (in Claude Code it may also appear as `ARGUMENTS: …`):
    - **Nothing:** run `bash scripts/setup-repo.sh list`, show it, and ask which repo to set up (or `all`). Stop until they answer.

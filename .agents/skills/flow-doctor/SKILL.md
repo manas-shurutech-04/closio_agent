@@ -10,7 +10,11 @@ Checks the user's setup and shows how to fix each problem. It only reads; it nev
 
 Symbols: ✅ fine, ⚠️ worth a look (doesn't fail), ❌ must fix. Every ⚠️ and ❌ comes with the steps to fix it (rule A11).
 
-1. **User memory (rule A7):** if `local/memory/general.md` exists, read it and apply any entry meant for this command. Team rules always win (rule A8). If the file doesn't exist, carry on; that's normal.
+1. **User memory (rule A7), never skipped:** your memory entries for this command are loaded here automatically:
+
+   !`bash scripts/memory.sh for setup all`
+
+   Apply what's above: the general entries, and repo entries only for the repo(s) this command works on. Say in one line which entries you used (e.g. "Using your memory: M2, M3"); say nothing if none apply. Team rules always win (rule A8): if an entry conflicts with one, say so and follow the team rule. **If the block above still shows the command instead of its output** (e.g. in Codex, which doesn't run it by itself), run `bash scripts/memory.sh for setup all` yourself first, before anything else.
 2. From the folder this session started in, run: `bash scripts/doctor.sh`
    - In Codex, ask the user to approve running it with network access, so the GitLab checks can run.
 3. If `scripts/doctor.sh` isn't found, this session wasn't started in the closio-agent folder. Tell the user: "Quit, open a terminal in the closio-agent folder, run `nvm use v22`, then start Claude Code or Codex again." Stop there.
