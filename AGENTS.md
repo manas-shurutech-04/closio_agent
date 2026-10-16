@@ -19,3 +19,6 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
    `source "${NVM_DIR:-$HOME/.nvm}/nvm.sh" && nvm use <version>`. If nvm doesn't have it yet, run `nvm install <version>` first
    (rule A13, D52). closio-agent itself and Claude Code / Codex stay on Node 22 (rule A9).
 7. Cloning a repo is always done by the user, by hand. Never clone a repo yourself (D53).
+8. Before working in a code repo, check that this session can use its folder. If it can't, stop and ask the user to give access,
+   with the exact way (Claude Code: `/add-dir <folder>` or a new session; Codex: restart with `codex --add-dir <folder>` or approve
+   its request). Go on only after the user has given access (rule A15, D55).
