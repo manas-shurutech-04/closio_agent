@@ -26,3 +26,7 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
    itself when the command loads; in Codex, run it yourself first) and applies the entries that fit. Team rules always win over memory.
    When the user corrects you during a flow command, offer once to save it to their memory; save it only after a clear yes,
    with `bash scripts/memory.sh add …` (the same steps as `/flow-memory add`).
+10. Error codes, HTTP statuses and messages always come from the code (rule A16, D59). Before developing a card, read the ones that
+    already exist in every repo the card touches (constants, utils, controllers, middlewares, WS1 locale files). If the card lists
+    error codes, check each one against the code and point out every difference; use the code's exact errors and messages for the
+    right conditions. Never invent a new error code, status, message, field or constant; a truly new one needs the user's approval.
