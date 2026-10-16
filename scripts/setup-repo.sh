@@ -85,6 +85,17 @@ nvm_sh() {
   fi
 }
 
+# 'docker info' can hang while Docker Desktop is starting or stuck, so it gets a 10-second limit.
+docker_answers() { # 0 = Docker answers; 124 = no answer within 10 s
+  local pid waited=0
+  { "$DOCKER" info >/dev/null 2>&1 & pid=$!
+    while kill -0 "$pid" 2>/dev/null; do
+      if [ "$waited" -ge 10 ]; then kill -KILL "$pid"; wait "$pid"; return 124; fi
+      sleep 1; waited=$((waited + 1))
+    done
+    wait "$pid"; } 2>/dev/null
+}
+
 port_answers() { nc -z -G 2 "$1" "$2" >/dev/null 2>&1; } # <host> <port>
 
 redis_reply() { # <host> <port> <command>: first line of Redis's answer
@@ -164,12 +175,12 @@ brew_copy() { # <service>
 docker_ready() {
   case "$DOCKER_STATE" in running|started-by-us) return 0 ;; not-installed|not-running) return 1 ;; esac
   if ! command -v "$DOCKER" >/dev/null 2>&1; then DOCKER_STATE="not-installed"; return 1; fi
-  if "$DOCKER" info >/dev/null 2>&1; then DOCKER_STATE="running"; return 0; fi
+  if docker_answers; then DOCKER_STATE="running"; return 0; fi
   info "Docker Desktop isn't running. Starting it to look for Docker copies (up to $DOCKER_START_TIMEOUT s)..."
   "$OPEN" -g -a Docker >/dev/null 2>&1
   local waited=0
   while [ "$waited" -lt "$DOCKER_START_TIMEOUT" ]; do
-    if "$DOCKER" info >/dev/null 2>&1; then DOCKER_STATE="started-by-us"; return 0; fi
+    if docker_answers; then DOCKER_STATE="started-by-us"; return 0; fi
     sleep 3
     waited=$((waited + 3))
   done

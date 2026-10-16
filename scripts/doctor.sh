@@ -218,6 +218,16 @@ fi
 
 # Docker: only needed when you use Docker copies of Redis or RabbitMQ (D21, D54). flow-setup-repo can use Homebrew ones.
 uses_docker=""
+# 'docker info' can hang while Docker Desktop is starting or stuck, so it gets a 10-second limit.
+docker_answers() { # 0 = Docker answers; 124 = no answer within 10 s
+  local pid waited=0
+  { docker info >/dev/null 2>&1 & pid=$!
+    while kill -0 "$pid" 2>/dev/null; do
+      if [ "$waited" -ge 10 ]; then kill -KILL "$pid"; wait "$pid"; return 124; fi
+      sleep 1; waited=$((waited + 1))
+    done
+    wait "$pid"; } 2>/dev/null
+}
 case " $LOCAL_REDIS_FROM $LOCAL_RABBITMQ_FROM " in *" docker "*) uses_docker="yes" ;; esac
 if ! command -v docker >/dev/null 2>&1; then
   if [ -n "$uses_docker" ]; then
@@ -226,8 +236,10 @@ if ! command -v docker >/dev/null 2>&1; then
   else
     pass "Docker isn't installed (only needed if you choose Docker for Redis or RabbitMQ)"
   fi
-elif docker info >/dev/null 2>&1; then
+elif docker_answers; then
   pass "Docker is installed and running"
+elif [ $? -eq 124 ]; then
+  warn "Docker Desktop doesn't answer (it may be starting, or stuck)" "Wait a minute; if it stays like this, quit Docker Desktop and open it again."
 elif [ -n "$uses_docker" ]; then
   warn "Docker is installed but not running, and you use it for Redis or RabbitMQ" "Open Docker Desktop before running backend tests."
 else
