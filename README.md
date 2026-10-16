@@ -4,14 +4,14 @@ An AI agent for the Japfa **Closio** team. It takes a Jira card from **SCRUM** t
 
 It runs as commands inside **Claude Code** (`/flow-start`) and **Codex** (`$flow-start`). Every command starts with `flow-` and only runs when you type it ([D43](docs/design-decisions.md#d43), [D44](docs/design-decisions.md#d44)).
 
-> **Status:** in design. The foundation (setup commands) is being built first; see the build plan in [build-memory/project-context.md](build-memory/project-context.md). Commands so far: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card` ([docs/commands.md](docs/commands.md)).
+> **Status:** in design. The foundation (setup commands) is being built first; see the build plan in [build-memory/project-context.md](build-memory/project-context.md). Commands so far: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card`, `flow-help` ([docs/commands.md](docs/commands.md)).
 
 ## Start here
 
 > **Every time you use it:** open a terminal in **this folder**, run `nvm use v22`, then start `claude` or `codex`. Never start it inside a code repo; the agent adds the repos it needs itself ([D41](docs/design-decisions.md#d41), [D42](docs/design-decisions.md#d42)).
 
 0. **Get it (one-time):** `git clone https://github.com/manas-shurutech-04/closio_agent.git closio-agent`. The repo is private, so ask Manas for access first. The `closio-agent` at the end names the folder the way the docs expect.
-1. **Set up your Mac:** [docs/setup-guide.md](docs/setup-guide.md) (VPN, GitLab token, Keychain secrets, repos).
+1. **Set up your Mac, step by step:** [docs/user-guide.md](docs/user-guide.md) (plain words, every command in order; also as a Claude artifact, link at its top). The details: [docs/setup-guide.md](docs/setup-guide.md) (VPN, GitLab token, Keychain secrets, repos).
 2. **Understand the flow:** [docs/architecture.md](docs/architecture.md), the rules the agent always follows: [docs/agent-rules.md](docs/agent-rules.md), and what a Jira card must look like: [docs/jira-card-template.md](docs/jira-card-template.md).
 3. **Check it works:** type `/flow-ping`, then `/flow-doctor` (Codex: `$flow-ping`, `$flow-doctor`). See [docs/commands.md](docs/commands.md).
 4. **Why things are the way they are:** [docs/design-decisions.md](docs/design-decisions.md).

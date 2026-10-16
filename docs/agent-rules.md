@@ -6,7 +6,7 @@ Every rule closio-agent follows when it runs, in one place. **Every rule is stri
 - **Behaviour rules (A1–A16):** everything else.
 - **`AGENTS.md` column:** the rules the AI must follow in every session are also written in [`AGENTS.md`](../AGENTS.md), which Claude Code and Codex read at the start of every session ([D45](design-decisions.md#d45)). The number is the rule's number there.
 - **Your user memory never overrides these rules** (A8). If one of your memory entries disagrees with a rule, the agent tells you and follows the rule.
-- The rules for **building** closio-agent (R1–R16) are a different list, in [build-memory/rules.md](../build-memory/rules.md).
+- The rules for **building** closio-agent (R1–R17) are a different list, in [build-memory/rules.md](../build-memory/rules.md).
 
 > Status (2026-10-17): the setup commands are built (incl. `flow-setup-repo`, `flow-memory` and `flow-check-card`); the card phases (1–9) aren't yet. "Not built yet" below means the rule is decided and will be applied by that phase.
 

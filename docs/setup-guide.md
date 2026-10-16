@@ -1,8 +1,8 @@
 # Setup Guide — closio-agent for Japfa (Closio)
 
-> **Status (2026-10-16):** `closio-agent` is **in design.** The setup commands are built: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory` and `flow-check-card` ([commands.md](commands.md)). The card phases (1–9) come next.
+> **Status (2026-10-16):** `closio-agent` is **in design.** The setup commands are built: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card` and `flow-help` ([commands.md](commands.md)). The card phases (1–9) come next.
 >
-> **Use the commands first** (see "First-time setup, in order" below). The manual steps in this guide stay as a backup and explain what the commands do. Steps marked **✅ verified** were tested on a real Mac (macOS 26.6.2). Steps marked **🛠 planned** aren't built yet.
+> **Use the commands first** (see "First-time setup, in order" below, or the plain-words walkthrough in [user-guide.md](user-guide.md)). The manual steps in this guide stay as a backup and explain what the commands do. Steps marked **✅ verified** were tested on a real Mac (macOS 26.6.2). Steps marked **🛠 planned** aren't built yet.
 >
 > **Golden rule:** never paste a password, token or secret into the Claude Code or Codex chat. Anything typed there is sent to the AI provider and stays in the session history. Secrets go into the **macOS Keychain** only, using the commands below in your **own terminal**.
 
@@ -110,6 +110,7 @@ The first time you start Claude Code in this folder, it asks whether you trust i
 6. `/flow-configure-repo`: for each repo you work on, where your clone is and its dev keys.
 7. `/flow-setup-repo all`: gets every repo you've cloned ready (Node version, packages, local Redis and RabbitMQ, `.env` check, tests, folder access).
 8. `/flow-vpn connect`, then `/flow-doctor` again: everything should be ✅ or ⚠️.
+9. Any time: `/flow-help` shows every command and how it's typed.
 
 ### Check that the flow commands work
 
