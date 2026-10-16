@@ -14,6 +14,8 @@
 #   edit <id> <text...>             New text for an entry (the other fields stay)
 #   set-phases <id> <phases>        New phases for an entry
 #   remove <id>                     Removes an entry
+#   clear-preview <all|repo>        What 'clear' would remove (only reads)
+#   clear <all|repo> confirmed      Removes all your entries, or one repo's (only after the user said yes)
 #   count                           Number of entries (for flow-doctor)
 #   problems                        Lines in your memory files that aren't in the format (for flow-doctor)
 #
@@ -279,6 +281,68 @@ remove_entry() { # <id>
   ok "Removed $id: $(field "$line" text)"
 }
 
+# The files 'clear' works on: every memory file (all), or one repo's. One per line.
+clear_files() { # <all|repo>
+  if [ "$1" = "all" ]; then all_files
+  else [ -f "$(repo_file "$1")" ] && repo_file "$1"; fi
+  return 0
+}
+
+clear_target_ok() { # <all|repo>
+  [ "$1" = "all" ] && return 0
+  is_repo "$1" && return 0
+  bad "'$1' isn't 'all' or a registered repo" "Use $CMD clear (everything) or $CMD clear <repo> (e.g. nodejs-ws2closio)."
+  return 1
+}
+
+clear_preview() { # <all|repo>
+  local target="$1" f line n=0 scope out=""
+  clear_target_ok "$target" || return 1
+  while IFS= read -r f; do
+    [ -f "$f" ] || continue
+    scope="$(scope_of "$f")"
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      out="$out   [$(field "$line" id)] ($scope) $(field "$line" text)$NL"
+      n=$((n + 1))
+    done <<EOF
+$(entries "$f")
+EOF
+  done <<EOF
+$(clear_files "$target")
+EOF
+  if [ "$n" -eq 0 ]; then
+    if [ "$target" = "all" ]; then echo "Nothing to clear: you have no memory entries."; else echo "Nothing to clear: you have no memory entries for $target."; fi
+    return 0
+  fi
+  echo "These $n $( [ "$n" -eq 1 ] && echo entry || echo entries ) would be removed$( [ "$target" = "all" ] || echo " ($target only)"):"
+  printf '%s' "$out"
+  echo "This can't be undone."
+}
+
+clear_memory() { # <all|repo> confirmed
+  local target="$1" f n=0
+  clear_target_ok "$target" || return 1
+  if [ "${2:-}" != "confirmed" ]; then
+    bad "Clearing needs the user's yes first" "Show '$CMD clear' (it lists what would be removed), ask the user, then run it with 'confirmed'."
+    return 1
+  fi
+  while IFS= read -r f; do
+    [ -f "$f" ] || continue
+    n=$((n + $(entries "$f" | grep -c .)))
+    rm -f "$f"
+  done <<EOF
+$(clear_files "$target")
+EOF
+  rmdir "$MEMORY_DIR/repos" 2>/dev/null
+  rmdir "$MEMORY_DIR" 2>/dev/null
+  if [ "$target" = "all" ]; then
+    ok "Removed $n $( [ "$n" -eq 1 ] && echo entry || echo entries ). Your user memory is empty now (that's normal); add entries again any time with $CMD add."
+  else
+    ok "Removed $n $( [ "$n" -eq 1 ] && echo entry || echo entries ) for $target. Your other entries are kept."
+  fi
+}
+
 count_entries() {
   local f n=0
   while IFS= read -r f; do
@@ -306,7 +370,9 @@ case "${1:-}" in
   edit) [ $# -ge 3 ] || { echo "Usage: bash scripts/memory.sh edit <id> <text...>"; exit 1; }; shift; edit_entry "$@" ;;
   set-phases) [ $# -eq 3 ] || { echo "Usage: bash scripts/memory.sh set-phases <id> <phases>"; exit 1; }; set_phases "$2" "$3" ;;
   remove) [ $# -eq 2 ] || { echo "Usage: bash scripts/memory.sh remove <id>"; exit 1; }; remove_entry "$2" ;;
+  clear-preview) [ $# -eq 2 ] || { echo "Usage: bash scripts/memory.sh clear-preview <all|repo>"; exit 1; }; clear_preview "$2" ;;
+  clear) [ $# -ge 2 ] || { echo "Usage: bash scripts/memory.sh clear <all|repo> confirmed"; exit 1; }; clear_memory "$2" "${3:-}" ;;
   count) count_entries ;;
   problems) format_problems ;;
-  *) echo "Usage: bash scripts/memory.sh for <phase> [words...] | list | add <general|repo> <phases> <card|-> <text...> | edit <id> <text...> | set-phases <id> <phases> | remove <id> | count | problems"; exit 1 ;;
+  *) echo "Usage: bash scripts/memory.sh for <phase> [words...] | list | add <general|repo> <phases> <card|-> <text...> | edit <id> <text...> | set-phases <id> <phases> | remove <id> | clear-preview <all|repo> | clear <all|repo> confirmed | count | problems"; exit 1 ;;
 esac

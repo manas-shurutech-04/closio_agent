@@ -13,6 +13,8 @@ Your user memory (F6b, D40, D56): short entries the agent follows in every flow 
 - `/flow-memory edit <id> <new text>`: change an entry's text (e.g. `M3`).
 - `/flow-memory edit <id> phases <phases>`: change where it applies.
 - `/flow-memory remove <id>`: remove an entry.
+- `/flow-memory clear`: remove all your entries (it shows them and asks first).
+- `/flow-memory clear <repo>`: remove only that repo's entries.
 
 ## Steps
 
@@ -27,6 +29,7 @@ Your user memory (F6b, D40, D56): short entries the agent follows in every flow 
    - **`edit <id> phases <phases>`:** run `bash scripts/memory.sh set-phases <id> <phases>`, show the output, and stop.
    - **`edit <id> <text>`:** check the new text like in "Add an entry" (steps 3–4), then run `bash scripts/memory.sh edit <id> '<text>'`, show the output, and stop.
    - **`remove <id>`:** run `bash scripts/memory.sh remove <id>`, show the output, and stop.
+   - **`clear` or `clear <repo>`:** go to "Clear the memory".
    - Anything else: show the usage above and stop.
 
 ### Add an entry
@@ -38,6 +41,12 @@ Your user memory (F6b, D40, D56): short entries the agent follows in every flow 
 3. **Team rules first (rule A8):** compare the entry with the team rules: `AGENTS.md`, `docs/agent-rules.md` (G1–G4, A1–A15) and the repo's file in `config/repos/`. If it goes against one, tell the user which rule, and that the entry would never override it. Save it only if they still want it.
 4. **No secrets:** if the text holds a password, token, key or `.env` value, don't save it, don't repeat it, and tell the user to change that secret. The script refuses anything that looks like a secret too.
 5. Run `bash scripts/memory.sh add <general|repo> <phases> <card or -> '<text>'`. Put the text in single quotes; write a `'` inside it as `'\''`. Show the output.
+
+### Clear the memory
+
+1. Run `bash scripts/memory.sh clear-preview all` (or `… clear-preview <repo>`) and show its output. If there's nothing to clear, stop.
+2. Ask the user exactly: "Remove these N entries? This can't be undone." (N from the output.)
+3. **Only after a clear yes**, run `bash scripts/memory.sh clear all confirmed` (or `… clear <repo> confirmed`) and show the output. On anything else, say nothing was removed and stop.
 
 ## Rules
 - Only change memory through `bash scripts/memory.sh` (it keeps the format and refuses secrets). The user may also edit the files by hand; `list` shows any line that isn't in the format.
