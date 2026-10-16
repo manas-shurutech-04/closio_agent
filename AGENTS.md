@@ -22,3 +22,7 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
 8. Before working in a code repo, check that this session can use its folder. If it can't, stop and ask the user to give access,
    with the exact way (Claude Code: `/add-dir <folder>` or a new session; Codex: restart with `codex --add-dir <folder>` or approve
    its request). Go on only after the user has given access (rule A15, D55).
+9. User memory (rules A7, A8; D40, D56): every flow command starts with `bash scripts/memory.sh for setup all` (Claude Code runs it by
+   itself when the command loads; in Codex, run it yourself first) and applies the entries that fit. Team rules always win over memory.
+   When the user corrects you during a flow command, offer once to save it to their memory; save it only after a clear yes,
+   with `bash scripts/memory.sh add …` (the same steps as `/flow-memory add`).
