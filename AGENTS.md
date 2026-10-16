@@ -30,3 +30,8 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     already exist in every repo the card touches (constants, utils, controllers, middlewares, WS1 locale files). If the card lists
     error codes, check each one against the code and point out every difference; use the code's exact errors and messages for the
     right conditions. Never invent a new error code, status, message, field or constant; a truly new one needs the user's approval.
+11. Adding or changing a flow command (rule R17, D60): in the same step, give it a `## Usage` block in its `SKILL.md`, a section in
+    `docs/commands.md`, a section and an index row in `docs/user-guide.md`, and update the Claude artifact of the guide from
+    `docs/user-guide.md` (its link is at the top of the guide), then set the guide's "mirrored" line (the date and every command).
+    Only Claude Code can reach the artifact: a change made in Codex is finished in Claude Code. `bash scripts/help.sh check`
+    (also run by flow-doctor) fails until all of this is done.
