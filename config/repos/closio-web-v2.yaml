@@ -13,7 +13,7 @@ dev_command: npm run dev
 port: from the repo's .env (VITE_PORT)
 health_url: /   # no health endpoint in the web app; the dev server start page
 check_commands: none
-test_command: npm test
+test_command: npm test -- --run   # --run: always one run, never watch mode (D54)
 test_framework: vitest, @vue/test-utils
 test_layout:
 coverage_command: npm run test:coverage
@@ -23,7 +23,7 @@ migration_tool: none
 queues: none
 local_services: none
 calls: nodejs-ws1closio
-env_file: .env
+env_file: .env.development   # Vite dev mode file; the AI never reads what is inside (rule A6)
 dev_keys: none
 dev_keys_optional: none
 mr_target_branch: development
