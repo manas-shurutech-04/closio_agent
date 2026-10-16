@@ -355,6 +355,13 @@ fi
   "Run /flow-memory to see which lines, then fix or remove them."
 
 # ---------------------------------------------------------------- Repos (F5)
+# ---------------------------------------------------------------- Commands documented (F8, D60, rule R17)
+section "Commands documented (flow-help, user guide, Claude artifact)"
+help_out="$(bash "$AGENT_ROOT/scripts/help.sh" check 2>/dev/null)"
+printf '%s\n' "$help_out"
+to_fix=$((to_fix + $(printf '%s\n' "$help_out" | grep -c '^❌')))
+to_look=$((to_look + $(printf '%s\n' "$help_out" | grep -c '^⚠️')))
+
 section "Repos (config/repos/)"
 
 yaml_get() { # <file> <key>: value of a flat "key: value" line
