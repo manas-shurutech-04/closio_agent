@@ -43,6 +43,8 @@ GITLAB_USERNAME=""
 WORKSPACE_DIR=""
 AI_TOOLS=""
 VPN_USERNAME=""
+LOCAL_REDIS_FROM=""      # set by flow-setup-repo (F6, D54)
+LOCAL_RABBITMQ_FROM=""
 [ -f "$USER_SETTINGS_FILE" ] && . "$USER_SETTINGS_FILE"
 
 # Values are written inside double quotes, so they must not contain characters the shell would treat specially.
@@ -62,6 +64,8 @@ write_settings() {
     printf 'WORKSPACE_DIR="%s"\n' "$WORKSPACE_DIR"
     printf 'AI_TOOLS="%s"\n' "$AI_TOOLS"
     printf 'VPN_USERNAME="%s"   # optional, not needed today (kept for later use, D15)\n' "$VPN_USERNAME"
+    if [ -n "$LOCAL_REDIS_FROM" ]; then printf 'LOCAL_REDIS_FROM="%s"   # homebrew or docker; set by flow-setup-repo (D54)\n' "$LOCAL_REDIS_FROM"; fi
+    if [ -n "$LOCAL_RABBITMQ_FROM" ]; then printf 'LOCAL_RABBITMQ_FROM="%s"   # homebrew or docker; set by flow-setup-repo (D54)\n' "$LOCAL_RABBITMQ_FROM"; fi
   } > "$USER_SETTINGS_FILE.tmp" && mv "$USER_SETTINGS_FILE.tmp" "$USER_SETTINGS_FILE"
 }
 

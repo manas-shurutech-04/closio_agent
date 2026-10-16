@@ -1,0 +1,19 @@
+# Local Redis and RabbitMQ for backend tests (F6, D21, D54). Used only when you choose Docker:
+# flow-setup-repo starts them with  docker compose -f config/local-services.yml up -d <redis|rabbitmq>
+# Same versions for everyone. Local only (bound to 127.0.0.1): Redis has no password,
+# RabbitMQ uses its built-in guest / guest login. The ports must match config/project-settings.sh.
+name: closio-agent
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: closio-agent-redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    restart: unless-stopped
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: closio-agent-rabbitmq
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"   # web page: http://localhost:15672 (guest / guest)
+    restart: unless-stopped

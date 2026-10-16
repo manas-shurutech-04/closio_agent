@@ -33,3 +33,12 @@ NODE_MAJOR="${NODE_MAJOR:-22}"
 # Branch names (D50, rule A12): SCRUM-<number>/<short-description>, the same name in every repo of a card.
 # The description: lowercase words joined by "-", only a-z and 0-9, at most BRANCH_DESC_MAX_WORDS words.
 BRANCH_DESC_MAX_WORDS="${BRANCH_DESC_MAX_WORDS:-5}"
+
+# Repo setup (F6, D54): flow-setup-repo
+SETUP_INSTALL_TIMEOUT="${SETUP_INSTALL_TIMEOUT:-900}"   # seconds for installing a repo's packages
+SETUP_TEST_TIMEOUT="${SETUP_TEST_TIMEOUT:-900}"         # seconds for running a repo's tests once (15 minutes)
+DOCKER_START_TIMEOUT="${DOCKER_START_TIMEOUT:-90}"      # seconds to wait for Docker Desktop to start
+SERVICE_START_TIMEOUT="${SERVICE_START_TIMEOUT:-30}"    # seconds to wait for a local Redis / RabbitMQ to answer
+# Local Redis and RabbitMQ ports (must match config/local-services.yml)
+LOCAL_REDIS_PORT="${LOCAL_REDIS_PORT:-6379}"
+LOCAL_RABBITMQ_PORT="${LOCAL_RABBITMQ_PORT:-5672}"

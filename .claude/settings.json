@@ -26,6 +26,9 @@
       "Bash(bash scripts/configure-repo.sh show *)",
       "Bash(bash scripts/branch-name.sh make *)",
       "Bash(bash scripts/branch-name.sh check *)",
+      "Bash(bash scripts/setup-repo.sh check-folder)",
+      "Bash(bash scripts/setup-repo.sh list)",
+      "Bash(bash scripts/setup-repo.sh run *)",
       "Edit(/config/repos/**)"
     ]
   }
