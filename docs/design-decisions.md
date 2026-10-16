@@ -531,7 +531,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d39"></a>
 ### D39 — Repository layout of closio-agent (foundation step F0)
 - **Date:** 2026-10-09
-- **Status:** Accepted (created 2026-10-09). Local-path handling **approved by the user on 2026-10-10**. First commit and push on 2026-10-11 (see below). Built since: `config/repos/<repo>.yaml` (F5); in `local/`: `user-settings.sh` (F4), `repos/` (F5), `vpn/` (the openfortivpn log, F3), `logs/` (setup and test output, F6); `local/memory/` comes with F6b.
+- **Status:** Accepted (created 2026-10-09). Local-path handling **approved by the user on 2026-10-10**. First commit and push on 2026-10-11 (see below). Built since: `config/repos/<repo>.yaml` (F5); in `local/`: `user-settings.sh` (F4), `repos/` (F5), `vpn/` (the openfortivpn log, F3), `logs/` (setup and test output, F6), `memory/` (user memory, F6b, created on the first entry).
 - **Context:** Everything lives in this project folder, which the team clones (D36). The user approved `git init` and creating the structure.
 - **Decision:**
   - `git init` (branch `main`). **First commit and push on 2026-10-11** (user): remote **`https://github.com/manas-shurutech-04/closio_agent.git`** (private GitHub repo). Teammates clone it with `git clone https://github.com/manas-shurutech-04/closio_agent.git closio-agent`. Before the push, the chat transcript's WS1 login user ID was blanked out, like the GitLab token.
@@ -550,7 +550,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d40"></a>
 ### D40 — User-specific runtime context memory ("user memory")
 - **Date:** 2026-10-10
-- **Status:** Accepted (design approved by the user on 2026-10-10). Built as foundation step **F6b**, right after `setup-repo` (confirmed by the user on 2026-10-10). Not built yet.
+- **Status:** Accepted (design approved by the user on 2026-10-10). Built as foundation step **F6b**, right after `setup-repo` (confirmed by the user on 2026-10-10). **Built on 2026-10-16** as `flow-memory` and `scripts/memory.sh`; the details are in [D56](#d56).
 - **Context:** The project has build memory (for building the agent) and per-card memory (`runs/<CARD-KEY>/`, D36). There was **no memory that carries a user's preferences and corrections across cards and runs**.
 - **Requirement (user, 2026-10-10):**
   - When people use closio-agent's workflows, they may want to **store changes or preferences for the current and future runs**.
@@ -657,7 +657,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d45"></a>
 ### D45 — One shared rules file, `AGENTS.md`, for both tools
 - **Date:** 2026-10-10
-- **Status:** Accepted. **F1 T4 re-tested by the user on 2026-10-10 in new sessions: passed** in Claude Code and Codex (asked "check my setup", the AI pointed to the command instead of running the steps).
+- **Status:** Accepted. **F1 T4 re-tested by the user on 2026-10-10 in new sessions: passed** in Claude Code and Codex (asked "check my setup", the AI pointed to the command instead of running the steps). Rules 5–9 added since: branch names ([D50](#d50)), repo Node versions ([D52](#d52)), manual cloning ([D53](#d53)), folder access ([D55](#d55)), user memory ([D56](#d56)).
 - **Context:**
   - In F1 test T4, both tools did `flow-doctor`'s steps by hand when the user asked "check my setup" without typing the command ([D44](#d44)).
   - Codex reads `AGENTS.md` from the project root at the start of every session. Claude Code reads `AGENTS.md` too, **as long as there is no `CLAUDE.md`** in the folder or above it (both checked in the official docs on 2026-10-10).
@@ -730,14 +730,14 @@ Every decision taken while building the agent, including the options we rejected
     - `wait-seconds.sh` (waits 1–30 s; used while the Jira connector loads; added 2026-10-13)
     - `configure-repo.sh` (all its steps), `branch-name.sh` (make, check), and writing files in `config/repos/` (`Edit(/config/repos/**)`) (added 2026-10-14, F5)
     - `setup-repo.sh check-folder`, `list` and `run *` (added 2026-10-16, F6, [D54](#d54)). The setup run was first left to ask once; the user asked the same day for no prompt there. It installs the repo's packages (their install scripts run) and runs the repo's tests, which are the team's own repos
-  - **Still asks:** changing the global git name or email (`set git-name`, `set git-email`) and every other command.
+  - **Still asks:** changing the global git name or email (`set git-name`, `set git-email`) and every other command. **Changed by [D57](#d57) (2026-10-16):** every script the commands run is now pre-approved, git name and email included, in Claude Code and in Codex.
   - The commands must run the scripts exactly as written (`bash scripts/…`, no `cd`, nothing joined with `&&`), or the rules don't match.
   - Checked in Claude Code's docs (2026-10-13): a rule like `Bash(safe-cmd *)` doesn't approve `safe-cmd && other-cmd`, because each part of a joined command must match a rule on its own. Project allow rules only apply after the user trusts the folder.
 - **Why:** User decision. Fewer interruptions without giving the AI a free hand: only our own scripts, and only the safe parts.
 - **Rejected options:**
   - Auto mode: the user doesn't want it.
   - `allowed-tools` inside the command file: Claude Code clears that permission when the user sends their next message, and `flow-configure-user` asks questions in between, so the prompts would come back.
-- **Not covered:** Codex's own way to pre-approve commands hasn't been checked yet.
+- **Not covered:** Codex's own way to pre-approve commands hasn't been checked yet. **Done in [D57](#d57)** (Codex rules file).
 
 <a id="d50"></a>
 ### D50 — One strict branch-naming rule for every repo
@@ -855,6 +855,7 @@ Every decision taken while building the agent, including the options we rejected
   - Claude Code folder access: `jq` adds the path to `permissions.additionalDirectories` in `.claude/settings.local.json`, keeping everything else; a broken file is left untouched (❌ with the fix).
   - `flow-doctor`: new "Repo setup" section; Docker is no longer ❌ when missing unless you chose Docker.
   - Added 2026-10-16: the `.env` names check (above), and the folder-access check in the command file (rule A15, [D55](#d55)). The env file opens at most once per repo.
+  - Fixed 2026-10-16: `docker info` can hang while Docker Desktop is starting or stuck (seen on the first Mac), so `flow-setup-repo` and `flow-doctor` give it 10 seconds; `flow-doctor` then shows ⚠️ "Docker Desktop doesn't answer".
 
 <a id="d55"></a>
 ### D55 — Ask for folder access before working in a code repo
@@ -868,4 +869,39 @@ Every decision taken while building the agent, including the options we rejected
   - Written into `AGENTS.md` (rule 8), so both tools follow it in every session.
 - **Why:** User decision. The agent never works around missing access, and the user always knows why it stopped.
 - **Rejected options:** None considered.
+
+<a id="d56"></a>
+### D56 — User memory is built as `flow-memory`, and every command loads it first
+- **Date:** 2026-10-16
+- **Status:** Accepted (user's answers to the F6b draft, 2026-10-16). Built in F6b on 2026-10-16. **Tested by the user on 2026-10-16.** Builds [D40](#d40).
+- **Context:** [D40](#d40) approved a private, local user memory with a dedicated command, agent-offered saves, rule A7 (load it in every command) and A8 (team rules win). The user asked that the loading script "runs before every command without a miss".
+- **Decision:**
+  - **Command `flow-memory`** (list, add, add for one repo, edit, change phases, remove). All changes go through `scripts/memory.sh`, which keeps the format and refuses anything that looks like a secret.
+  - **Files:** `local/memory/general.md` and `local/memory/repos/<repo>.md`, created on the first entry. One entry per line: `- [M3] 2026-10-16 · phases: plan, develop · from: SCRUM-519 · <text>`. IDs `M1`, `M2`… are unique across the files.
+  - **Phases:** `all`, or some of `setup`, `pick-up`, `plan`, `develop`, `review`, `ac-check`, `testing`, `ship`, `mr`, `after-merge`. The setup commands use `setup`.
+  - **Loading, never skipped:** every command's step 1 holds `!`bash scripts/memory.sh for setup all``. **Claude Code runs it by itself when the command loads** (its "dynamic context injection": before the command reaches the AI, never prompts, checked against the permission rules). Codex has no such feature, so the same step tells the AI to run it first, and `AGENTS.md` rule 9 repeats it. The output lists general entries and every repo's entries (labelled), and the AI applies the repo ones only for the repos the command works on (so no arguments are needed in the command line, which Claude Code doesn't document for this feature). The AI says in one line which entries it used.
+  - **Team rules win (A8):** when an entry conflicts, the AI says so and follows the team rule. When a new entry goes against a team rule, `flow-memory` warns and saves it only if the user still wants it.
+  - **Offered saves:** `AGENTS.md` rule 9: when the user corrects the AI during a flow command, it offers once to save it, and saves only after a clear yes.
+  - **Hand edits allowed:** lines that aren't in the format are shown as ⚠️ (in the memory step, `/flow-memory` and `flow-doctor`) and ignored.
+  - **`flow-doctor`:** one ✅ line with the entry count, or "none yet (that's normal)"; ⚠️ only for lines in the wrong format.
+  - **The memory step never fails** (fixed 2026-10-16, after the user's first `/flow-memory` stopped with "Shell command failed"): the script read the memory files with a loop that broke on the space in the folder name (`AI Pipeline`) and ended with an error, and Claude Code stops the whole command when this step fails. Now the files are read safely, and `memory.sh for …` always ends without an error: any problem is shown as a ⚠️ line and the command goes on.
+- **Why:** User decisions. The memory step can't be forgotten in Claude Code, and the same commands still work in Codex.
+- **Rejected options:**
+  - Each command reading `local/memory/general.md` itself (the first version): the AI could skip it, and it ignored repo memory.
+  - Refusing an entry that goes against a team rule (option b): the user chose a warning instead.
+  - A Claude Code hook (`UserPromptExpansion`) for the loading: it works too, but the line inside each command travels with the command and needs no extra settings.
+
+<a id="d57"></a>
+### D57 — Every script the flow commands run is pre-approved, in Claude Code and in Codex
+- **Date:** 2026-10-16
+- **Status:** Accepted. Changes [D49](#d49).
+- **Context:** [D49](#d49) pre-approved only the safe parts of our scripts in Claude Code (not the git name/email change), and Codex's way wasn't checked. The user: "all the scripts written in the commands should run automatically without user permission".
+- **Decision:**
+  - **Claude Code:** `.claude/settings.json` allows every action of each script the commands use: `Bash(bash scripts/<script>.sh *)` for `configure-user.sh`, `configure-repo.sh`, `setup-repo.sh`, `memory.sh`, `doctor.sh`, `vpn.sh`, `wait-seconds.sh`, `branch-name.sh` (the rule also matches the script with no arguments), plus writing files in `config/repos/`.
+  - **Codex:** a committed rules file, `.codex/rules/closio-agent.rules`, with one `prefix_rule(pattern = ["bash", "scripts/<script>.sh"], decision = "allow")` per script. Codex's rules are experimental; they load only when Codex trusts this folder (it does on the first Mac), and an allowed command runs outside Codex's sandbox. Checked with `codex execpolicy check`: our scripts → allow, anything else → no rule (Codex asks as usual).
+  - The commands still run the scripts exactly as written (`bash scripts/…`, no `cd`, nothing joined with `&&`), or the rules don't match.
+- **Why:** User decision. No interruptions for our own scripts in either tool.
+- **Rejected options:**
+  - Keeping the git name/email change behind a prompt (the [D49](#d49) choice).
+  - Auto mode / a looser Codex approval policy for everything: it would also approve commands that aren't ours.
 

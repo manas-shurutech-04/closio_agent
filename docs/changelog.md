@@ -4,6 +4,11 @@ Dated list of what changed in closio-agent. Newest first.
 
 ## 2026-10-16
 
+- `flow-memory` tested by the user; working.
+- Fixed: `/flow-memory` (and every command, once you had a memory entry) stopped with "Shell command failed" because the memory step broke on the space in the folder name. It now works with any folder name and never stops a command: a problem shows as ⚠️ and the command goes on.
+- **`flow-memory` (F6b):** your private user memory (`local/memory/`): list, add (everywhere or for one repo), edit, change phases, remove. Every command now starts with the memory step, which Claude Code runs by itself when the command loads (Codex: the first step); the AI says which entries it used and offers to save your corrections ([D56](design-decisions.md#d56), `AGENTS.md` rule 9).
+- **No approval prompts for our own scripts** in Claude Code (`.claude/settings.json`, now incl. the git name/email change) and in Codex (`.codex/rules/closio-agent.rules`) ([D57](design-decisions.md#d57)).
+- `flow-doctor`: user memory line; `docker info` gets a 10-second limit (it could hang while Docker Desktop was stuck), shown as ⚠️ "Docker Desktop doesn't answer".
 - `flow-setup-repo` also compares the variable names in a repo's `.env` with `.env.example` (never the values) and lists the missing ones, with the file opened for you.
 - **New rule A15** ([D55](design-decisions.md#d55), `AGENTS.md` rule 8): before working in a code repo, the AI checks it can use the repo's folder; if not, it asks you to give access and waits.
 - `flow-setup-repo` tested by the user; working.

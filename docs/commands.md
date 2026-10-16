@@ -11,11 +11,11 @@ Before you start: open a terminal **in the closio-agent folder**, run `nvm use v
 
 - **Written once, used by both tools ([D8](design-decisions.md#d8)).** Each command lives in `.agents/skills/<name>/SKILL.md`, where Codex reads it. Claude Code reads `.claude/skills/<name>`, which is a link to the same folder. `scripts/link-claude-skills.sh` creates any missing links.
 - **They only run when you type them ([D44](design-decisions.md#d44)).** The tool never starts a command by itself. Claude Code: `disable-model-invocation: true` in `SKILL.md`. Codex: `agents/openai.yaml` in the command's folder. Also, the rules file `AGENTS.md` tells the AI not to do a command's steps by hand: if you ask for what a command does (e.g. "check my setup"), it tells you which command to type ([D45](design-decisions.md#d45)). Tested in both tools on 2026-10-10. This is an instruction, not a hard lock, so the tool still asks before running a script.
-- **Your user memory is applied ([D40](design-decisions.md#d40), rules A7/A8).** Every command first reads `local/memory/general.md` if it exists. Team rules always win.
+- **Your user memory is applied, every time ([D40](design-decisions.md#d40), [D56](design-decisions.md#d56), rules A7/A8).** Every command starts with `bash scripts/memory.sh for setup all`: Claude Code runs it by itself when the command loads; in Codex it's the command's first step. Team rules always win. See [`flow-memory`](#flow-memory).
 - **Shared logic lives in `scripts/`.** The command tells the AI which script to run, so both tools do the same thing.
 - **Every command follows the agent rules** in [agent-rules.md](agent-rules.md), e.g. every problem comes with the steps to fix it (A11).
 
-**Fewer approval prompts (Claude Code, [D49](design-decisions.md#d49)):** the shared file `.claude/settings.json` lets Claude Code run our own scripts without asking, but only the parts that just read or ask you themselves in a macOS dialog: `configure-user.sh` (not the git name/email change), `configure-repo.sh` (all its steps), `branch-name.sh`, `setup-repo.sh` (all its steps, including the setup run, which installs packages and runs tests: user, 2026-10-16), `doctor.sh`, `vpn.sh`, `wait-seconds.sh`, and writing files in `config/repos/`. Everything else still asks.
+**No approval prompts for our own scripts ([D49](design-decisions.md#d49), [D57](design-decisions.md#d57)):** every script the commands run (`configure-user.sh`, `configure-repo.sh`, `setup-repo.sh`, `memory.sh`, `doctor.sh`, `vpn.sh`, `wait-seconds.sh`, `branch-name.sh`, all their steps) runs without asking. **Claude Code:** the shared file `.claude/settings.json` (it applies once you've trusted the folder). **Codex:** the shared file `.codex/rules/closio-agent.rules` (Codex's "rules", still experimental; they apply when Codex trusts this folder, and the scripts then run outside its sandbox). Anything else still asks.
 
 ## Command list
 
@@ -27,12 +27,13 @@ Before you start: open a terminal **in the closio-agent folder**, run `nvm use v
 | [`flow-configure-user`](#flow-configure-user) | Sets up your personal settings and your 5 secrets | Built 2026-10-12 (F4). Tested by the user |
 | [`flow-configure-repo`](#flow-configure-repo) | Registers a repo, or sets it up on your Mac (path, dev keys) | Built 2026-10-14 (F5). Tested by the user (2026-10-15) |
 | [`flow-setup-repo`](#flow-setup-repo) | Gets a repo ready to work on: Node version, packages, local Redis/RabbitMQ, `.env` check, tests, folder access | Built 2026-10-16 (F6). Tested by the user (2026-10-16) |
+| [`flow-memory`](#flow-memory) | Shows and manages your user memory: the preferences and corrections every command follows | Built 2026-10-16 (F6b). Tested by the user (2026-10-16) |
 
 ---
 
 ### `flow-ping`
 
-**Purpose:** the quickest way to see that closio-agent is installed and its commands load in your tool. It changes nothing and runs no commands.
+**Purpose:** the quickest way to see that closio-agent is installed and its commands load in your tool. It changes nothing; the only thing it runs is the memory step every command starts with.
 
 **Usage:**
 ```
@@ -86,6 +87,7 @@ $flow-doctor      (Codex: approve running it with network access, so the GitLab 
 | | VPN certificate pin still valid | ⚠️ in the last 30 days, ❌ after 2027-02-03 |
 | Personal settings | Jira account ID, GitLab username, workspace folder (exists), AI tools | Fix: `/flow-configure-user` ([D15](design-decisions.md#d15)) |
 | Repos | Each registered repo: clone exists and points at the right GitLab project; its Node version is installed in nvm; its dev keys are stored | ⚠️ for repos not set up on this Mac, and ⚠️ (not ❌) for missing dev keys: they're only needed to test on dev. Fix: `/flow-configure-repo <repo>` |
+| User memory | How many entries you have (never a warning when you have none); ⚠️ for lines in your memory files that aren't in the format | Fix: `/flow-memory` |
 | Repo setup | Each repo set up with `flow-setup-repo`: packages still installed, Claude Code can use its folder; one ⚠️ listing cloned repos not set up yet; the local Redis and RabbitMQ answer (when a set-up repo needs them) | Fix: `/flow-setup-repo <repo>` |
 | Keychain | The 5 personal items exist | Names only; values are never read ([D33](design-decisions.md#d33)). Fix: `/flow-configure-user <item>` |
 | Jira | The AI reads project SCRUM | Done by the AI, because only the AI tool has the Jira connection. The Jira connector can take a while to load when a session starts, so the AI waits and retries up to 3 times (about 30 s) before reporting ❌ |
@@ -325,6 +327,35 @@ Result for nodejs-ws2closio: 0 to fix, 1 to look at.
 
 **Files:** `.agents/skills/flow-setup-repo/`, `scripts/setup-repo.sh` (you can run `bash scripts/setup-repo.sh list` in a terminal too), `config/local-services.yml` (Docker copies), settings in `config/project-settings.sh` (time limits, ports).
 
+### `flow-memory`
+
+**Purpose:** shows and manages your **user memory**: short entries with your preferences and corrections, which every flow command follows ([D40](design-decisions.md#d40), [D56](design-decisions.md#d56), rules A7/A8). It's private (`local/memory/`, never pushed), starts empty, and is created with your first entry. **Team rules always win over it.**
+
+**Usage:**
+```
+/flow-memory                                   list all your entries
+/flow-memory add Write plans as short numbered steps.          one entry for everywhere
+/flow-memory add nodejs-ws2closio Put new tests in test/unit.  one entry for one repo
+/flow-memory edit M3 <new text>                change an entry's text
+/flow-memory edit M3 phases plan,develop       change where it applies
+/flow-memory remove M3                         remove an entry
+$flow-memory …                                 (Codex)
+```
+
+When you add an entry, the AI asks once which **phases** it applies to (`all`, or some of `setup`, `pick-up`, `plan`, `develop`, `review`, `ac-check`, `testing`, `ship`, `mr`, `after-merge`) and the **card** it came from, if any, with a suggestion you can just confirm. If the entry goes against a team rule, it tells you which one and saves it only if you still want it (it never overrides the rule). Anything that looks like a secret is refused.
+
+**How it's stored:** `local/memory/general.md` (everywhere) and `local/memory/repos/<repo>.md` (one repo), one entry per line:
+```
+- [M3] 2026-10-16 · phases: plan, develop · from: SCRUM-519 · Write plans as short numbered steps.
+```
+You can also edit these files by hand; lines that aren't in this format are shown as ⚠️ and ignored.
+
+**How every command uses it (never skipped):** each command starts with `bash scripts/memory.sh for setup all`, which prints only the entries that apply. **Claude Code runs it by itself when the command loads** (before the AI even reads the command); in Codex the command's first step tells the AI to run it, and `AGENTS.md` rule 9 repeats it. The AI follows the entries and says in one line which ones it used, e.g. "Using your memory: M2, M3". Later, the card phases will also write those IDs into the card's history.
+
+**Offered saves:** when you correct the AI during a flow command, it offers once to save the correction to your memory, and saves it only after your yes (`AGENTS.md` rule 9).
+
+**Files:** `.agents/skills/flow-memory/`, `scripts/memory.sh` (you can run `bash scripts/memory.sh list` in a terminal too), `local/memory/` (yours).
+
 ---
 
 ## Helper scripts
@@ -340,6 +371,7 @@ The commands run these scripts (in `scripts/`). You can run them yourself in a t
 | `configure-user.sh check-folder \| show \| set \| secrets \| secret \| gitlab-username-from-token` | Personal settings and the 5 secrets | `flow-configure-user` |
 | `configure-repo.sh check-folder \| list \| detect \| validate \| set-path \| keys \| key \| show` | The repo registry, clone paths and dev keys | `flow-configure-repo` |
 | `setup-repo.sh check-folder \| list \| run <repo\|all> [install\|services]` | Gets repos ready to work on (Node, packages, local Redis/RabbitMQ, `.env` check, tests, folder access) | `flow-setup-repo` |
+| `memory.sh for <phase> [words] \| list \| add \| edit \| set-phases \| remove \| count \| problems` | Your user memory: the entries for a command, and managing them | Every command (first step), `flow-memory`, `flow-doctor` |
 | `branch-name.sh make <CARD-KEY> "<title>" \| check <name>` | Builds and checks branch names (strict rule A12) | Later phases (Phase 1); you can use it any time |
 | `link-claude-skills.sh` | Adds the Claude Code link for every command (run it after adding a command) | Setup; `flow-doctor` tells you when |
 | `wait-seconds.sh <1-30>` | Waits a few seconds (e.g. while Jira loads) | `flow-doctor`, `flow-configure-user` |

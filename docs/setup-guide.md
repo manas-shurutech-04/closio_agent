@@ -1,6 +1,6 @@
 # Setup Guide — closio-agent for Japfa (Closio)
 
-> **Status (2026-10-16):** `closio-agent` is **in design.** The setup commands are built: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo` and `flow-setup-repo` ([commands.md](commands.md)). The card phases (1–9) come next.
+> **Status (2026-10-16):** `closio-agent` is **in design.** The setup commands are built: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo` and `flow-memory` ([commands.md](commands.md)). The card phases (1–9) come next.
 >
 > **Use the commands first** (see "First-time setup, in order" below). The manual steps in this guide stay as a backup and explain what the commands do. Steps marked **✅ verified** were tested on a real Mac (macOS 26.6.2). Steps marked **🛠 planned** aren't built yet.
 >
@@ -96,7 +96,9 @@ claude        # or: codex
 
 ### Approval prompts in Claude Code
 
-The first time you start Claude Code in this folder, it asks whether you trust it. Say yes: that turns on the shared file `.claude/settings.json`, which lets Claude Code run our own setup scripts without asking you each time (only the parts that read, or ask you themselves in a macOS dialog; [D49](design-decisions.md#d49)). Anything else still asks.
+The first time you start Claude Code in this folder, it asks whether you trust it. Say yes: that turns on the shared file `.claude/settings.json`, which lets Claude Code run every script the flow commands use without asking you ([D49](design-decisions.md#d49), [D57](design-decisions.md#d57)). Anything else still asks.
+
+**Codex:** when Codex asks whether to trust this folder, say yes too. Then the shared file `.codex/rules/closio-agent.rules` lets Codex run the same scripts without asking (Codex calls these "rules"; they're still experimental).
 
 ### First-time setup, in order
 
