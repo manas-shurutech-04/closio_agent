@@ -1,6 +1,6 @@
 # Rules (non-negotiable)
 
-**Every rule below is strict and is followed at every step, without exception** (user, 2026-10-15). These R-rules are about **how the agent is built**. The **agent's own rules** (what closio-agent does when it runs) are G1–G4 and A1–A15 in `project-context.md` (sections "Agent Git Rules" and "Agent Behaviour Rules"); the team copy, with each rule's decision and where it's applied, is `docs/agent-rules.md`; the ones the AI must follow in every session are also in `AGENTS.md`. All three are updated together.
+**Every rule below is strict and is followed at every step, without exception** (user, 2026-10-15). These R-rules are about **how the agent is built**. The **agent's own rules** (what closio-agent does when it runs) are G1–G4 and A1–A16 in `project-context.md` (sections "Agent Git Rules" and "Agent Behaviour Rules"); the team copy, with each rule's decision and where it's applied, is `docs/agent-rules.md`; the ones the AI must follow in every session are also in `AGENTS.md`. All three are updated together.
 
 | # | Rule | How it is applied |
 |---|------|-------------------|
