@@ -10,3 +10,4 @@ prefix_rule(pattern = ["bash", "scripts/doctor.sh"], decision = "allow", justifi
 prefix_rule(pattern = ["bash", "scripts/vpn.sh"], decision = "allow", justification = "closio-agent: VPN (flow-vpn, flow-connectivity)")
 prefix_rule(pattern = ["bash", "scripts/wait-seconds.sh"], decision = "allow", justification = "closio-agent: short wait while Jira loads")
 prefix_rule(pattern = ["bash", "scripts/branch-name.sh"], decision = "allow", justification = "closio-agent: branch names (rule A12)")
+prefix_rule(pattern = ["bash", "scripts/card-check.sh"], decision = "allow", justification = "closio-agent: card template check (flow-check-card)")

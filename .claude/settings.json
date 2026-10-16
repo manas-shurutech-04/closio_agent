@@ -9,7 +9,14 @@
       "Bash(bash scripts/vpn.sh *)",
       "Bash(bash scripts/wait-seconds.sh *)",
       "Bash(bash scripts/branch-name.sh *)",
-      "Edit(/config/repos/**)"
+      "Bash(bash scripts/card-check.sh *)",
+      "Edit(/config/repos/**)",
+      "Write(/local/cards/**)",
+      "Edit(/local/cards/**)",
+      "mcp__claude_ai_Atlassian_MCP__getAccessibleAtlassianResources",
+      "mcp__claude_ai_Atlassian_MCP__atlassianUserInfo",
+      "mcp__claude_ai_Atlassian_MCP__searchJiraIssuesUsingJql",
+      "mcp__claude_ai_Atlassian_MCP__getJiraIssue"
     ]
   }
 }
