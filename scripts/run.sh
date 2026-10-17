@@ -17,6 +17,8 @@
 #   save <KEY> "<message>"           Commits runs/<KEY>/ to the card's branch and pushes it (D61), without switching
 #                                    this folder: a temporary git index, so the working tree and its changes are untouched
 #   list                             Every card in progress, from the run branches on this Mac and on origin
+#   quick-clean <KEY>                Removes local/quick-checks/<KEY>/: the scratch files of flow-verify's quick check
+#                                    (one-off tests, test data, queries; on this Mac only, never saved), at its end (D68)
 #   count | problems                 For flow-doctor
 #
 # runs/<KEY>/ folders are git-ignored on main (/runs/*/ in .gitignore); they're committed only to their card's branch.
@@ -32,6 +34,7 @@ set -u
 AGENT_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 . "$AGENT_ROOT/config/project-settings.sh"
 RUNS_DIR="${RUNS_DIR:-$AGENT_ROOT/runs}"
+QUICK_DIR="${QUICK_DIR:-$AGENT_ROOT/local/quick-checks}"
 CMD="/flow-start"
 FIELDS="card title type phase step jira_status repos branch run_branch next updated"
 
@@ -46,7 +49,7 @@ bad() {
 }
 usage() {
   echo "Usage: bash scripts/run.sh check-folder | branch <KEY> | create <KEY> \"<title>\" | state <KEY> | get <KEY> <field>"
-  echo "       | set <KEY> <field> <value> | log <KEY> <step> \"<what>\" [\"<rules and memory>\"] | save <KEY> \"<message>\" | list | count | problems"
+  echo "       | set <KEY> <field> <value> | log <KEY> <step> \"<what>\" [\"<rules and memory>\"] | save <KEY> \"<message>\" | list | quick-clean <KEY> | count | problems"
 }
 now() { date '+%Y-%m-%d %H:%M'; }
 valid_key() { printf '%s' "$1" | grep -q -E "^$JIRA_PROJECT_KEY-[0-9]+$"; }
@@ -328,6 +331,8 @@ case "$action" in
   log) need_key "${2:-}"; [ -n "${3:-}" ] && [ -n "${4:-}" ] || { usage; exit 2; }; do_log "$2" "$3" "$4" "${5:-}" ;;
   save) need_key "${2:-}"; do_save "$2" "${3:-}" ;;
   list) do_list ;;
+  quick-clean) need_key "${2:-}"
+    if [ -d "$QUICK_DIR/$2" ]; then rm -rf "${QUICK_DIR:?}/$2" && ok "Removed local/quick-checks/$2/ (the quick check's scratch files)"; else ok "Nothing to remove: no local/quick-checks/$2/"; fi ;;
   count) do_count ;;
   problems) do_problems ;;
   -h|--help|help|"") usage; [ -n "$action" ] && exit 0 || exit 2 ;;
