@@ -40,7 +40,8 @@ The first memory step runs here automatically:
 
 **1. Start.** Run `bash scripts/run.sh check-folder`; if it fails, show the fix and stop. Read the card key typed after the command (in Claude Code it may also appear as `ARGUMENTS: …`) or the one from the plain-words check; if it isn't like `SCRUM-567`, show the usage and stop. `bash scripts/run.sh state <KEY>`:
    - No run folder, or `phase: pick-up` / `plan`: the plan isn't approved yet. Say "finish with `/flow-start <KEY>` first" and stop.
-   - A later phase (`verify`, `ship`, …): say where the card is and what to type next (its `next:` line), and stop.
+   - `phase: verify` and the newest run in `runs/<KEY>/verify.md` (the top `## Run` section) lists failures under its `### Result` (after `bash scripts/run.sh branch <KEY>`, which brings the folder here): **the user decides** (D67). Show the failures and ask whether to go back to develop to fix them. On a clear yes: `bash scripts/run.sh set <KEY> phase develop`, `set <KEY> step 4`, `set <KEY> next "/flow-develop <KEY>"`, add a `## Back from verify` section to `develop.md` listing them, log "back from verify", and continue as a continuation (step 2, then step 4 works through that list; the summary and the review show what was fixed). On no: stop.
+   - Any other later phase (`verify` with nothing failed, `ship`, …): say where the card is and what to type next (its `next:` line), and stop.
    - `phase: develop`: go on.
    Then `bash scripts/run.sh branch <KEY>` (brings the card's run folder onto this Mac without switching this folder, which stays on `main`) and connect the VPN with the `flow-connectivity` agent (rule A5). If either fails, show its fix and stop. If `step:` is above 1, this is a continuation: do step 2, read what step 3 reads (plus `develop.md` so far and each repo's uncommitted changes with `git -C <repo folder> diff`), then **go to the saved step**.
 
@@ -102,7 +103,7 @@ Then `bash scripts/run.sh set <KEY> next "/flow-develop <KEY>"`, `bash scripts/r
    - Changes asked: write them under `## Review` in `develop.md`, go back to step 4 for the repos involved (tests and checks again), then show the review again.
    - Approved **in so many words**: write "Approved by the user on <date>" under `## Review`. Log the step; `set <KEY> step 11`.
 
-**11. Finish.** `bash scripts/run.sh set <KEY> phase verify`, `set <KEY> step 1`, `set <KEY> next "/flow-verify <KEY>"`, log "review approved", and `bash scripts/run.sh save <KEY> "developed and reviewed"`. Show the save's output and end with one line: `Done: <KEY> is developed and reviewed. Next: /flow-verify <KEY> (coming; Codex: $flow-verify <KEY>).`
+**11. Finish.** `bash scripts/run.sh set <KEY> phase verify`, `set <KEY> step 1`, `set <KEY> next "/flow-verify <KEY>"`, log "review approved", and `bash scripts/run.sh save <KEY> "developed and reviewed"`. Show the save's output and end with one line: `Done: <KEY> is developed and reviewed. Next: /flow-verify <KEY> (Codex: $flow-verify <KEY>).`
 
 ## Rules
 - Every step writes its history line with the rules and memory applied (A1, A17). Pausing is just stopping; the next `/flow-develop <KEY>` carries on (on this Mac: the code isn't pushed yet).
