@@ -11,13 +11,20 @@
       "Bash(bash scripts/branch-name.sh *)",
       "Bash(bash scripts/card-check.sh *)",
       "Bash(bash scripts/help.sh *)",
+      "Bash(bash scripts/run.sh *)",
+      "Bash(bash scripts/card-branch.sh *)",
       "Edit(/config/repos/**)",
       "Write(/local/cards/**)",
       "Edit(/local/cards/**)",
+      "Write(/runs/**)",
+      "Edit(/runs/**)",
       "mcp__claude_ai_Atlassian_MCP__getAccessibleAtlassianResources",
       "mcp__claude_ai_Atlassian_MCP__atlassianUserInfo",
       "mcp__claude_ai_Atlassian_MCP__searchJiraIssuesUsingJql",
-      "mcp__claude_ai_Atlassian_MCP__getJiraIssue"
+      "mcp__claude_ai_Atlassian_MCP__getJiraIssue",
+      "mcp__claude_ai_Atlassian_MCP__executeRead",
+      "mcp__claude_ai_Atlassian_MCP__transitionJiraIssue",
+      "mcp__claude_ai_Atlassian_MCP__editJiraIssue"
     ]
   }
 }
