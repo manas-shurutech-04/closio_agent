@@ -29,5 +29,4 @@ dev_keys_optional: none
 mr_target_branch: development
 mr_labels: none   # optional default; confirmed or changed when each MR is created (D51)
 mr_reviewers: none   # optional default (GitLab usernames); confirmed or changed when each MR is created
-rulesets: none yet
 registered_on: 2026-10-14

@@ -12,6 +12,7 @@
 #   keys <repo>               Asks every missing dev key of the repo in one run (hidden macOS box)
 #   key <repo> <name>         Asks one dev key
 #   show <repo>               Everything about one repo: shared facts, local path, keys
+#   ruleset <repo>            Which ruleset the repo follows (D64, rule A19: kept by closio-agent, not set per repo)
 #
 # Shared facts:   config/repos/<repo>.yaml   (committed, no secrets)
 # Personal facts: local/repos/<repo>.yaml    (git-ignored, never pushed)
@@ -273,11 +274,6 @@ detect() {
   echo "mr_target_branch:   # ask the user (default: the base branch)"
   echo "mr_labels:   # optional default (comma-separated, or none); confirmed or changed when each MR is created (D51)"
   echo "mr_reviewers:   # optional default (GitLab usernames, or none); confirmed or changed when each MR is created"
-  if has_dep vue || has_dep react || has_dep vite; then
-    echo "rulesets: none yet   # FE rulesets to be defined later"
-  else
-    echo "rulesets: backend/story-implementation-workflow.md   # baseline (D26), to be refined later"
-  fi
   echo "# local_path for set-path: $path"
 }
 
@@ -436,6 +432,26 @@ list() {
   echo "Branch names for every repo (D50, rule A12): $JIRA_PROJECT_KEY-<number>/<short-description>, at most $BRANCH_DESC_MAX_WORDS words."
 }
 
+# ---------------------------------------------------------------- ruleset (D64, rule A19)
+
+# The ruleset comes from closio-agent itself (RULESET_FILE), never from the repo's registry file.
+ruleset() {
+  local repo="$1" file type rel="$RULESET_FILE"
+  require_registered "$repo"
+  file="$(shared_file "$repo")"
+  type="$(yaml_get "$file" type)"
+  if [ ! -f "$AGENT_ROOT/$rel" ]; then
+    bad "The ruleset file $rel is missing from closio-agent" "It's part of closio-agent: get it back with: git checkout -- $rel (or pull the latest closio-agent), then run this again."
+    return 1
+  fi
+  case "$type" in
+    BE) ok "$repo (BE) follows the ruleset $rel (all of it)" ;;
+    FE) ok "$repo (FE) follows the common practices of the ruleset $rel (no frontend ruleset yet; the note at its top says which parts)" ;;
+    *) bad "'type' in config/repos/$repo.yaml must be FE or BE" "Edit config/repos/$repo.yaml, then run this again."; return 1 ;;
+  esac
+  echo "   File: $rel · your memory entries may change its points for you (flow-memory); the agent rules always win"
+}
+
 # ---------------------------------------------------------------- main
 
 case "${1:-}" in
@@ -458,5 +474,6 @@ case "${1:-}" in
     printf '%s' "$3" | grep -q -E '^[a-z0-9-]+$' || { bad "'$3' isn't a valid key name" "Use lowercase letters, numbers and '-'."; exit 1; }
     ask_key "$2" "$3" ;;
   show) [ $# -eq 2 ] || { echo "Usage: bash scripts/configure-repo.sh show <repo>"; exit 1; }; show "$2" ;;
-  *) echo "Usage: bash scripts/configure-repo.sh check-folder | list | detect <path> | validate <repo> | set-path <repo> <path|not-cloned> | keys <repo> | key <repo> <name> | show <repo>"; exit 1 ;;
+  ruleset) [ $# -eq 2 ] || { echo "Usage: bash scripts/configure-repo.sh ruleset <repo>"; exit 1; }; ruleset "$2" || exit 1 ;;
+  *) echo "Usage: bash scripts/configure-repo.sh check-folder | list | detect <path> | validate <repo> | set-path <repo> <path|not-cloned> | keys <repo> | key <repo> <name> | show <repo> | ruleset <repo>"; exit 1 ;;
 esac

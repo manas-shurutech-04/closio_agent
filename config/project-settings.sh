@@ -47,3 +47,6 @@ LOCAL_RABBITMQ_PORT="${LOCAL_RABBITMQ_PORT:-5672}"
 RUN_BRANCH_PREFIX="${RUN_BRANCH_PREFIX:-runs/}"   # the card's branch is runs/<CARD-KEY>
 GIT_REMOTE="${GIT_REMOTE:-origin}"
 
+# The ruleset for every card (D64, rule A19): kept by the closio-agent builders, never by a command.
+# Backend repos follow all of it; the web app follows its common practices until a frontend ruleset exists.
+RULESET_FILE="${RULESET_FILE:-rulesets/story-implementation-workflow.md}"   # relative to the closio-agent folder

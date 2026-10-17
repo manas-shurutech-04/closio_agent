@@ -29,5 +29,4 @@ dev_keys_optional: none
 mr_target_branch: develop
 mr_labels: none   # optional default; confirmed or changed when each MR is created (D51)
 mr_reviewers: none   # optional default (GitLab usernames); confirmed or changed when each MR is created
-rulesets: backend/story-implementation-workflow.md
 registered_on: 2026-10-14

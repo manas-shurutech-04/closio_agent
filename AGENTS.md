@@ -43,3 +43,7 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     difference between the card and the code (error codes, statuses, messages, fields, anything the card names that isn't in the
     code) and ask the user about them first; wait for the answers. Only then draft the plan. Nothing is saved or pushed before
     the user approves the plan in chat; that approval is strictly necessary.
+14. Rulesets (rule A19, D64): every card follows `rulesets/story-implementation-workflow.md` (backend repos: all of it; the web
+    app: its common practices until a frontend ruleset exists). The closio-agent builders keep it; no command adds or changes it.
+    A user changes its points for themselves only through their user memory (`flow-memory`), and the plan names which entry
+    changed which point. The rules in this file always win over both.
