@@ -16,7 +16,7 @@ Before you start: open a terminal **in the closio-agent folder**, run `nvm use v
 - **Every command follows the agent rules** in [agent-rules.md](agent-rules.md), e.g. every problem comes with the steps to fix it (A11).
 - **Every command is in the help and in the guide (rule R17, [D60](design-decisions.md#d60)).** `flow-help` reads each command's `## Usage` block, [user-guide.md](user-guide.md) walks through every command in order (and is mirrored into a Claude artifact), and `flow-doctor` checks that nothing is missing.
 
-**No approval prompts for our own scripts ([D49](design-decisions.md#d49), [D57](design-decisions.md#d57)):** every script the commands run (`configure-user.sh`, `configure-repo.sh`, `setup-repo.sh`, `memory.sh`, `doctor.sh`, `vpn.sh`, `wait-seconds.sh`, `branch-name.sh`, `card-check.sh`, `help.sh`, `run.sh`, `card-branch.sh`, `repo-run.sh`, all their steps) runs without asking, and so does saving a card's text to `local/cards/` for `flow-check-card` and writing a card's run folder `runs/<CARD-KEY>/` for the card phases. **Claude Code:** the shared file `.claude/settings.json` (it applies once you've trusted the folder). It also pre-approves the **read-only Jira tools** the commands use through Claude's Atlassian connector (read a project or an issue, search issues, your account), so `flow-doctor`, `flow-configure-user`, `flow-check-card` and `flow-start` don't ask each session, and the two changes `flow-start` makes to a card (its status and its assignee, plus the sprint field) are pre-approved too ([D61](design-decisions.md#d61)). Those rules name the connector as claude.ai registers it (`mcp__claude_ai_Atlassian_MCP__…`, setup guide section 3); any other change to Jira still asks. **Codex:** the shared file `.codex/rules/closio-agent.rules` (Codex's "rules", still experimental; they apply when Codex trusts this folder, and the scripts then run outside its sandbox). Anything else still asks.
+**No approval prompts for our own scripts ([D49](design-decisions.md#d49), [D57](design-decisions.md#d57)):** every script the commands run (`configure-user.sh`, `configure-repo.sh`, `setup-repo.sh`, `memory.sh`, `doctor.sh`, `vpn.sh`, `wait-seconds.sh`, `branch-name.sh`, `card-check.sh`, `help.sh`, `run.sh`, `card-branch.sh`, `repo-run.sh`, `api-call.sh`, `api-check.sh`, `db-run.sh`, `e2e.sh`, `qmetry-import.sh`, all their steps) runs without asking, and so does saving a card's text to `local/cards/` for `flow-check-card` and writing a card's run folder `runs/<CARD-KEY>/` for the card phases. **Claude Code:** the shared file `.claude/settings.json` (it applies once you've trusted the folder). It also pre-approves the **read-only Jira tools** the commands use through Claude's Atlassian connector (read a project or an issue, search issues, your account), so `flow-doctor`, `flow-configure-user`, `flow-check-card` and `flow-start` don't ask each session, and the two changes `flow-start` makes to a card (its status and its assignee, plus the sprint field) are pre-approved too ([D61](design-decisions.md#d61)). Those rules name the connector as claude.ai registers it (`mcp__claude_ai_Atlassian_MCP__…`, setup guide section 3); any other change to Jira still asks. **Codex:** the shared file `.codex/rules/closio-agent.rules` (Codex's "rules", still experimental; they apply when Codex trusts this folder, and the scripts then run outside its sandbox). Anything else still asks.
 
 ## Command list
 
@@ -34,8 +34,10 @@ Before you start: open a terminal **in the closio-agent folder**, run `nvm use v
 | [`flow-status`](#flow-status) | Where a card stands (phase, step, branch, what to type next), or every card in progress | Built 2026-10-17 (C1). Tested by the user (2026-10-17, on SCRUM-540) |
 | [`flow-start`](#flow-start) | Picks up a Jira card and plans it: the card checked, In Development and assigned to you, a branch in every repo, the plan made from the code and approved by you | Built 2026-10-17 (C2). Tested by the user (2026-10-17, on SCRUM-540) |
 | [`flow-develop`](#flow-develop) | Develops a planned card with you: the code and its unit tests from the approved plan, the repo checks, then your review | Built 2026-10-17 (C3). Tested by the user (2026-10-17, on SCRUM-540) |
+| [`flow-verify`](#flow-verify) | Checks a developed card: every AC with its test cases (API checks or Playwright), the repo tests again and the story check; then the push, or what's wrong for you to decide | Built 2026-10-18 (C4). Not yet tested by the user |
+| [`flow-ac-check`](#flow-ac-check) | Adds or changes the test cases of one AC and runs them once | Built 2026-10-18 (C4). Not yet tested by the user |
 
-**Coming, in this order ([D61](design-decisions.md#d61), not built yet):** `flow-verify`, `flow-push`, `flow-finish`. See [architecture.md](architecture.md).
+**Coming, in this order ([D61](design-decisions.md#d61), not built yet):** `flow-push`, `flow-finish`. See [architecture.md](architecture.md).
 
 ---
 
@@ -98,6 +100,7 @@ $flow-doctor      (Codex: approve running it with network access, so the GitLab 
 | User memory | How many entries you have (never a warning when you have none); ⚠️ for lines in your memory files that aren't in the format | Fix: `/flow-memory` |
 | Commands documented | Every flow command has its `## Usage` block, is in a `flow-help` group, its section in this file, its row in [user-guide.md](user-guide.md), and is covered by the guide's Claude artifact ("mirrored" line) | Rule R17, [D60](design-decisions.md#d60). Fix: add what's missing; update the artifact in Claude Code |
 | Cards in progress | How many cards have a run folder or a run branch; ❌ for a broken run folder (no `state.md`, a missing line, a folder that isn't a card key) | [D61](design-decisions.md#d61). See them with `/flow-status` |
+| Checking web cards | Playwright is set up (`bash scripts/e2e.sh check`) | ⚠️ when it isn't: run `/flow-configure-user playwright` |
 | Repo setup | Each repo set up with `flow-setup-repo`: packages still installed, Claude Code can use its folder; one ⚠️ listing cloned repos not set up yet; the local Redis and RabbitMQ answer (when a set-up repo needs them) | Fix: `/flow-setup-repo <repo>` |
 | Keychain | The 5 personal items exist | Names only; values are never read ([D33](design-decisions.md#d33)). Fix: `/flow-configure-user <item>` |
 | Jira | The AI reads project SCRUM | Done by the AI, because only the AI tool has the Jira connection. The Jira connector can take a while to load when a session starts, so the AI waits and retries up to 3 times (about 30 s) before reporting ❌ |
@@ -200,6 +203,7 @@ $flow-configure-user …              (Codex: approve running the secret steps o
 | `vpn-username` | **Optional, not needed today** (the VPN uses SSO); skip it if you like | `local/user-settings.sh` |
 | `git-name`, `git-email` | Read from git; asked only if missing | Your global git settings |
 | `gitlab-token`, `fe-login-id`, `fe-login-password`, `ws1-login-userid`, `ws1-login-password` | A macOS message first says which one is next ("Copy it now, then click Continue"), then a hidden box opens to paste it into | macOS Keychain |
+| `playwright` | **Asks you first** (a download of about 150 MB: the `@playwright/test` packages and the Chromium browser), then sets up closio-agent's `e2e/` folder; needed to check web cards with `flow-verify` ([D67](design-decisions.md#d67)). Say no and `/flow-doctor` reminds you | `e2e/node_modules/` (git-ignored) and your user's browser cache |
 
 - **All missing secrets are asked in one go,** one after another (heads-up, then hidden box), so you approve only once, or not at all in Claude Code (see below).
 - **Secrets never go through the AI chat,** a file or a visible command. Only "✅ stored" is shown. If you paste a secret in the chat by mistake, change that secret.
@@ -429,23 +433,84 @@ Ready, with 1 thing worth a look.
 $flow-help …                 (Codex)
 ```
 
-**Output example (shortened):**
+**Output example (shortened).** In Claude Code or Codex, the AI puts the script's formatted text (markdown) in its reply, and the tool draws it: a heading per group, each command's name in bold with a one-line summary, and each way to type it on its own line in the tool's code color. The text behind it:
 ```
-flow-help — every flow command (Claude Code: /name · Codex: $name)
+### Setup, once, in this order
 
-Setup, once, in this order
-  flow-ping              Checks that the flow commands are installed and loading in this tool.
-                         /flow-ping · /flow-ping <any text>
-  flow-doctor            Checks that this Mac is set up correctly for the flow commands and shows how to fix each problem.
-                         /flow-doctor
+**flow-ping** · Checks that the flow commands are installed and loading in this tool.
+- `/flow-ping`
+- `/flow-ping <any text>`
+
+**flow-doctor** · Checks that this Mac is set up correctly for the flow commands and shows how to fix each problem.
+- `/flow-doctor`
 …
-Step-by-step guide: docs/user-guide.md · Claude artifact: https://claude.ai/code/artifact/…
-One command in full: /flow-help <command> · every detail: docs/commands.md
+Step by step: `docs/user-guide.md` · Claude artifact: https://claude.ai/code/artifact/… · every detail: `docs/commands.md`
 ```
+`/flow-help <command>` shows the full description and every line of the command's `## Usage` block. **In a terminal** (`bash scripts/help.sh` typed by you): the same layout with real colors (cyan group headings, green names, yellow commands), wrapped to the terminal's width (at most 100 characters); no colors with `NO_COLOR` set, or when the output goes to a file.
 
 **The check behind it (rule R17):** `bash scripts/help.sh check`, run by `flow-doctor` ("Commands documented"), shows ❌ with the fix when any command folder has no `## Usage` block, isn't in a `flow-help` group (the `GROUP_` lines at the top of `scripts/help.sh`; it would show under "Other"), has no section in this file, no row in the user guide's command index, or isn't covered by the guide's "mirrored" line (the Claude artifact is behind).
 
 **Files:** `.agents/skills/flow-help/`, `scripts/help.sh` (you can run `bash scripts/help.sh` in a terminal too), [user-guide.md](user-guide.md).
+
+---
+
+### `flow-verify`
+
+**Purpose:** checks one card that's been developed and reviewed: Phases 5 and 6 of [architecture.md](architecture.md) ([D67](design-decisions.md#d67), [D68](design-decisions.md#d68)). It runs the card's repos on your Mac and checks every AC in one of **two ways you pick**:
+
+- **A — Full check:** writes and saves every AC's test cases in the run folder (API checks for the backend, Playwright tests for the web app; a QMetry export is the base when you give one), runs them, runs the repo tests again and checks the build against the story.
+- **B — Quick check:** checks every AC directly against the running code: the statuses, error codes, messages and response structure it returns (backend: API calls, and the database read after a call that writes; web: one-off Playwright tests). No test cases are saved, no QMetry, no story check; the repo tests run again. Faster, and fewer tokens.
+
+Every run is recorded in `verify.md` (what was tested and the results), never overwritten. Everything passes: the card moves to the push phase. Something fails: it tells you what's wrong with a suggestion for each failure, and **you decide** how to go on. Nothing changes in Jira, and nothing is committed in the repos.
+
+**Usage:**
+```
+/flow-verify SCRUM-567                      check the card, or check it again; asks: A full check or B quick check   (Claude Code)
+/flow-verify SCRUM-567 full                 A without the question
+/flow-verify SCRUM-567 quick                B without the question
+/flow-verify SCRUM-567 full <export.xlsx>   A with the card's QMetry test cases as the base (optional; one or more exports)
+$flow-verify SCRUM-567 …                    (Codex: approve the scripts outside the sandbox)
+```
+
+**QMetry is optional, and only for A** ([D67](design-decisions.md#d67)). `flow-verify` never asks for it. With an export (typed after the key, or saved in an earlier run), the QMetry cases are the base: every case that can be automated becomes a test, with its QMetry key in the test's name, and an AC without a QMetry case still gets cases of its own. At the end, one line says how many were covered, e.g. `QMetry: 18 of 22 test cases covered (82%)`: nothing more (no table, no list). Without an export, the test cases are written from the card and the code, and there's no QMetry line. With B, an export typed after the key isn't used, and it says so.
+
+**Web cards: the APIs first** ([D69](design-decisions.md#d69)). Before any test is written, in both ways and on every run, the AI lists the APIs the card's screens call (from the web app's code: method, path, and the name of the variable its base comes from) in `api-list.json`, and asks you once: **"Which of these APIs are available on the dev environment right now?"** Each API you say isn't available is mocked in that run, with the **exact 200 response object you send** (asked for once, kept in `api-mocks.ts`; never made up; error answers come from the web app's code). Right before the tests run, `e2e.sh probe` logs in once and calls each GET API that isn't mocked; one that looks unavailable (no answer, 502/503/504, WS1 can't reach the service behind it, or WS1 doesn't know the route: 597 with `GENERAL_ERROR`) is asked about again. After the run, a call of the card's APIs that failed in a failing test is asked about too. The tests themselves compare the screen with whatever the API answered, so the same test runs against the real API or the mock (`e2e.sh … --mock <names>` turns mocks on for that run). `verify.md` records, per run, which APIs were real and which were mocked, with your answer.
+
+**What it does, step by step** (before every step: the team rules and your memory for `ac-check`, then `testing`; rule A17):
+
+| Step | A — Full check | B — Quick check |
+|---|---|---|
+| 1 Start and the choice | The card must be in the verify phase (otherwise it says what to type); brings in its run folder; connects the VPN; asks A or B (unless you typed `full` or `quick`) | same |
+| 2 Read | The card's ACs and QA steps, the plan, `develop.md`; a web card when its repos include the web app. A QMetry export typed after the key is saved with `scripts/qmetry-import.sh` (one that doesn't mention the card: it asks whether it's the right file); never asked for | The same, plus the code the card changed in each repo; no QMetry |
+| 3 Servers | `repo-run.sh <repo> start` for each repo (WS2, then WS1, then the web app), waiting for each health URL; web cards also need Playwright set up | same |
+| 4 What's checked | Web cards first: the APIs listed and asked about, the mocks set (see above). Then the `flow-ac-checker` agent writes the cases of every AC that has none: `runs/<KEY>/api-checks/ac-<n>.json` (backend) or `runs/<KEY>/e2e/ac-<n>.spec.ts` (web). With QMetry cases they're the base; without, its own from the card and the code. Cases you changed with `/flow-ac-check` are kept | Web cards first: the APIs listed and asked about, the mocks set (see above). The AI works out each AC's scenarios from the card and the code (every error the code returns, with its status, `error_code` and message; through WS1, WS1's statuses; the response fields) and shows one line each. Web: one-off Playwright tests in `local/quick-checks/<KEY>/` (this Mac only) |
+| 5 Test data and calls that write | Test data and every call that writes (`POST`, `PUT`, `PATCH`, `DELETE`) are shown first with their cleanup (which removes the test data and the rows the calls create), and run only after your clear yes (A23) | same (its SQL in `local/quick-checks/<KEY>/`) |
+| 6 AC checks | `api-check.sh <KEY>` (backend) or, web: `e2e.sh probe <KEY>` (the API check), then `e2e.sh run <KEY> [--mock <names>]`; failed calls of the card's APIs in failing tests are asked about | Each scenario with `api-call.sh`, compared with the AC and the code (status, error code, message, every response field); after a call that writes, the database is read with `db-run.sh <repo> query` (read only, no yes needed). Web: `e2e.sh probe <KEY> --quick`, then `e2e.sh quick <KEY> [--mock <names>]`, failed API calls asked about as in A |
+| 7 Repo tests | `repo-run.sh <repo> test` and `check` again (lint only warns) | same |
+| 8 Story check | The `flow-story-check` agent: every AC and the objective built, nothing out of scope, error codes from the code, rules A20–A22 | skipped |
+| 9 Clean up | The cleanup SQL shown again and run after your clear yes; the servers stopped; the WS1 session forgotten | The same, then `run.sh quick-clean <KEY>` removes `local/quick-checks/<KEY>/` |
+| 10 Result | With QMetry cases only: one line first, `QMetry: <n> of <total> test cases covered (<percent>%)` (`qmetry-import.sh coverage`). All passed: the card moves to the ship phase, next `/flow-push`. Something failed: each failure with a suggestion (`/flow-develop <KEY>` to fix the code, `/flow-ac-check <KEY> <AC> "…"` for a wrong case, or the exact fix for a setup problem); you decide; the card stays in verify | The same without a QMetry line; a scenario checked the wrong way: tell the AI what to check instead and run `/flow-verify <KEY> quick` again |
+
+**`runs/<CARD-KEY>/verify.md`:** one section per run, newest first, earlier runs never overwritten ([D68](design-decisions.md#d68)): `## Run <n> — <date and time> · A full check | B quick check` (or `· flow-ac-check AC <n>`), then (web cards) the APIs, each real or mocked with your answer ([D69](design-decisions.md#d69)), the AC checks (every case or scenario tested with ✅ / ❌, each failure with what was expected and what came back), the repo tests and checks, the story check (A), the test data, and the result.
+
+**Files:** `.agents/skills/flow-verify/`, the agents `flow-ac-checker` and `flow-story-check`, `scripts/repo-run.sh`, `scripts/api-call.sh`, `scripts/api-check.sh`, `scripts/db-run.sh`, `scripts/e2e.sh`, `scripts/qmetry-import.sh`, `scripts/run.sh` (`quick-clean`), `e2e/` (the shared Playwright project).
+
+---
+
+### `flow-ac-check`
+
+**Purpose:** adds, changes or rewrites the test cases of **one AC** of a card (option A's saved cases), runs them once and saves them in its run folder ([D67](design-decisions.md#d67)). `flow-verify`'s full check writes every AC's cases by default; this command is for a new case, a changed case, or a case written again. The next `/flow-verify` (full check) runs them with the rest. The card's phase and Jira don't change.
+
+**Usage:**
+```
+/flow-ac-check SCRUM-567 3                              write AC 3's cases again from the card and the code
+/flow-ac-check SCRUM-567 3 "add a case for ?status=foo"   add or change AC 3's cases as asked
+$flow-ac-check …                                        (Codex)
+```
+
+**What it does:** checks the card is developed and the AC exists; the `flow-ac-checker` agent writes or changes the AC's cases and shows what changed; for a web card it first asks which of the AC's APIs are available on dev and mocks the others (your exact 200 response, [D69](design-decisions.md#d69)), then runs the API check; it starts the servers the AC needs, adds test data and sends calls that write only after your clear yes, runs just that AC (`api-check.sh <KEY> <AC>` or `e2e.sh run <KEY> <AC>`), cleans up after your yes, records the run in `verify.md` (`## Run <n> — … · flow-ac-check AC <n>`), stops the servers and saves the run folder.
+
+**Files:** `.agents/skills/flow-ac-check/`, the `flow-ac-checker` agent, the scripts above.
 
 ---
 
@@ -534,7 +599,7 @@ $flow-develop SCRUM-567        (Codex: approve the scripts outside the sandbox)
 | 8 Summary | A short summary of the repo (new and changed files, tests, checks, anything not in the plan), then it carries straight on with the next repo |
 | 9 Save | `develop.md` complete; the run folder saved and pushed |
 | 10 ✋ Review | Per repo: the changed files, what each plan item became, every change from the plan, and every new function with the search behind it. You review in your editor: "change X" goes back to step 4; "review approved" goes on |
-| 11 Finish | The review result in `develop.md`; the card moves to the verify phase; saved and pushed; next: `flow-verify` (coming) |
+| 11 Finish | The review result in `develop.md`; the card moves to the verify phase; saved and pushed; next: [`flow-verify`](#flow-verify) |
 
 **`runs/<CARD-KEY>/develop.md`:** the plan and ruleset it followed and the memory applied; one section per repo (new and changed files, tests and their result, checks, everything not in the plan with your answer); the migrations and seeders run; the review.
 
@@ -558,10 +623,15 @@ The commands run these scripts (in `scripts/`). You can run them yourself in a t
 | `memory.sh for <phase> [words] \| list \| add \| edit \| set-phases \| remove \| clear-preview \| clear \| count \| problems` | Your user memory: the entries for a command, and managing them | Every command (first step), `flow-memory`, `flow-doctor` |
 | `branch-name.sh make <CARD-KEY> "<title>" \| check <name>` | Builds and checks branch names (strict rule A12) | Later phases (Phase 1); you can use it any time |
 | `card-check.sh <card file>` | Checks a card's text against the card template: ❌ not ready (with the fix), ⚠️ worth a look; exit code 0 when there's no ❌ | `flow-check-card`; Phase 1 later |
-| `help.sh list \| show <command> \| check` | The command help, read from each command's `SKILL.md`; `check` = rule R17 (Usage block, `commands.md` section, user-guide row, Claude artifact covering every command) | `flow-help`, `flow-doctor` |
-| `run.sh branch \| create \| state \| get \| set \| log \| save \| list \| count \| problems` | The card's run folder `runs/<CARD-KEY>/`: create it, read and change its state, write its history, and save it to its branch `runs/<CARD-KEY>` of closio-agent and push (never `main`), without ever switching this folder to that branch; `branch` brings the folder onto this Mac (a teammate's too) | `flow-start`, `flow-status`, `flow-doctor`; the later card phases |
+| `help.sh list \| show <command> \| check` | The command help, read from each command's `SKILL.md` (formatted text for the AI, colors in a terminal); `check` = rule R17 (Usage block, `commands.md` section, user-guide row, Claude artifact covering every command) | `flow-help`, `flow-doctor` |
+| `run.sh branch \| create \| state \| get \| set \| log \| save \| list \| quick-clean \| count \| problems` | The card's run folder `runs/<CARD-KEY>/`: create it, read and change its state, write its history, and save it to its branch `runs/<CARD-KEY>` of closio-agent and push (never `main`), without ever switching this folder to that branch; `branch` brings the folder onto this Mac (a teammate's too); `quick-clean` removes the quick check's scratch folder `local/quick-checks/<CARD-KEY>/` | `flow-start`, `flow-status`, `flow-doctor`; the later card phases |
 | `card-branch.sh check <repo> \| create <repo> <branch> \| update <repo> <branch>` | In a code repo: fetch, pull the base branch and create the card's branch (or reuse it); `update` brings the latest base branch into it (a fast-forward while it has no commits of its own; with its own commits it's left for the rebase in `flow-push`); stops with exit code 3 on uncommitted changes | `flow-start` |
-| `repo-run.sh <repo> check \| test \| migrate confirmed \| seed confirmed` | A repo's own commands, in its folder, on its Node version (A13): its check commands (lint only on the files the card changed, as ⚠️ warnings); its tests and coverage gate; `npm run migrate` / `seed` only with the word `confirmed`, after the user's yes ([D21](design-decisions.md#d21)). Output in `local/logs/repo-run-<repo>.log` | `flow-develop` |
+| `repo-run.sh <repo> check \| test \| migrate confirmed \| seed confirmed \| start \| stop \| status` (and `all stop`) | A repo's own commands, in its folder, on its Node version (A13): its check commands (lint only on the files the card changed, as ⚠️ warnings); its tests and coverage gate; `npm run migrate` / `seed` only with the word `confirmed`, after the user's yes ([D21](design-decisions.md#d21)). `start` runs the repo's server in the background and waits for its health URL; `stop` only stops what it started. Output in `local/logs/` | `flow-develop` |
+| `api-call.sh <repo> login \| logout \| <METHOD> <path> [--json \| --body] [--header] [--auth user\|none] [--client ok\|none\|id-only\|secret-only\|unknown\|wrong-secret] [--save]` | One API call to a repo running on this Mac. WS1 calls go logged in as you (your WS1 login from the Keychain; the session stays in `local/sessions/`); WS2 calls carry the keys saved with `/flow-configure-repo <repo> key …`, or missing or wrong keys on purpose. Keys, passwords and sessions are never shown | `flow-verify`, `flow-ac-check` (through `api-check.sh`) |
+| `api-check.sh <CARD-KEY> [<AC>]` | Runs the card's API test cases (`runs/<CARD-KEY>/api-checks/ac-<n>.json`: the call and what must come back) and says per case and per AC whether they pass | `flow-verify`, `flow-ac-check` |
+| `db-run.sh <repo> show <sql> \| run <sql> confirmed \| query <sql>` | A card's test data on the database the repo's `.env` names: `show` prints the SQL to review; `run … confirmed` runs it in one transaction with the repo's own config, only after your yes (A23); `query` only reads (a read-only transaction: the database refuses any change; no COMMIT, SET and the like) and prints the rows, no yes needed | `flow-verify`, `flow-ac-check` |
+| `e2e.sh check \| setup \| run <CARD-KEY> [<AC>] [--mock <names>] \| quick <CARD-KEY> [<AC>] [--mock <names>] \| probe <CARD-KEY> [--quick] [--mock <names>]` | Playwright: is it set up; set it up (`e2e/` packages and Chromium); run a card's tests (`runs/<CARD-KEY>/e2e/`; `quick`: the quick check's one-off tests in `local/quick-checks/<CARD-KEY>/`) against the web app on this Mac, logged in with your FE login; `--mock` turns on those mocks of the card's `api-mocks.ts`. No test run at all is a ❌. Under failing tests it lists the API calls that got no answer or a 5xx from dev (the card's APIs first, other screens' calls apart). `probe`: the API check before the run (logs in once, calls each GET API of the card's `api-list.json` that isn't mocked; ⚠️ for one that looks unavailable) | `flow-configure-user`, `flow-verify`, `flow-ac-check`, `flow-doctor` |
+| `qmetry-import.sh <CARD-KEY> <export.xlsx> \| coverage <CARD-KEY>` | Saves a QMetry test-case export of a card as markdown in `runs/<CARD-KEY>/qmetry/`, the base for its test cases (QMetry can't be read through the Jira tools); `coverage` counts how many of its cases the card's test cases cover (a case's QMetry key in a test's name) | `flow-verify`, `flow-ac-check` |
 | `link-claude-skills.sh` | Adds the Claude Code link for every command (run it after adding a command) | Setup; `flow-doctor` tells you when |
 | `wait-seconds.sh <1-30>` | Waits a few seconds (e.g. while Jira loads) | `flow-doctor`, `flow-configure-user` |
 | `lib/secret-dialogs.sh` | The heads-up and hidden box for secrets | `configure-user.sh`, `configure-repo.sh` |
@@ -573,4 +643,6 @@ Agents are helpers that commands start; you don't type them.
 | Agent | What it does | Files |
 |---|---|---|
 | `flow-connectivity` | Connects the VPN if needed and checks GitLab, at the start of every phase that needs it (Phases 1–9). Limits: 3 steps in Claude Code, 180 s for the SSO login ([D47](design-decisions.md#d47)) | `.claude/agents/flow-connectivity.md`, `.codex/agents/flow-connectivity.toml` |
+| `flow-ac-checker` | Writes or updates a card's test cases, one file per AC, in its run folder (API checks for backend cards, Playwright tests for web cards), from the card's QMetry export when there is one (the base, each case with its QMetry key), otherwise from the card and the code. A web test that needs an answer the dev data or the server can't give on demand (a 500, more than 5 items, a fixed order) answers the screen's one API call itself (`page.route`, the response shape and error codes from the code) and ends its name with `(answer from the test)`. Never runs them. Limit: 60 steps ([D47](design-decisions.md#d47)) | `.claude/agents/flow-ac-checker.md`, `.codex/agents/flow-ac-checker.toml` |
+| `flow-story-check` | Checks the build against the card's story (ACs, out of scope, error codes, rules A20–A22) and lists what's missing or extra. Only reads. Limit: 15 steps | `.claude/agents/flow-story-check.md`, `.codex/agents/flow-story-check.toml` |
 

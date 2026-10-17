@@ -4,7 +4,7 @@ An AI agent for the Japfa **Closio** team. It takes a Jira card from **SCRUM** t
 
 It runs as commands inside **Claude Code** (`/flow-start`) and **Codex** (`$flow-start`). Every command starts with `flow-` and only runs when you type it ([D43](docs/design-decisions.md#d43), [D44](docs/design-decisions.md#d44)); the one exception is `flow-develop`, which also starts when you ask in plain words to develop a card whose plan is approved ([D61](docs/design-decisions.md#d61)).
 
-> **Status:** in design. The foundation (setup commands) is being built first; see the build plan in [build-memory/project-context.md](build-memory/project-context.md). Commands so far: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card`, `flow-help`, and the first card commands `flow-status`, `flow-start`, `flow-develop` ([docs/commands.md](docs/commands.md)).
+> **Status:** in design. The foundation (setup commands) is being built first; see the build plan in [build-memory/project-context.md](build-memory/project-context.md). Commands so far: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card`, `flow-help`, and the card commands `flow-status`, `flow-start`, `flow-develop`, `flow-verify`, `flow-ac-check` ([docs/commands.md](docs/commands.md)).
 
 ## Start here
 

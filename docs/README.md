@@ -6,7 +6,7 @@
 
 **Pick up the JIRA card → … → MR (Merge Request) review → Deployment doc creation**
 
-> Status: in design. The phases are approved (see [architecture.md](architecture.md)). Commands built so far: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card`, `flow-help`, `flow-status`, `flow-start`, `flow-develop`, see [commands.md](commands.md).
+> Status: in design. The phases are approved (see [architecture.md](architecture.md)). Commands built so far: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card`, `flow-help`, `flow-status`, `flow-start`, `flow-develop`, `flow-verify`, `flow-ac-check`, see [commands.md](commands.md).
 
 > **New to closio-agent?** Start with [user-guide.md](user-guide.md): the whole process step by step, in plain words (also as a Claude artifact, link at its top). The details of each setup step are in [setup-guide.md](setup-guide.md); the whole flow is in [architecture.md](architecture.md).
 >
@@ -19,7 +19,7 @@
 | [user-guide.md](user-guide.md) | closio-agent step by step: which command to type, in what order, what each one asks, every option. Mirrored into a Claude artifact ([D60](design-decisions.md#d60)) | Available (added 2026-10-17, F8) |
 | [design-decisions.md](design-decisions.md) | Every decision taken, including the options we rejected and why | Available |
 | [setup-guide.md](setup-guide.md) | Access needed, installation, configuration, first run | Available: setup with the commands (`flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`), with the manual steps kept as a backup |
-| [commands.md](commands.md) | Every agent command: purpose, usage, inputs, outputs, example | Available: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card`, `flow-help`, `flow-status`, `flow-start`, `flow-develop` |
+| [commands.md](commands.md) | Every agent command: purpose, usage, inputs, outputs, example | Available: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card`, `flow-help`, `flow-status`, `flow-start`, `flow-develop`, `flow-verify`, `flow-ac-check` |
 | [architecture.md](architecture.md) | How the pipeline stages connect and what each one takes in and produces | Available (phases approved; first commands built) |
 | [agent-rules.md](agent-rules.md) | Every rule the agent follows when it runs (G1–G4, A1–A23), each with its decision and where it's applied today | Available (added 2026-10-15) |
 | [jira-card-template.md](jira-card-template.md) | What a Jira card looks like: the sections, the AC and QA rules, code alignment, how a card is drafted, the ready checklist | Available (added 2026-10-17, F7) |

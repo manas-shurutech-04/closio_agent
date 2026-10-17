@@ -1,6 +1,6 @@
 # Architecture — Pipeline Flow
 
-> Status: the phase structure was approved on 2026-10-09 and updated the same day with the developer-testing phase ([D18](design-decisions.md#d18)). Built so far (foundation, Phase 0): `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card`, `flow-help`, the `flow-connectivity` agent ([commands.md](commands.md)), the Jira card template ([jira-card-template.md](jira-card-template.md)) and the step-by-step guide ([user-guide.md](user-guide.md)). **Of the card phases: `flow-status`, `flow-start` (Phases 1 and 2, built 2026-10-17, C1 + C2) and `flow-develop` (Phases 3 and 4, built 2026-10-17, C3).** The card phases' commands and the order of building are decided in [D61](design-decisions.md#d61) (2026-10-17): `flow-start` (Phases 1–2, **built**), `flow-develop` (3–4, **built**), `flow-verify` (5–6), `flow-push` (7–8), `flow-finish` (9), plus `flow-status` (**built**). Every command starts with **`flow-`** ([D43](design-decisions.md#d43)). In Claude Code a command is typed as `/flow-…`; in Codex as `$flow-…` ([D16](design-decisions.md#d16)). Commands only run when the user types them ([D44](design-decisions.md#d44)).
+> Status: the phase structure was approved on 2026-10-09 and updated the same day with the developer-testing phase ([D18](design-decisions.md#d18)). Built so far (foundation, Phase 0): `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card`, `flow-help`, the `flow-connectivity` agent ([commands.md](commands.md)), the Jira card template ([jira-card-template.md](jira-card-template.md)) and the step-by-step guide ([user-guide.md](user-guide.md)). **Of the card phases: `flow-status`, `flow-start` (Phases 1 and 2, built 2026-10-17, C1 + C2) `flow-develop` (Phases 3 and 4, built 2026-10-17, C3) and `flow-verify` + `flow-ac-check` (Phases 5 and 6, built 2026-10-18, C4).** The card phases' commands and the order of building are decided in [D61](design-decisions.md#d61) (2026-10-17): `flow-start` (Phases 1–2, **built**), `flow-develop` (3–4, **built**), `flow-verify` (5–6, **built**), `flow-push` (7–8), `flow-finish` (9), plus `flow-status` (**built**). Every command starts with **`flow-`** ([D43](design-decisions.md#d43)). In Claude Code a command is typed as `/flow-…`; in Codex as `$flow-…` ([D16](design-decisions.md#d16)). Commands only run when the user types them ([D44](design-decisions.md#d44)).
 
 ## Overview
 
@@ -10,8 +10,8 @@ Phase 1  Pick up the card        flow-start <CARD-KEY>            (C2, built 202
 Phase 2  Understand & plan       part of flow-start · ✋ user approves the plan
 Phase 3  Develop                 flow-develop <CARD-KEY>          (C3, built 2026-10-17) agent + user together: code + unit tests; also from plain words once the plan is approved
 Phase 4  Human review            part of flow-develop · ✋
-Phase 5  Check against ACs       flow-verify <CARD-KEY>           (C4) loops back to Phase 3 if logic changes are needed
-Phase 6  Developer testing       part of flow-verify · the repo tests again (written in Phase 3) + Playwright + story verification; loops back to Phase 3
+Phase 5  Check against ACs       flow-verify <CARD-KEY>           (C4, built 2026-10-18) every AC's test cases; flow-ac-check <CARD-KEY> <AC> edits one AC's
+Phase 6  Developer testing       part of flow-verify · the repo tests again + the story check; a failure: the user decides (e.g. back to Phase 3)
 Phase 7  Ship                    flow-push <CARD-KEY>             (C5) push (also creates, assigns and describes the MRs)
 Phase 8  Merge Request           part of flow-push · MRs linked on Jira → card to Code Review
 Phase 9  After merge             flow-finish <CARD-KEY>           (C6) deployment doc → test on dev → card to Ready for Test
@@ -85,16 +85,16 @@ The agent and the user develop together, following the approved plan and the rul
 Part of `flow-develop`. Per repo, the agent shows the changed files, what each plan item became and every change from the plan; the user reviews the changes in their editor. "Change X" goes back to Phase 3; "review approved" (in so many words) ends `flow-develop`, and the card moves on to `flow-verify`.
 
 ### Phase 5 — Check against ACs (`flow-verify <CARD-KEY>`, Phases 5 and 6)
-Run the code and check each AC, using its own specialised custom agent ([D19](design-decisions.md#d19)). If logic changes are needed, go back to Phase 3.
+Built in C4 ([D67](design-decisions.md#d67)). `flow-verify` starts the card's repos on this Mac (`scripts/repo-run.sh <repo> start`) and checks every AC in one of **two ways the user picks** ([D68](design-decisions.md#d68)): **A — Full check** (below) or **B — Quick check**: every AC checked directly against the running code (the statuses, error codes, messages and response structure it returns, through `scripts/api-call.sh`, and the database read with `scripts/db-run.sh … query` after a call that writes; web: one-off Playwright tests in `local/quick-checks/<CARD-KEY>/`, run by `scripts/e2e.sh quick`), with no saved test cases, no QMetry and no story check. Every run, either way, is recorded in `verify.md` (newest first, never overwritten), and test data or calls that write run only after the user's yes. **Web cards, the APIs first** ([D69](design-decisions.md#d69)): before any test is written, the APIs the screens call are listed (`api-list.json`) and the user says which are available on dev, every run; an unavailable one is mocked with the exact 200 response the user sends (`api-mocks.ts`, switched on per run with `e2e.sh … --mock`); `e2e.sh probe` checks the GET APIs on dev right before the run; `e2e/fixtures.ts` notes API calls that fail during a test, and those of the card's APIs are asked about after the run. In the full check, the `flow-ac-checker` agent ([D19](design-decisions.md#d19)) writes the test cases of every AC that has none, in the card's run folder: **API checks** for backend cards (`runs/<CARD-KEY>/api-checks/ac-<n>.json`: the call and what must come back; run by `scripts/api-check.sh`, through `scripts/api-call.sh`, which adds the WS1 login or the WS2 keys itself) and **Playwright tests** for web cards (`runs/<CARD-KEY>/e2e/ac-<n>.spec.ts`; run by `scripts/e2e.sh` against the web app on this Mac, logged in with the FE login; a test that needs an answer the dev data or the server can't give on demand, such as a 500 or more than 5 items, answers the screen's one API call itself with `page.route`, shaped from the code, and is named `… (answer from the test)`). QMetry is optional and never asked for: a QMetry export of the card, when the user gives one, is the base for its test cases (`scripts/qmetry-import.sh`; each case named with its QMetry key), and the result says how many of its cases were covered (`qmetry-import.sh coverage`); without one, the cases are written from the card and the code. Test data the cases need, and its cleanup, are shown to the user and run only after a clear yes (`scripts/db-run.sh`, rule A23). `flow-ac-check <CARD-KEY> <AC> ["…"]` adds or changes one AC's cases.
 
 ### Phase 6 — Developer testing ([D18](design-decisions.md#d18))
 Runs **before the push**, so a failure never needs a second push (G4).
 
 1. **Repository tests (committed to the repo):** written in Phase 3 by `flow-develop`, in the format registered for the repo ([D65](design-decisions.md#d65)); here they run again, and the repo's strict **coverage rules** must pass. Skipped for repos without a test suite ([D25](design-decisions.md#d25)).
    - **FE end-to-end:** Playwright, written and run here by `flow-verify`, kept **outside the repo in closio-agent's own workspace** and run against the locally running app; never pushed ([D24](design-decisions.md#d24)).
-2. **Story verification:** a specialised **custom agent** tests the implementation against the card's story description.
-3. Save the results in the card's run folder.
-4. On any failure, go back to Phase 3.
+2. **Story verification** (full check only): the `flow-story-check` agent checks the build against the card's story (every AC and the objective built, nothing out of scope, error codes from the code, rules A20–A22).
+3. Save the results in the card's run folder (`verify.md`).
+4. **All passed:** the card moves to Phase 7. **A failure:** the agent tells the user what's wrong and suggests what to do (fix the code with `flow-develop`, which then offers to go back; change a test case with `flow-ac-check`; or a setup fix). **The user decides** how to go on (D67).
 
 Local test environment ([D21](design-decisions.md#d21)):
 - **PostgreSQL:** the dev database, used directly. Credentials from the repo's `.env` ([D34](design-decisions.md#d34)).
@@ -108,7 +108,7 @@ Test credentials ([D20](design-decisions.md#d20)): per person, asked once in set
   - `POST https://dev-closio-ws1-apiprivate.japfacomfeed.co.id/api/v1/login`
   - Headers: `accept: application/json`, `X-Secure-Transmission-Type: x`, `X-Application-Version: 1.0.0+1`, `Content-Type: application/json`
   - Body: `userid` and `password` (per person), `napp_pk: 4` and `client_type: "web"` (the same for everyone)
-- **BE, WS2:** each service's own client ID and secret (`x-client-id` / `x-client-secret` headers), **taken from that repo's `.env`**, not the Keychain ([D34](design-decisions.md#d34)).
+- **BE, WS2:** each service's own client ID and secret (`x-client-id` / `x-client-secret` headers). For the checks on this Mac, `flow-verify` uses the keys saved with `/flow-configure-repo <repo> key ws2-client-id` and `… ws2-client-secret` (Keychain, [D37](design-decisions.md#d37)); the local WS2 accepts them when its `.env` lists the same client ([D67](design-decisions.md#d67)).
 
 _Details still open: how the coverage check that runs on every commit affects atomic commits._
 
@@ -161,6 +161,8 @@ _Details still open: how the coverage check that runs on every commit affects at
   | Agent | Time limit (in its script) | Step limit (Claude Code) |
   |---|---|---|
   | `flow-connectivity` | 180 s for the SSO login (`VPN_CONNECT_TIMEOUT`) | 3 |
+  | `flow-ac-checker` | Each call it makes is a script with its own limit (`API_CALL_TIMEOUT` 30 s, `E2E_TIMEOUT` 900 s) | 60 |
+  | `flow-story-check` | Only reads | 15 |
   | Later agents | Set when each is built | Set when each is built |
 
 ## Not covered yet
