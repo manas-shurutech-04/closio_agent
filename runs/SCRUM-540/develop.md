@@ -35,7 +35,7 @@ Next:     your review
 
 ## Migrations and seeders run
 - nodejs-ws2targetsalesincentive · `npm run migrate` (repo-run.sh migrate confirmed) · 2026-10-17 · ✅ passed (creates `trader_stock_days_multiplier_configs`).
-- nodejs-ws2targetsalesincentive · seeder `20261017100001-seed-trader-stock-days-multiplier-configs.js` · **not run by the agent**. `npm run seed` is `db:seed:all` and the repo doesn't record which seeders have run, so it would rerun all 7. The first one (`20260529000000-seed-incentive-schemas.js`, a plain `bulkInsert`) would hit `uq_schema_partner` on dev and stop the run. The user chose (2026-10-17) to run only this seeder by hand: `npx sequelize-cli db:seed --seed 20261017100001-seed-trader-stock-days-multiplier-configs.js` (Node 22). Result: waiting for the user.
+- nodejs-ws2targetsalesincentive · seeder `20261017100001-seed-trader-stock-days-multiplier-configs.js` · **not run by the agent**. `npm run seed` is `db:seed:all` and the repo doesn't record which seeders have run, so it would rerun all 7. The first one (`20260529000000-seed-incentive-schemas.js`, a plain `bulkInsert`) would hit `uq_schema_partner` on dev and stop the run. The user chose (2026-10-17) to run only this seeder by hand: `npx sequelize-cli db:seed --seed 20261017100001-seed-trader-stock-days-multiplier-configs.js` (Node 22). Result: ✅ ran successfully (run by the user by hand, reported on 2026-10-17). The seeded row: partner `e3d8f926-a1bf-4890-9524-cc2d610152f9`, 30 days, `2026-10-01` to `2026-10-31`, active.
 - For the deployment doc: on each environment, run the migration, then **only this seeder** (`db:seed --seed …`), not `db:seed:all`.
 
 ## Review
