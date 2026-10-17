@@ -1,7 +1,7 @@
 # Open Questions
 
 - **A6 confirmation:** user said "hold onto this rule for now". Recorded as adopted provisionally; confirm the interpretation (adopt vs. defer).
-- **MR title/description content:** e.g. title `SCRUM-519: <summary>`. Labels or draft?
+- **MR title/description content:** e.g. title `SCRUM-519: <summary>`. Labels or draft? The description's content is set (D64): the ruleset's MR description checklist (Jira ref, files by layer, ACs covered, error-code differences); the title format is still open.
 - **Security:** a GitLab personal access token was used in plain text in a past Claude Code session (2026-10-08), so it's stored in that transcript and was sent to the AI provider. Recommend the user revokes it and creates a new one for D32, stored only in the Keychain.
 - **REST API description step (D32), to test when built:** `PUT /api/v4/projects/:id/merge_requests/:iid` with a multi-line `description`, token read from the Keychain and kept off the command line (e.g. curl reading the header from stdin). Also confirm the push option `merge_request.assign` works on the Japfa GitLab.
 - **Coverage check on every commit:** husky runs the full `coverage:check` on pre-commit and pre-push in notification, pricingengine and targetsalesincentive. Each atomic commit must pass 80/70/80/80 on its own, and every commit runs the whole suite (slow). The commit-splitting design (Phase 7) must account for this.
@@ -12,7 +12,9 @@
 - **New-user test (F9):** user agreed to a separate macOS account and asked how big the setup is. Explained 2026-10-09 (incl. the Homebrew multi-user caveat).
 - **Jira in Codex:** works through the Atlassian app on the user's ChatGPT account (verified 2026-10-11). Still to write up: how a new user connects that app in ChatGPT (exact steps). The `codex mcp add` way is untested.
 - **Not yet seen:** doctor's ✅ for a stored Keychain item and a real GitLab token check (no items stored yet).
-- **F8 user tests (built 2026-10-17, D60):** `/flow-help` and `/flow-help memory` in Claude Code and Codex; `/flow-doctor`'s new "Commands documented" section ✅; the Claude artifact opens and reads like `docs/user-guide.md`; the guide's language is simple enough.
+- **Not tested yet:** `$flow-start` / `$flow-status` in Codex; `/flow-start` on a card that's already planned.
+- **`flow-finish` merges the run branch into `main`:** decided in D61; built with C6.
+- **F9 (new-user test):** postponed by the user on 2026-10-17 ("for now"); the plan for it is in the chat of that day (second admin account, the guide from the top, one repo, the Homebrew single-user risk).
 - **Dev database details in the repo files:** `dev_db_host`/`port`/`name`/`schema` are empty in `config/repos/`. The answer "okayy" (2026-10-14) was read as "add later".
 - **Watch:** Codex's updater process still runs with Node v18; if Codex falls back to v18 after an update, restart the service again (fallback: `nvm alias default 22`). How to restart the updater itself is not checked yet (documented as such in the setup guide).
 - **Backend allow list (security):** `japfa/backend/.claude/settings.local.json` allows `echo $GITLAB_TOKEN` / `echo $GITLAB_PRIVATE_TOKEN` without asking. Suggested removing them; user's call.
@@ -79,3 +81,11 @@
 - F7 user tests passed (user, 2026-10-17: "F7 cases are tested already"). F7 complete.
 - F8 draft questions answered (2026-10-17): recorded as D60 (doc + published page with its link in the code; placeholders listed; `## Usage` blocks; hard rule R17 / rule 11 / doctor check).
 - F8 final draft approved and built (2026-10-17, D60).
+- F8 user tests passed (user, 2026-10-17: "The testing has been done"). F8 complete.
+- Card phases plan answered (2026-10-17): recorded as D61 (commands, run folder, memory before planning, push on a branch, repos confirmed, ask when not To Do, Jira changes pre-approved, order C1+C2 first).
+- C1 + C2 final draft approved and built (2026-10-17, D61).
+- C1 + C2 user tests passed (user, 2026-10-17: "test cases are done now"), on SCRUM-540, SCRUM-131 (Spike) and SCRUM-521 (a teammate's card).
+- Sprint move: works on the Japfa Jira (2026-10-17): the sprint id goes with the move to In Development (`transitionJiraIssue`); Sprint field `customfield_10020`.
+- The 5 fixes from the C1 + C2 tests and the ruleset copy: drafted, answered and built (2026-10-17, D64, rule A19).
+- Where the ruleset lives and who changes it: in closio-agent, the builders; users only through memory (D64).
+- User tests of the C1 + C2 fixes: skipped by the user (2026-10-17: "no need for testing we can move ahead"). The first real card run will show them (latest develop at step 7, resume at steps 8–10, `next:` line, Cards group, the plan's `Ruleset:` line).
