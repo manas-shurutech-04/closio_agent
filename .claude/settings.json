@@ -13,6 +13,7 @@
       "Bash(bash scripts/help.sh *)",
       "Bash(bash scripts/run.sh *)",
       "Bash(bash scripts/card-branch.sh *)",
+      "Bash(bash scripts/repo-run.sh *)",
       "Edit(/config/repos/**)",
       "Edit(/local/cards/**)",
       "Edit(/runs/**)",

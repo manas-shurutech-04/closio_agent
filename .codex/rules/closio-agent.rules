@@ -14,3 +14,4 @@ prefix_rule(pattern = ["bash", "scripts/card-check.sh"], decision = "allow", jus
 prefix_rule(pattern = ["bash", "scripts/help.sh"], decision = "allow", justification = "closio-agent: command help and the commands-documented check (flow-help, flow-doctor)")
 prefix_rule(pattern = ["bash", "scripts/run.sh"], decision = "allow", justification = "closio-agent: the card run folder (flow-status, flow-start and the other card phases)")
 prefix_rule(pattern = ["bash", "scripts/card-branch.sh"], decision = "allow", justification = "closio-agent: the card branch in a code repo (flow-start)")
+prefix_rule(pattern = ["bash", "scripts/repo-run.sh"], decision = "allow", justification = "closio-agent: a repo's own checks, tests, migrations and seeders, on its Node version (flow-develop)")
