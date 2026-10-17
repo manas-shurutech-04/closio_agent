@@ -2,7 +2,7 @@
 # Help for the flow commands, and the "every command is listed everywhere" check (F8, D60, rule R17).
 # Run it from the closio-agent folder:  bash scripts/help.sh <action>
 #
-#   list (or nothing)     Every flow command, grouped, with what it does and how it's typed
+#   list (or nothing)     Every flow command, grouped: a one-line summary and each way to type it
 #   show <command>        One command in full (the "flow-" part can be left out)
 #   check                 Rule R17: every command folder has a "## Usage" block, a section in docs/commands.md,
 #                         an index row in docs/user-guide.md, and is covered by the guide's "mirrored" line
@@ -10,6 +10,9 @@
 #
 # The text comes from the commands' own files: every folder .agents/skills/flow-*/ is a command; its SKILL.md
 # gives the one-line "description:" and the "## Usage" block. So a new command can't be missing from the help.
+# Output format for list and show (HELP_FORMAT overrides): in a terminal, colors and lines wrapped to its width
+# ("terminal"; no colors with NO_COLOR set: "plain"); otherwise markdown ("markdown"), which is what the AI shows in
+# its reply when /flow-help runs, so Claude Code and Codex draw the headings, bold names and `commands` in color.
 # Exit codes: 0 fine, 1 at least one ❌ (check, or an unknown command), 2 wrong usage.
 # Only reads. Works in the Mac's own bash 3.2.
 
@@ -26,7 +29,7 @@ GUIDE_DOC="${GUIDE_DOC:-$AGENT_ROOT/docs/user-guide.md}"
 GROUP_NAMES="Setup, once, in this order|Every day|Cards|Any time"
 GROUP_1="flow-ping flow-doctor flow-configure-user flow-configure-repo flow-setup-repo"
 GROUP_2="flow-vpn flow-memory"
-GROUP_3="flow-check-card flow-start flow-develop flow-status"
+GROUP_3="flow-check-card flow-start flow-develop flow-verify flow-ac-check flow-status"
 GROUP_4="flow-help"
 
 to_fix=0
@@ -46,6 +49,28 @@ usage() {
   echo "Usage: bash scripts/help.sh [list | show <command> | check]"
 }
 
+# ---------------------------------------------------------------- output format
+if [ -n "${HELP_FORMAT:-}" ]; then FORMAT="$HELP_FORMAT"
+elif [ -t 1 ]; then
+  if [ -n "${NO_COLOR:-}" ]; then FORMAT="plain"; else FORMAT="terminal"; fi
+else FORMAT="markdown"; fi
+case "$FORMAT" in markdown|terminal|plain) ;; *) FORMAT="markdown" ;; esac
+if [ "$FORMAT" = "terminal" ]; then
+  C_HEAD=$'\033[1;36m'; C_NAME=$'\033[1;32m'; C_FORM=$'\033[33m'; C_DIM=$'\033[2m'; C_OFF=$'\033[0m'
+else
+  C_HEAD=""; C_NAME=""; C_FORM=""; C_DIM=""; C_OFF=""
+fi
+WIDTH="${COLUMNS:-}"
+[ -z "$WIDTH" ] && [ -t 1 ] && WIDTH="$(tput cols 2>/dev/null)"
+case "$WIDTH" in ''|*[!0-9]*) WIDTH=80 ;; esac
+[ "$WIDTH" -gt 100 ] && WIDTH=100
+[ "$WIDTH" -lt 40 ] && WIDTH=40
+# Prints text wrapped to the width, every line starting with <indent> spaces (terminal and plain formats).
+wrap() { # <indent> <text>
+  local pad; pad="$(printf '%*s' "$1" '')"
+  printf '%s\n' "$2" | fold -s -w "$((WIDTH - $1))" | sed -e 's/[[:space:]]*$//' -e "s/^/$pad/"
+}
+
 # ---------------------------------------------------------------- reading the command files
 # Every command folder, one name per line (names never contain spaces; paths may, so this prints names only).
 all_commands() {
@@ -55,11 +80,22 @@ all_commands() {
   done
 }
 skill_file() { echo "$SKILLS_DIR/$1/SKILL.md"; }
-# The one-line description from the frontmatter, without the "Runs only when the user types…" sentence.
+# The one-line description from the frontmatter, without the "Runs only when / Starts when the user types…" part.
 description_of() { # <command>
   local f; f="$(skill_file "$1")"
   [ -f "$f" ] || return 0
-  sed -n 's/^description:[[:space:]]*//p' "$f" | head -n 1 | sed -E 's/[[:space:]]*Runs only when the user types.*$//'
+  sed -n 's/^description:[[:space:]]*//p' "$f" | head -n 1 | sed -E 's/[[:space:]]*(Runs only|Starts) when the user types.*$//'
+}
+# A one-line summary for the list: the description's first sentence, without the parts in brackets, up to its first colon.
+summary_of() { # <command>
+  description_of "$1" | awk '{
+    s = $0
+    if (match(s, /\.[[:space:]]/)) s = substr(s, 1, RSTART)
+    while (match(s, /[[:space:]]*\([^()]*\)/)) s = substr(s, 1, RSTART - 1) substr(s, RSTART + RLENGTH)
+    if (match(s, /: /)) s = substr(s, 1, RSTART - 1)
+    sub(/[.[:space:]]+$/, "", s)
+    if (s != "") print s "."
+  }'
 }
 # The lines of the "## Usage" block (up to the next "## " heading).
 usage_of() { # <command>
@@ -67,9 +103,9 @@ usage_of() { # <command>
   [ -f "$f" ] || return 0
   awk 'BEGIN{on=0} /^## Usage[[:space:]]*$/{on=1; next} on && /^## /{exit} on{print}' "$f"
 }
-# The command forms of a usage block: the first `…` of every "- " line, except the Codex line.
+# The command forms of a usage block, one per line: the first `…` of every "- " line, except the Codex line.
 forms_of() { # <command>
-  usage_of "$1" | grep -E '^- `' | grep -v -E '^- Codex' | sed -E 's/^- `([^`]*)`.*/\1/' | awk '{ if (NR > 1) printf " · "; printf "%s", $0 } END { print "" }'
+  usage_of "$1" | grep -E '^- `' | grep -v -E '^- Codex' | sed -E 's/^- `([^`]*)`.*/\1/'
 }
 is_command() { [ -d "$SKILLS_DIR/$1" ] && [ -f "$(skill_file "$1")" ]; }
 # The guide's "mirrored" line: the Claude artifact link, the date and the commands it covers.
@@ -77,18 +113,30 @@ mirrored_line() { [ -f "$GUIDE_DOC" ] && grep -m 1 -E 'mirrored on [0-9]{4}-[0-9
 artifact_url() { mirrored_line | grep -o -E 'https://[^ )>]+' | head -n 1; }
 
 # ---------------------------------------------------------------- list
+group_heading() { # <text>
+  if [ "$FORMAT" = "markdown" ]; then printf '### %s\n\n' "$1"
+  else printf '%s%s%s\n\n' "$C_HEAD" "$(printf '%s' "$1" | tr '[:lower:]' '[:upper:]')" "$C_OFF"; fi
+}
 do_list() {
-  echo "flow-help — every flow command (Claude Code: /name · Codex: \$name)"
-  local shown="" i=1 names group name forms desc
+  local shown="" i=1 names group name url
+  if [ "$FORMAT" = "markdown" ]; then
+    echo "## flow-help: every flow command"
+    echo
+    echo "Claude Code: \`/flow-<name>\` · Codex: \`\$flow-<name>\` · one command in full: \`/flow-help <command>\`"
+  else
+    printf '%sflow-help: every flow command%s\n' "$C_HEAD" "$C_OFF"
+    wrap 0 "Claude Code: /flow-<name> · Codex: \$flow-<name> · one command in full: /flow-help <command>"
+  fi
+  echo
   names="$GROUP_NAMES"
   while [ -n "$names" ]; do
     group="${names%%|*}"
     case "$names" in *"|"*) names="${names#*|}" ;; *) names="" ;; esac
     eval "members=\"\$GROUP_$i\""
-    echo; echo "$group"
+    group_heading "$group"
     for name in $members; do
       is_command "$name" || continue
-      print_line "$name"; shown="$shown $name "
+      print_command "$name"; shown="$shown $name "
     done
     i=$((i + 1))
   done
@@ -97,38 +145,90 @@ do_list() {
     case "$shown" in *" $name "*) ;; *) other="$other $name" ;; esac
   done < <(all_commands)
   if [ -n "$other" ]; then
-    echo; echo "Other (not in a group yet: add it to the groups in scripts/help.sh)"
-    for name in $other; do print_line "$name"; done
+    group_heading "Other (not in a group yet: add it to the groups in scripts/help.sh)"
+    for name in $other; do print_command "$name"; done
   fi
-  echo
-  echo "Step-by-step guide: docs/user-guide.md$( [ -n "$(artifact_url)" ] && echo " · Claude artifact: $(artifact_url)")"
-  echo "One command in full: /flow-help <command> · every detail: docs/commands.md"
+  url="$(artifact_url)"
+  if [ "$FORMAT" = "markdown" ]; then
+    echo "Step by step: \`docs/user-guide.md\`${url:+ · Claude artifact: $url} · every detail: \`docs/commands.md\`"
+  else
+    wrap 0 "${C_DIM}Step by step: docs/user-guide.md${url:+ · Claude artifact: $url} · every detail: docs/commands.md${C_OFF}"
+  fi
 }
-print_line() { # <command>
-  local name="$1" desc forms
-  desc="$(description_of "$name")"; forms="$(forms_of "$name")"
-  printf '  %-22s %s\n' "$name" "${desc:-(no description in its SKILL.md yet)}"
-  if [ -n "$forms" ]; then printf '  %-22s %s\n' "" "$forms"; else printf '  %-22s %s\n' "" "⚠️ no \"## Usage\" block in its SKILL.md yet (rule R17)"; fi
+print_command() { # <command>
+  local name="$1" summary forms f
+  summary="$(summary_of "$name")"; summary="${summary:-(no description in its SKILL.md yet)}"
+  forms="$(forms_of "$name")"
+  if [ "$FORMAT" = "markdown" ]; then
+    echo "**$name** · $summary"
+    if [ -n "$forms" ]; then
+      while IFS= read -r f; do echo "- \`$f\`"; done <<EOF_FORMS
+$forms
+EOF_FORMS
+    else
+      echo "- ⚠️ no \`## Usage\` block in its SKILL.md yet (rule R17)"
+    fi
+    echo
+  else
+    printf '  %s%s%s\n' "$C_NAME" "$name" "$C_OFF"
+    wrap 4 "$summary"
+    if [ -n "$forms" ]; then
+      while IFS= read -r f; do printf '      %s%s%s\n' "$C_FORM" "$f" "$C_OFF"; done <<EOF_FORMS
+$forms
+EOF_FORMS
+    else
+      wrap 6 "⚠️ no \"## Usage\" block in its SKILL.md yet (rule R17)"
+    fi
+    echo
+  fi
 }
 
 # ---------------------------------------------------------------- show
 do_show() { # <command>
-  local name="$1"
+  local name="$1" lines l
   case "$name" in flow-*) ;; *) name="flow-$name" ;; esac
   if ! is_command "$name"; then
     fail "No flow command called '$name'" "Run /flow-help to see every command (Codex: \$flow-help)."
     return 1
   fi
-  echo "$name — $(description_of "$name")"
-  echo
-  if [ -n "$(usage_of "$name" | grep -E '^- ')" ]; then
-    echo "How to type it:"
-    usage_of "$name" | grep -E '^- ' | sed 's/^- /  /'
+  lines="$(usage_of "$name" | grep -E '^- ')"
+  if [ "$FORMAT" = "markdown" ]; then
+    echo "## $name"
+    echo
+    description_of "$name"
+    echo
+    if [ -n "$lines" ]; then
+      echo "**How to type it**"
+      echo
+      printf '%s\n' "$lines"
+    else
+      warn "No \"## Usage\" block in its SKILL.md yet" "Add one (rule R17); flow-help reads it from there."
+    fi
+    echo
+    echo "More: section \`$name\` in \`docs/commands.md\` · step by step: \`docs/user-guide.md\`"
   else
-    warn "No \"## Usage\" block in its SKILL.md yet" "Add one (rule R17); flow-help reads it from there."
+    printf '%s%s%s\n\n' "$C_NAME" "$name" "$C_OFF"
+    wrap 2 "$(description_of "$name")"
+    echo
+    if [ -n "$lines" ]; then
+      printf '%sHOW TO TYPE IT%s\n' "$C_HEAD" "$C_OFF"
+      while IFS= read -r l; do
+        l="${l#- }"
+        # the form (first `…`) in color, the rest wrapped under it
+        case "$l" in
+          '`'*) f="${l#\`}"; f="${f%%\`*}"; rest="${l#\`$f\`}"; rest="${rest#:}"; rest="${rest# }"
+                printf '  %s%s%s\n' "$C_FORM" "$f" "$C_OFF"; [ -n "$rest" ] && wrap 4 "$(printf '%s' "$rest" | tr -d '`')" ;;
+          *) wrap 2 "$(printf '%s' "$l" | tr -d '`')" ;;
+        esac
+      done <<EOF_LINES
+$lines
+EOF_LINES
+    else
+      warn "No \"## Usage\" block in its SKILL.md yet" "Add one (rule R17); flow-help reads it from there."
+    fi
+    echo
+    wrap 0 "${C_DIM}More: section \"$name\" in docs/commands.md · step by step: docs/user-guide.md${C_OFF}"
   fi
-  echo
-  echo "More: docs/commands.md (section \"$name\") · step by step: docs/user-guide.md"
 }
 
 # ---------------------------------------------------------------- check (rule R17)
