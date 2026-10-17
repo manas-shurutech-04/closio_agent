@@ -1,0 +1,218 @@
+#!/usr/bin/env bash
+# Runs a registered repo's own commands, in its folder, on its own Node version (C3, flow-develop; rules A13, A6; D21, D65).
+# Run it from the closio-agent folder:  bash scripts/repo-run.sh <repo> <action>
+#
+#   <repo> check               The repo's check commands (check_commands in config/repos/<repo>.yaml: lint, circular imports).
+#                              A lint command checks only the files the card changed (since the base branch, uncommitted,
+#                              new) and its problems are warnings (⚠️), never ❌ (D65): the repos have older lint errors.
+#   <repo> test                The repo's tests and coverage gate: its coverage_command (runs every test and the gate in one
+#                              go), or its test_command when it has none. A repo with test_command: none has no tests (D25).
+#   <repo> migrate confirmed   npm run migrate (the repo's own script), against the database its .env names. Only after the
+#                              user's yes in chat, every run (D21, D64); without the word "confirmed" it refuses.
+#   <repo> seed confirmed      npm run seed, the same way.
+#
+# Prints one ✅ / ❌ line per command, with the test counts; the full output goes to local/logs/repo-run-<repo>.log.
+# Never reads or prints .env values (rule A6): the repo's own scripts load .env themselves. Never clones (D53), never commits.
+# Exit codes: 0 everything passed · 1 ❌ · 2 wrong usage. Works in the Mac's own bash 3.2.
+
+set -u
+
+AGENT_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+. "$AGENT_ROOT/config/project-settings.sh"
+REPOS_DIR="${REPOS_DIR:-$AGENT_ROOT/config/repos}"
+LOCAL_REPOS_DIR="${LOCAL_REPOS_DIR:-$AGENT_ROOT/local/repos}"
+LOGS_DIR="${LOGS_DIR:-$AGENT_ROOT/local/logs}"
+NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+
+failed=0
+ok() { echo "✅ $1"; }
+look() {
+  echo "⚠️ $1"
+  [ -n "${2:-}" ] && echo "   Tip: $2"
+}
+bad() {
+  echo "❌ $1"
+  echo "   Fix: $2"
+  failed=1
+}
+info() { echo "   $1"; }
+usage() { echo "Usage: bash scripts/repo-run.sh <repo> check | test | migrate confirmed | seed confirmed"; }
+
+yaml_get() { # <file> <key>: value of a flat "key: value" line ("" if missing); a " # comment" is dropped
+  [ -f "$1" ] || return 0
+  grep -m1 -E "^$2:" "$1" | sed -E "s/^$2:[[:space:]]*//; s/[[:space:]]+#.*$//; s/[[:space:]]+$//"
+}
+list_items() { printf '%s' "$1" | tr ',' '\n' | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' | grep -v -x 'none' | grep -v '^$'; }
+
+nvm_sh() { # the same places as scripts/setup-repo.sh
+  if [ -s "$NVM_DIR/nvm.sh" ]; then echo "$NVM_DIR/nvm.sh"
+  elif [ -s /opt/homebrew/opt/nvm/nvm.sh ]; then echo /opt/homebrew/opt/nvm/nvm.sh
+  elif [ -s /usr/local/opt/nvm/nvm.sh ]; then echo /usr/local/opt/nvm/nvm.sh
+  fi
+}
+
+# Runs a command string in the repo folder, on the repo's Node version, with a time limit (the same way as
+# scripts/setup-repo.sh). Output goes to the log. Returns the command's exit code; 124 = time limit; 96–98 = setup.
+run_in_repo() { # <path> <node version or ""> <seconds> <log> <command>
+  local path="$1" nv="$2" limit="$3" log="$4" command="$5" pid waited=0 rc
+  printf '\n$ %s   (in %s, %s)\n' "$command" "$path" "$(date '+%Y-%m-%d %H:%M:%S')" >> "$log"
+  /usr/bin/perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV' -- /bin/bash -c '
+    cd "$1" || exit 96
+    if [ -n "$2" ]; then
+      . "$3" >/dev/null 2>&1 || exit 97
+      nvm use "$2" >/dev/null 2>&1 || exit 98
+    fi
+    eval "$4"' _ "$path" "$nv" "$(nvm_sh)" "$command" >> "$log" 2>&1 < /dev/null &
+  pid=$!
+  while kill -0 "$pid" 2>/dev/null; do
+    if [ "$waited" -ge "$limit" ]; then
+      { kill -TERM -- "-$pid"; sleep 2; kill -KILL -- "-$pid"; wait "$pid"; } 2>/dev/null
+      echo "closio-agent: stopped after $limit seconds (time limit)" >> "$log"
+      return 124
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  wait "$pid"
+  rc=$?
+  return "$rc"
+}
+
+# The result lines of mocha / vitest / nyc from the last command in the log
+last_output() { awk '/^\$ /{buf=""} {buf=buf $0 "\n"} END{printf "%s", buf}' "$1"; }
+result_lines() {
+  last_output "$1" | grep -E '^[[:space:]]*[0-9]+ (passing|failing|pending)|^[[:space:]]*(Test Files|Tests)[[:space:]]|Coverage for .* does not meet|ERROR: Coverage|^(Statements|Branches|Functions|Lines)[[:space:]]*:' | tail -8 | sed 's/^[[:space:]]*/   /'
+}
+
+# One command: runs it and prints ✅ / ❌ with the fix (rule A11)
+run_one() { # <label> <command>
+  local label="$1" command="$2" rc
+  run_in_repo "$PATH_" "$NV" "$REPO_RUN_TIMEOUT" "$LOG" "$command"
+  rc=$?
+  run_one_result "$rc" "$label" "$command"
+}
+run_one_result() { # <exit code> <label> <command>
+  local rc="$1" label="$2" command="$3"
+  case "$rc" in
+    0) ok "$REPO: $label passed ($command)"; result_lines "$LOG" ;;
+    124) bad "$REPO: $label took longer than $REPO_RUN_TIMEOUT seconds and was stopped ($command)" "Run it yourself to see why: cd \"$PATH_\" && nvm use $NV && $command. The limit is REPO_RUN_TIMEOUT in config/project-settings.sh." ;;
+    96) bad "$REPO: couldn't go into $PATH_" "Check the clone is there: /flow-configure-repo $REPO path <folder>."; exit 1 ;;
+    97) bad "$REPO: nvm couldn't be loaded" "Install nvm (setup guide, section 1), then run this again."; exit 1 ;;
+    98) bad "$REPO: Node $NV (what $REPO is built for, rule A13) isn't installed" "Run: nvm install $NV, then run this again."; exit 1 ;;
+    *) bad "$REPO: $label failed ($command)" "Read the lines below (full output: local/logs/repo-run-$REPO.log), fix the cause, then run this again."
+       result_lines "$LOG"
+       last_output "$LOG" | tail -12 | sed 's/^/        /' ;;
+  esac
+  return 0
+}
+
+# The files the card changed in the repo that lint can read: committed on this branch since the base branch,
+# uncommitted, and new; one per line, relative to the repo.
+changed_files() {
+  local base; base="$(yaml_get "$FILE" base_branch)"
+  { [ -n "$base" ] && git -C "$PATH_" diff --name-only "origin/$base...HEAD" 2>/dev/null
+    git -C "$PATH_" diff --name-only HEAD 2>/dev/null
+    git -C "$PATH_" ls-files --others --exclude-standard 2>/dev/null
+  } | sort -u | while IFS= read -r f; do
+    [ -f "$PATH_/$f" ] || continue
+    case "$f" in *.js|*.cjs|*.mjs|*.jsx|*.ts|*.tsx|*.vue) printf '%s\n' "$f" ;; esac
+  done
+}
+
+# A lint command: only on the card's changed files, and its problems are warnings (D65)
+run_lint() { # <command>
+  local command="$1" files n=0 f args="" rc problems
+  files="$(changed_files)"
+  if [ -z "$files" ]; then ok "$REPO: lint has nothing to check (no changed code files yet)"; return 0; fi
+  while IFS= read -r f; do
+    n=$((n + 1))
+    args="$args '$(printf '%s' "$f" | sed "s/'/'\\\\''/g")'"
+  done <<EOF_FILES
+$files
+EOF_FILES
+  case "$command" in "npm run "*) command="$command --$args" ;; *) command="$command$args" ;; esac
+  run_in_repo "$PATH_" "$NV" "$REPO_RUN_TIMEOUT" "$LOG" "$command"
+  rc=$?
+  case "$rc" in
+    0) ok "$REPO: lint passed on the $n file(s) the card changed" ;;
+    96|97|98) run_one_result "$rc" "lint" "$command" ;;
+    124) look "$REPO: lint took longer than $REPO_RUN_TIMEOUT seconds and was stopped (a warning, D65)" "Run it yourself to see why: cd \"$PATH_\" && nvm use $NV && $command" ;;
+    *) problems="$(last_output "$LOG" | grep -E '✖ [0-9]+ problem' | tail -1 | sed 's/^[[:space:]]*//')"
+       look "$REPO: lint found problems in the $n file(s) the card changed: ${problems:-see below} (a warning, it doesn't stop anything; D65)" "Tidy them in the card's own files if you can; older lint errors elsewhere in the repo are left alone."
+       if [ -n "$problems" ]; then
+         last_output "$LOG" | grep -E '^/|^[[:space:]]+[0-9]+:[0-9]+[[:space:]]+(error|warning)' | head -12 | sed 's/^/        /'
+       else
+         last_output "$LOG" | tail -8 | sed 's/^/        /'
+       fi ;;
+  esac
+  return 0
+}
+
+# Finds the repo; sets REPO, FILE, PATH_, NV, LOG. Exits with a ❌ when something's missing.
+locate() { # <repo>
+  REPO="$1"
+  printf '%s' "$REPO" | grep -q -E '^[a-z0-9][a-z0-9._-]*$' || { bad "'$REPO' isn't a repo name" "Use the name of a registered repo (see /flow-configure-repo)."; exit 1; }
+  FILE="$REPOS_DIR/$REPO.yaml"
+  [ -f "$FILE" ] || { bad "$REPO isn't registered" "Register it with /flow-configure-repo <path of your clone> (Codex: \$flow-configure-repo …)."; exit 1; }
+  PATH_="$(yaml_get "$LOCAL_REPOS_DIR/$REPO.yaml" local_path)"
+  if [ -z "$PATH_" ] || [ "$PATH_" = "not-cloned" ] || [ ! -d "$PATH_/.git" ]; then
+    bad "$REPO isn't cloned on this Mac (cloning is manual, D53)" "On the VPN: git clone $(yaml_get "$FILE" gitlab_url) <your workspace folder>/$REPO, then run /flow-configure-repo $REPO path <that folder>."
+    exit 1
+  fi
+  NV=""
+  case "$(yaml_get "$FILE" language)" in node|'') NV="$(yaml_get "$FILE" node_version)" ;; esac
+  [ "$NV" = "none" ] && NV=""
+  mkdir -p "$LOGS_DIR"
+  LOG="$LOGS_DIR/repo-run-$REPO.log"
+}
+
+has_npm_script() { # <name>: the repo's package.json has this script
+  [ -f "$PATH_/package.json" ] && grep -q -E "^[[:space:]]*\"$1\"[[:space:]]*:" "$PATH_/package.json"
+}
+
+[ $# -ge 2 ] || { usage; exit 2; }
+action="$2"
+case "$action" in check|test|migrate|seed) ;; *) usage; exit 2 ;; esac
+locate "$1"
+
+case "$action" in
+  check)
+    [ $# -eq 2 ] || { usage; exit 2; }
+    cmds="$(list_items "$(yaml_get "$FILE" check_commands)")"
+    if [ -z "$cmds" ]; then
+      ok "$REPO has no check commands (check_commands: none)"
+    else
+      while IFS= read -r c; do
+        case "$c" in *lint*) run_lint "$c" ;; *) run_one "check" "$c" ;; esac
+      done <<EOF_CMDS
+$cmds
+EOF_CMDS
+    fi ;;
+  test)
+    [ $# -eq 2 ] || { usage; exit 2; }
+    test_cmd="$(yaml_get "$FILE" test_command)"
+    cov_cmd="$(yaml_get "$FILE" coverage_command)"
+    if [ -z "$test_cmd" ] || [ "$test_cmd" = "none" ]; then
+      ok "$REPO has no test suite, so no tests to write or run (D25)"
+    elif [ -n "$cov_cmd" ] && [ "$cov_cmd" != "none" ]; then
+      info "$REPO: every test and the coverage gate ($(yaml_get "$FILE" coverage_rules)) in one run, time limit $REPO_RUN_TIMEOUT s..."
+      run_one "the tests and the coverage gate" "$cov_cmd"
+    else
+      info "$REPO: every test (no coverage command registered), time limit $REPO_RUN_TIMEOUT s..."
+      run_one "the tests" "$test_cmd"
+    fi ;;
+  migrate|seed)
+    if [ "${3:-}" != "confirmed" ] || [ $# -ne 3 ]; then
+      bad "$REPO: '$action' needs the user's yes first (D21)" "Ask the user in chat, naming $REPO and what will run (npm run $action, against the database its .env names). Only after their yes: bash scripts/repo-run.sh $REPO $action confirmed"
+      exit 1
+    fi
+    if ! has_npm_script "$action"; then
+      bad "$REPO has no '$action' script in its package.json" "Nothing to run here: this repo has no migrations or seeders. If the card needs some, they go in a repo that has them."
+      exit 1
+    fi
+    run_one "npm run $action" "npm run $action"
+    [ "$failed" -eq 0 ] && info "Write this run in the card's develop.md (for the deployment doc, D12)." ;;
+  *) usage; exit 2 ;;
+esac
+
+[ "$failed" -eq 0 ]

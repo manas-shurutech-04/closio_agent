@@ -43,6 +43,9 @@ SERVICE_START_TIMEOUT="${SERVICE_START_TIMEOUT:-30}"    # seconds to wait for a 
 LOCAL_REDIS_PORT="${LOCAL_REDIS_PORT:-6379}"
 LOCAL_RABBITMQ_PORT="${LOCAL_RABBITMQ_PORT:-5672}"
 
+# Running a repo's own commands (C3, D65): scripts/repo-run.sh (checks, tests + coverage gate, migrate, seed)
+REPO_RUN_TIMEOUT="${REPO_RUN_TIMEOUT:-900}"   # seconds for one command (15 minutes)
+
 # Card run folders (C1, D61): committed and pushed on a branch of closio-agent per card, never main
 RUN_BRANCH_PREFIX="${RUN_BRANCH_PREFIX:-runs/}"   # the card's branch is runs/<CARD-KEY>
 GIT_REMOTE="${GIT_REMOTE:-origin}"
