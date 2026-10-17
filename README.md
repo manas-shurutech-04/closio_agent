@@ -4,7 +4,7 @@ An AI agent for the Japfa **Closio** team. It takes a Jira card from **SCRUM** t
 
 It runs as commands inside **Claude Code** (`/flow-start`) and **Codex** (`$flow-start`). Every command starts with `flow-` and only runs when you type it ([D43](docs/design-decisions.md#d43), [D44](docs/design-decisions.md#d44)).
 
-> **Status:** in design. The foundation (setup commands) is being built first; see the build plan in [build-memory/project-context.md](build-memory/project-context.md). Commands so far: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card`, `flow-help` ([docs/commands.md](docs/commands.md)).
+> **Status:** in design. The foundation (setup commands) is being built first; see the build plan in [build-memory/project-context.md](build-memory/project-context.md). Commands so far: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card`, `flow-help`, and the first card commands `flow-status`, `flow-start` ([docs/commands.md](docs/commands.md)).
 
 ## Start here
 
@@ -26,8 +26,9 @@ It runs as commands inside **Claude Code** (`/flow-start`) and **Codex** (`$flow
 | `.claude/agents/`, `.codex/agents/` | Custom agents (helpers the commands use), one file per tool, e.g. `flow-connectivity` ([D30](docs/design-decisions.md#d30)) | ✅ |
 | `config/repos/` | Shared repo registry: one file per repo with the facts that are the same for everyone ([D35](docs/design-decisions.md#d35)) | ✅ |
 | `scripts/` | Helper scripts the commands run (VPN, Keychain, Git, …) | ✅ |
+| `rulesets/` | The ruleset every card follows (`story-implementation-workflow.md`), kept by the closio-agent builders; you change its points for yourself with `flow-memory` ([D64](docs/design-decisions.md#d64)) | ✅ |
 | `e2e/` | Playwright project for front-end end-to-end tests, kept outside the code repos ([D24](docs/design-decisions.md#d24)) | ✅ (dependencies and outputs ignored) |
-| `runs/<CARD-KEY>/` | The agent's memory per Jira card: history, plan, state. Shared, so a teammate can pick up a paused card ([D36](docs/design-decisions.md#d36), [D38](docs/design-decisions.md#d38)) | ✅ |
+| `runs/<CARD-KEY>/` | The agent's memory per Jira card: state, history, card, plan. On the card's branch `runs/<CARD-KEY>` of this repo, pushed after every phase, so a teammate can pick up a paused card ([D36](docs/design-decisions.md#d36), [D38](docs/design-decisions.md#d38), [D61](docs/design-decisions.md#d61)) | ✅ on the card's branch |
 | `local/` | **Your** personal settings, where the repos are cloned on **your** Mac, and **your user memory** (`local/memory/`: your preferences and corrections, which every command loads and applies; [D40](docs/design-decisions.md#d40)), and the text of the cards you checked with `flow-check-card` (`local/cards/`) | ❌ never (git-ignored) |
 | `docs/` | Team documentation | ✅ |
 | `build-memory/` | Working memory used while building the agent | ✅ |

@@ -1,6 +1,6 @@
 # closio-agent, step by step
 
-**Claude artifact:** https://claude.ai/code/artifact/a83b1e2a-0e5a-4378-b791-26b9f34e8b7a · mirrored on 2026-10-17 · commands: flow-check-card, flow-configure-repo, flow-configure-user, flow-doctor, flow-help, flow-memory, flow-ping, flow-setup-repo, flow-vpn
+**Claude artifact:** https://claude.ai/code/artifact/a83b1e2a-0e5a-4378-b791-26b9f34e8b7a · mirrored on 2026-10-17 · commands: flow-check-card, flow-configure-repo, flow-configure-user, flow-doctor, flow-help, flow-memory, flow-ping, flow-setup-repo, flow-start, flow-status, flow-vpn
 
 This guide walks you through closio-agent from the first minute: which command to type, in what order, what each one asks you, and what you get back. It's written for anyone on the team, even if you've never used an AI tool before.
 
@@ -10,7 +10,7 @@ This file is the source and holds the full text. The Claude artifact linked abov
 
 closio-agent is a helper that lives in your AI tool (Claude Code or Codex). It takes a Jira card from the SCRUM board through the whole delivery flow: pick up the card, plan, develop with you, test, push with tidy commits, create the merge requests, and write the deployment doc.
 
-Today the **setup part** is built: the commands that get your Mac ready and keep it healthy. The **card part** (from pick-up to Ready for Test) comes next ([section 6](#6-working-on-a-card-coming)).
+Today the **setup part** is built: the commands that get your Mac ready and keep it healthy. Of the **card part**, the pick-up and the plan are built (`flow-start`, `flow-status`); the rest comes next ([section 6](#6-working-on-a-card)).
 
 You never run scripts by hand. You type a command, the AI runs the right script and shows you the result. Every problem comes with the steps to fix it.
 
@@ -56,7 +56,7 @@ flowchart LR
         direction TB
         d1["Start the tool in the folder"] --> d2["/flow-vpn connect for GitLab"] --> d3["/flow-memory: how you work"] --> d4["/flow-check-card: a card"] --> d5["/flow-help: every command"]
     end
-    subgraph K["3. Cards (coming, not built yet)"]
+    subgraph K["3. Cards (pick-up and plan built; the rest coming)"]
         direction TB
         k1["Pick up the card"] --> k2["Plan: you approve it"] --> k3["Develop together"] --> k4["Review, AC check, tests"] --> k5["Push + merge requests"] --> k6["After the merge: deploy doc"] --> k7["Ready for Test"]
     end
@@ -80,10 +80,10 @@ You set up once, left to right; then every day you only need the middle box; the
 4. `/flow-check-card` before a card is picked up.
 5. `/flow-help` whenever you forget a command.
 
-**Working on a card** (section 6, coming):
+**Working on a card** (section 6; the first two steps are built):
 
-1. Pick up the card.
-2. Plan (you approve the plan).
+1. `/flow-start SCRUM-567`: pick up the card.
+2. Plan: the code first, your answers, your approval (part of `/flow-start`).
 3. Develop together, review, check the ACs, test.
 4. Push and create the merge requests.
 5. After the merge: deployment doc, then Ready for Test.
@@ -200,32 +200,48 @@ Two rules that never change: **start in the closio-agent folder** (never inside 
 - **Options:** `/flow-help` (every command, grouped, with how it's typed), `/flow-help <command>` (one command in full, e.g. `/flow-help memory`).
 - **Good to know:** the help is read from the commands' own files, so it's always complete.
 
-## 6. Working on a card (coming)
+## 6. Working on a card
 
-These phases are designed but **not built yet**. Their command names are placeholders and can still change.
+The first piece is built: picking a card up and planning it. The other phases are designed but **not built yet**; they're built one piece at a time.
 
 ```mermaid
 flowchart TB
-    p1["1. Pick up the card<br/>flow-start: In Development"] --> p2["2. Understand and plan<br/>✋ you approve the plan"] --> p3["3. Develop<br/>you and the AI, together"]
-    p3 --> p4["4. Human review<br/>✋ you review the code"] --> p5["5. Check the ACs<br/>a helper agent checks each AC"] --> p6["6. Developer testing<br/>repo tests + story check"]
+    p1["1. Pick up the card<br/>flow-start: In Development"] --> p2["2. Understand and plan<br/>✋ you approve the plan"] --> p3["3. Develop<br/>flow-develop: you and the AI"]
+    p3 --> p4["4. Human review<br/>✋ you review the code"] --> p5["5. Check the ACs<br/>flow-verify: the AC-check agent"] --> p6["6. Developer testing<br/>flow-verify: tests, story check"]
     p5 -- "logic changes: back to 3" --> p3
     p6 -- "a test fails: back to 3" --> p3
-    p6 --> p7["7. Ship<br/>flow-push: commits + one push"] --> p8["8. Merge request<br/>MRs on the card, Code Review"] --> p9["9. After the merge<br/>deploy doc, test on dev"] --> r["Ready for Test"]
+    p6 --> p7["7. Ship<br/>flow-push: commits + one push"] --> p8["8. Merge request<br/>flow-push: MRs, Code Review"] --> p9["9. After the merge<br/>flow-finish: doc, test on dev"] --> r["Ready for Test"]
 ```
 
 The ✋ boxes are where the agent stops and waits for you; a failed AC check or test sends the work back to Develop.
 
+### `/flow-start`
+
+- **When:** to pick up a card that's To Do and plan it. Run it again any time to continue where it stopped (if it stopped while planning, it reads the latest code again first).
+- **What it does, in order:** the VPN; the card read from Jira and checked against the template (a Spike stops; a card that isn't To Do or belongs to someone else: it asks); into the sprint, **In Development**, assigned to you; the repos it needs, confirmed by you; a branch `SCRUM-<n>/<short-description>` in each repo, the name confirmed by you; everything saved. Then the plan: **the latest code is brought into the new branches and read first**, together with **the team's ruleset** (`rulesets/story-implementation-workflow.md`; your memory can change its points for you), **every difference between the card and the code is asked about** (with a recommended answer each), the draft plan is shown, **you approve it**, and only then it's saved.
+- **Options:** `/flow-start SCRUM-567` only.
+- **You see:** one line per step, each written into the card's `history.md` with the rules and memory it applied; the questions and the plan in chat; at the end `Done: SCRUM-567 is planned. Next: /flow-develop SCRUM-567 (coming)`.
+- **Where it's remembered:** `runs/SCRUM-567/` (`state.md`, `history.md`, `card.md`, `plan.md`) on the branch `runs/SCRUM-567` of closio-agent, pushed after every phase, never on `main`. A teammate can pull that branch and continue.
+- **If ❌:** the line says what to do (connect the VPN, fix the card, commit or stash a repo's changes, give folder access). Then run it again.
+
+### `/flow-status`
+
+- **When:** any time you want to know where a card stands, or which cards are in progress.
+- **Options:** `/flow-status` (every card, on this Mac and pushed by teammates), `/flow-status SCRUM-567` (that card: phase, step, branch, what to type next).
+- **Good to know:** it only reads.
+
 | Phase | What happens | Command |
 |---|---|---|
-| 1. Pick up | the card is checked against the template, moved to In Development and assigned to you; branches are created in every repo the card needs | `flow-start <CARD-KEY>` (coming) |
-| 2. Understand and plan | the AI summarises the card, lists the ACs, reads the existing error codes, writes a plan; **you approve the plan** | part of `flow-start` (coming) |
-| 3. Develop | you and the AI develop together | (coming) |
-| 4. Human review | you review | (coming) |
-| 5. Check against the ACs | a helper agent checks each AC | (coming) |
-| 6. Developer testing | repo tests (coverage rules must pass) and a story check | (coming) |
-| 7. Ship | rebase, atomic commits, one push that also creates and assigns the merge requests | `flow-push` (coming) |
+| 1. Pick up | the card is checked against the template, moved to In Development and assigned to you; branches are created in every repo the card needs | `flow-start <CARD-KEY>` (built) |
+| 2. Understand and plan | the AI reads the code on the branches first, asks you about every difference with the card, writes the plan with your memory applied; **you approve the plan** before it's saved | part of `flow-start` (built) |
+| 3. Develop | you and the AI develop together, following the plan | `flow-develop <CARD-KEY>` (coming); it also starts when you ask in plain words, once the plan is approved |
+| 4. Human review | you review | part of `flow-develop` (coming) |
+| 5. Check against the ACs | a helper agent checks each AC; a problem goes back to develop | `flow-verify <CARD-KEY>` (coming) |
+| 6. Developer testing | repo tests (coverage rules must pass) and a story check | part of `flow-verify` (coming) |
+| 7. Ship | rebase, atomic commits, one push that also creates and assigns the merge requests | `flow-push <CARD-KEY>` (coming) |
 | 8. Merge request | the MRs are linked on the card; card to Code Review | part of `flow-push` (coming) |
-| 9. After the merge | you run a command: deployment doc, test on dev, card to Ready for Test | (coming, name not decided) |
+| 9. After the merge | deployment doc, test on dev, card to Ready for Test | `flow-finish <CARD-KEY>` (coming) |
+| Any time | where a card stands; every step is remembered in `runs/<CARD-KEY>/`, so a card can be paused and picked up again | `flow-status <CARD-KEY>` (built) |
 
 The full design is in [architecture.md](architecture.md).
 
@@ -244,6 +260,8 @@ Every flow command that exists is in this table. That's a rule: a new command is
 | [`flow-memory`](commands.md#flow-memory) | Your private memory, followed by every command | `/flow-memory` · `/flow-memory add <text>` · `/flow-memory add <repo> <text>` · `/flow-memory edit <id> <new text>` · `/flow-memory edit <id> phases <phases>` · `/flow-memory remove <id>` · `/flow-memory clear` · `/flow-memory clear <repo>` |
 | [`flow-check-card`](commands.md#flow-check-card) | Checks a Jira card against the card template | `/flow-check-card SCRUM-567` · `/flow-check-card <file.md>` |
 | [`flow-help`](commands.md#flow-help) | Every command and how it's typed | `/flow-help` · `/flow-help <command>` |
+| [`flow-status`](commands.md#flow-status) | Where a card stands, or every card in progress | `/flow-status` · `/flow-status <CARD-KEY>` |
+| [`flow-start`](commands.md#flow-start) | Picks up a card and plans it, up to your approval of the plan | `/flow-start <CARD-KEY>` |
 
 Codex: the same commands with `$` instead of `/`.
 
@@ -269,7 +287,7 @@ Codex: the same commands with `$` instead of `/`.
 ```mermaid
 flowchart TB
     t["A flow command is added or changed"] --> r["Rule R17 (AGENTS.md rule 11):<br/>the same step updates all four"]
-    r --> u["Its ## Usage block<br/>what /flow-help shows"]
+    r --> u["Its ## Usage block<br/>+ its group in /flow-help"]
     r --> c["commands.md<br/>every detail"]
     r --> g["docs/user-guide.md<br/>the source"]
     r --> a["The Claude artifact<br/>the copy"]
@@ -279,4 +297,4 @@ flowchart TB
 
 One change to a command fans out to four places, and `/flow-doctor` won't go green until all four are done.
 
-**How this guide stays up to date.** `docs/user-guide.md` is the source. Whenever a flow command is added or changed, the same step adds it to that command's own `## Usage` block (what `/flow-help` shows), to `commands.md`, to this guide, and updates the Claude artifact from this file (there, each command is a picture, redrawn when the command changes), with the "mirrored" line at the top set to the date and every command. That's rule R17 for whoever builds closio-agent, and rule 11 in `AGENTS.md` for the AI. `/flow-doctor` runs the check ("Commands documented") and shows ❌ until it's done. Only Claude Code can update the artifact; a change made in Codex is finished in Claude Code.
+**How this guide stays up to date.** `docs/user-guide.md` is the source. Whenever a flow command is added or changed, the same step adds it to that command's own `## Usage` block and to a group in `/flow-help`, to `commands.md`, to this guide, and updates the Claude artifact from this file (there, each command is a picture, redrawn when the command changes), with the "mirrored" line at the top set to the date and every command. That's rule R17 for whoever builds closio-agent, and rule 11 in `AGENTS.md` for the AI. `/flow-doctor` runs the check ("Commands documented") and shows ❌ until it's done. Only Claude Code can update the artifact; a change made in Codex is finished in Claude Code.
