@@ -21,6 +21,9 @@
 - **Split cards:** skipped for now (user, 2026-10-09). Come back to it later.
 - **`repo-run.sh <repo> seed` runs every seeder (found in the SCRUM-540 test, 2026-10-17):** `npm run seed` is `db:seed:all`, which reruns all 7 seeders of ws2targetsalesincentive; `seed-incentive-schemas` would hit `uq_schema_partner`, so the agent didn't run it and the user ran the card's seeder by hand. Proposed fix (to draft): `seed <seeder file> confirmed` runs only that seeder (`npx sequelize-cli db:seed --seed <file>`), after the A23 review.
 - **ws2jauth lint (seen 2026-10-17):** `npm run lint` fails on its current code (`src/configs/appConfig.js`: `path` unused). Not closio-agent's; a card touching ws2jauth will see ❌ at the check step until it's fixed.
+- **Internal SCRUM-523 test (C4): run 2026-10-18.** 26 tests written by `flow-ac-checker` (QMetry as the base), Playwright 21 of 24 passed, QMetry 20 of 22 (91%); details in `environment.md`. Its fixes were built with D68 (2026-10-18): the one-AC filter, no tests = ❌, no color codes, WS1 statuses in the agent, 60 steps. **Found in the web app (not closio-agent's):** SCRUM-523's dates show D/M/YYYY (`formatDateShort`, `src/utils/dateFormatter.ts:134`) where AC 1 says DD/MM/YYYY; the card is merged and QA-passed: for the team.
+- **C4 user tests (2026-10-18):** a web card's API questions and mocks (D69) not tried by the user yet; `/flow-verify SCRUM-540` in both ways (A full check, B quick check; backend: WS2 target sales + WS1), `/flow-verify <KEY> full <export.xlsx>` (QMetry) and `/flow-ac-check` not tested by the user yet. The e2e.sh fixes were re-checked live after the VPN came back (2026-10-18): all confirmed. **No WS2 dev keys are saved yet** (`/flow-configure-repo nodejs-ws2targetsalesincentive key ws2-client-id` and `… ws2-client-secret`), so direct WS2 checks would stop with the fix line until then.
+- **QMetry:** only exports can be used today (`scripts/qmetry-import.sh`). QMetry's own REST API (needs a QMetry API key) is not explored; a later step if exports become a chore.
 
 ## Resolved
 
@@ -37,6 +40,7 @@
 - Dev-environment testing after merge (D22).
 - Repos in scope; registered with `configure-repo`, which captures the test format (D23).
 - No committed tests for repos without a suite (D25).
+- C4 `flow-verify` questions (2026-10-17 and 2026-10-18): test data shown first and run after a clear yes; saved WS2 keys; web part built now with Playwright; all ✅ → ship, a ❌ → the user decides; test cases in the run folder; Playwright in `flow-configure-user`; `flow-ac-check`; QMetry cases as exports (D67).
 - Playwright lives outside the repo, in closio-agent's workspace (D24, option a).
 - `story-implementation-workflow.md` is the baseline, with Express 5 (D26).
 - Login API: `napp_pk: 4` and `client_type: "web"` are the same for everyone.
@@ -95,3 +99,9 @@
 - The three fixes found before the C3 test (run branch never checked out, flow-start continue, lint as warnings on the card's files): approved and built 2026-10-17 (D61, D65).
 - New develop rules A20–A23 (request validation: WS1 schema presence/type/format, WS2 everything + business logic; no redundant code; every WS1 response field; migration review): settled ("with option A… That should be the final rule") and built 2026-10-17 (D66).
 - C3 user test passed (user, 2026-10-17: "The testing is done"), on SCRUM-540.
+- Playwright's size in the docs: a download of about 150 MB, about 430 MB on disk (fixed 2026-10-18 in `flow-configure-user`, `configure-user.sh`, `e2e.sh`, the user guide).
+- Web cards' data-specific cases (500, more than 5 rules, a fixed order): the test answers the screen's API call itself with `page.route`, shaped from the code, named `… (answer from the test)` (built 2026-10-18, D67).
+- QMetry in `flow-verify`: optional, never asked for; an export is the base, one coverage line at the end (built 2026-10-18, D67).
+- `flow-verify` two ways (A full check, B quick check), write calls shown first, every run recorded, `db-run.sh … query`, e2e.sh fixes, 60 steps: answered and built 2026-10-18 (D68).
+- Web app on the dev servers (a card changing the backend and the web app: its new API isn't on dev yet): covered by D69, the user says the API isn't available and its web tests run against a mock with the 200 response they send (2026-10-18).
+- API mocks for web cards: the APIs asked about before any test is written, every run; mocks with the user's exact 200 response; the GET check before the run; failed calls asked about after: answered and built 2026-10-18 (D69).
