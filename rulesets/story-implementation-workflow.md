@@ -6,7 +6,7 @@
 > - **Your own changes go in your user memory** (`flow-memory`): an entry may change a point of this ruleset for you, and the plan names which entry changed which point. The agent rules (`AGENTS.md`, [docs/agent-rules.md](../docs/agent-rules.md)) always win over both.
 > - **Backend repos** (`type: BE` in `config/repos/`) follow all of it.
 > - **The web app** (`type: FE`) follows its common practices until a frontend ruleset exists: read the card, explore and read the closest existing pattern, the plan format, tests mapped to the ACs, verify. It skips the parts about WS1/WS2, mocha, Sequelize and the S2S curl checks. Its tests are Vitest in the repo; Playwright stays outside the repo ([D24](../docs/design-decisions.md#d24)).
-> - **Where it came from:** the SCRUM-517 session (2026-10-02), copied from `japfa/backend/story-implementation-workflow.md` on 2026-10-17. Changed since: Steps instead of Phases, each mapped to its command; works in Claude Code and Codex; Express 5; `validateSchema` before `isAuthenticated` in WS1; migrations and seeders only after the user's yes; keys never pasted into chat; each repo's own test commands and Node version; one plan format with `flow-start`; the card's error codes checked against the code; GitLab MCP, `glab` and the session stats removed; the tests written and run in `flow-develop` (D65), with `scripts/repo-run.sh`.
+> - **Where it came from:** the SCRUM-517 session (2026-10-02), copied from `japfa/backend/story-implementation-workflow.md` on 2026-10-17. Changed since: Steps instead of Phases, each mapped to its command; works in Claude Code and Codex; Express 5; `validateSchema` before `isAuthenticated` in WS1; migrations and seeders only after the user's yes; keys never pasted into chat; each repo's own test commands and Node version; one plan format with `flow-start`; the card's error codes checked against the code; GitLab MCP, `glab` and the session stats removed; the tests written and run in `flow-develop` (D65), with `scripts/repo-run.sh`; rules A20–A23 added (where request validation goes, no redundant code, every WS1 response field, a review before any migration; D66).
 
 ---
 
@@ -100,6 +100,12 @@ The file names below are **examples from `nodejs-ws2targetsalesincentive` and `n
 21. WS2 constants (e.g., `src/constants/appConstants.js`, `src/constants/errorCodeEnums.json`) and the codes the closest controllers and middlewares already use
 22. WS1 message files (`locales/en/…/messages.json`, `locales/en/api/error.json`)
 
+**What already exists (rule A21, no redundant code):**
+23. For every function, helper, constant or regex the card will need, search the repo for one that already does exactly the same job: by name, by what it does, and in the `utils`, `helpers`, `constants` and `middlewares` folders (e.g. `isValidUuid` in `pgDbUtils.js`, `isUuid` in `dataTypeUtils.js`, `isValidUUID` in WS1's `helperFunctions.js`). Note each one you'll reuse, and anything close but not the same, to ask the user about.
+
+**The WS1 response (rule A22):**
+24. The WS2 model and the service's response for the card's endpoint: every field the response can return, including the optional ones (e.g. `updated_at`, `updated_by`, `updated_by_name`). This is the list the user confirms before planning.
+
 ---
 
 ## Step 4 — Plan
@@ -127,12 +133,17 @@ Ruleset: rulesets/story-implementation-workflow.md · Memory applied: M2 (change
 
 ### WS1 — nodejs-ws1closio (N files)
 1. Controller — BFF forwarding logic
-2. Schema — AJV validation
+2. Schema — presence, type and format checks; every response field
 3. Route — middleware chain
 4. Register in index file
 
 ## AC → Implementation Mapping
 | AC | Where | How |
+
+## Validation, reuse and response fields
+- Validation (rule A20): each check and where it goes: WS1 schema (presence, type, format) · WS2 controller inline · WS2 utils (which file, why) · WS2 service (needs the database)
+- Reused (rule A21): <function> from <file> · … · new ones: <function> (searched, none found)
+- WS1 response fields (rule A22): every field, required or optional (nullable), as confirmed by the user
 
 ## Error codes          (the existing ones, from the code)
 ## Migrations, seeders, queues
@@ -171,6 +182,21 @@ WS1:
 - Edit index files after all new files exist
 - Always verify edited index files with Read after editing
 - Migrations and seeders follow the repo's existing Sequelize pattern ([D51](../docs/design-decisions.md#d51))
+
+**Where request validation goes (rule A20):**
+- **WS1 is a proxy.** Its schema file (`schemas/v1/...`) checks only **presence** (`required`), **type** and **format** (`type`, `pattern`, `minLength`…), each with an `errorMessage` through `replaceMessagePlaceholders` using message keys already in its locale files, as `approval-tools/sfa/approvalApprove/approveRequest.js` does. A URL ID (a path parameter, which the schema doesn't see) is format-checked in the WS1 controller with the existing `isValidUUID` from `utils/helperFunctions.js`. **No business rule in WS1.**
+- **WS2 checks everything it receives again** (it's also called directly) and **owns every business-logic check** (ranges, date order, allowed values and combinations…):
+  - needs only the request → in the **controller**: inline when small; a function in the repo's domain utils file (e.g. `src/utils/incentives/<feature>Utils.js`) when large: over about 30 lines, used by more than one handler (e.g. create and update), or a nested body (arrays of rows, groups). The function returns an error (`{ error_code, message, details }`) or nothing, and the controller turns it into the 400, as `validateAgeingDeductionConfigBody` does.
+  - needs the database (overlap, "does it exist", a run in progress) → in the **service**.
+- Error codes, statuses and messages come from the code (rule A16). New code only: existing validation isn't moved unless the card asks.
+
+**No redundant code (rule A21):**
+- Before creating any function, helper, constant or regex, search the repo for one that does exactly the same job (Step 3, item 23). **The same:** import and reuse it, never a new copy. **Close but not the same:** ask the user: reuse, extend, or write a new one. **None:** create it.
+- Write each search in the card's `develop.md` ("searched for X: none" or "reused X from <file>").
+- Where copies already exist, use the one in the shared utils file. WS1's `asyncHandler` has no shared copy: reuse the one in the route file you add to; a new route file copies that one line, as the other route files do.
+
+**Every WS1 response field (rule A22):**
+- The WS1 schema's `responses` lists every field the WS2 response can return, as confirmed by the user when planning. Fields that aren't always there are nullable (`type: ['string', 'null']`) and left out of `required`, as `getAgeingDeductionConfigs.js` lists `updated_by`, `updated_by_name` and `updated_at`.
 
 **Common pitfalls (from SCRUM-517 review):**
 - **Express 5 (all backend repos, `express ^5.1.0`):** an error thrown in an async route handler reaches the error middleware by itself. Copy what the closest existing route file does: WS2 routes don't wrap their handlers; some WS1 route files (all the incentives ones) wrap them with a small local `asyncHandler`, so a new route in such a file does the same.
@@ -328,7 +354,7 @@ In ws2notification, ws2pricingengine and ws2targetsalesincentive, husky also run
 ### Prerequisites
 - WS2 (nodejs-ws2targetsalesincentive) running on its configured port
 - WS1 (nodejs-ws1closio) running on its configured port
-- **Migrations and seeders:** started from this Mac with the repo's own `npm run migrate` and `npm run seed` (closio-agent: `bash scripts/repo-run.sh <repo> migrate confirmed`), against the database the repo's `.env` names (today the dev database). **Only after the user's yes in chat, for every run**, naming the repo and what will run. They also go into the card's deployment doc ([D12](../docs/design-decisions.md#d12)).
+- **Migrations and seeders:** started from this Mac with the repo's own `npm run migrate` and `npm run seed` (closio-agent: `bash scripts/repo-run.sh <repo> migrate confirmed`), against the database the repo's `.env` names (today the dev database). **First the user reviews the files (rule A23):** the full migration or seeder (its up and its down), what it changes (tables, columns, rows), the repo, and that it runs against the database the repo's `.env` names. **Then a separate yes in chat, for every run.** The same review comes before the user is asked to run a migration on a server (the deployment doc). No wrong migration reaches a database. They also go into the card's deployment doc ([D12](../docs/design-decisions.md#d12)).
 - **Keys and cookies are never pasted into chat** (rule A6). The WS2 client ID and secret come from the repo's `.env` ([D34](../docs/design-decisions.md#d34)); the WS1 session comes from the login API with your logins in the Keychain ([D20](../docs/design-decisions.md#d20)). closio-agent runs these checks with its own script in `flow-verify` (coming); until then, the developer runs them in a terminal.
 
 ### WS2 Direct Tests (S2S)
@@ -455,7 +481,9 @@ Read: WS1 routes/incentives/index.js   → route registered?
 - [ ] WS2 controller created
 - [ ] WS2 route created and registered
 - [ ] WS1 controller created
-- [ ] WS1 schema created
+- [ ] WS1 schema created: presence, type and format only; every response field, optional ones nullable (rules A20, A22)
+- [ ] Business-logic checks in WS2: controller (inline or utils) or service (database) (rule A20)
+- [ ] Every new function searched for first; nothing duplicated (rule A21)
 - [ ] WS1 route created and registered (`validateSchema` first, then `isAuthenticated`)
 - [ ] All index files verified
 - [ ] WS2 controller unit test written
@@ -464,7 +492,7 @@ Read: WS1 routes/incentives/index.js   → route registered?
 - [ ] Tests pass (the repo's commands, on its Node version)
 - [ ] Lint on the card's changed files looked at (warnings only; older lint errors in the repo are left alone)
 - [ ] Coverage gate passes (`npm run coverage:check`)
-- [ ] Migrations and seeders run only after the user's yes
+- [ ] Migrations and seeders reviewed by the user, then run only after a separate yes (rule A23)
 - [ ] Curl verification — WS2 happy path (200)
 - [ ] Curl verification — WS2 error cases (400, 401)
 - [ ] Curl verification — WS1 through BFF (200)
