@@ -42,3 +42,8 @@ SERVICE_START_TIMEOUT="${SERVICE_START_TIMEOUT:-30}"    # seconds to wait for a 
 # Local Redis and RabbitMQ ports (must match config/local-services.yml)
 LOCAL_REDIS_PORT="${LOCAL_REDIS_PORT:-6379}"
 LOCAL_RABBITMQ_PORT="${LOCAL_RABBITMQ_PORT:-5672}"
+
+# Card run folders (C1, D61): committed and pushed on a branch of closio-agent per card, never main
+RUN_BRANCH_PREFIX="${RUN_BRANCH_PREFIX:-runs/}"   # the card's branch is runs/<CARD-KEY>
+GIT_REMOTE="${GIT_REMOTE:-origin}"
+
