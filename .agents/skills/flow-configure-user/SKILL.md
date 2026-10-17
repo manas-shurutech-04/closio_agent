@@ -14,8 +14,8 @@ In Codex: the secret steps open macOS dialogs and write to the Keychain, and the
 
 ## Usage
 
-- `/flow-configure-user`: set up everything that's still missing (personal settings, git name and email, the 5 secrets).
-- `/flow-configure-user <item>`: just one item, e.g. `/flow-configure-user gitlab-token` after renewing your token. Items: `jira-account-id`, `gitlab-username`, `workspace-dir`, `ai-tools`, `vpn-username`, `git-name`, `git-email`, `gitlab-token`, `fe-login-id`, `fe-login-password`, `ws1-login-userid`, `ws1-login-password`.
+- `/flow-configure-user`: set up everything that's still missing (personal settings, git name and email, the 5 secrets, Playwright).
+- `/flow-configure-user <item>`: just one item, e.g. `/flow-configure-user gitlab-token` after renewing your token. Items: `jira-account-id`, `gitlab-username`, `workspace-dir`, `ai-tools`, `vpn-username`, `git-name`, `git-email`, `gitlab-token`, `fe-login-id`, `fe-login-password`, `ws1-login-userid`, `ws1-login-password`, `playwright`.
 - Codex: `$flow-configure-user …` (approve the secret steps outside the sandbox).
 
 ## Steps
@@ -42,6 +42,7 @@ In Codex: the secret steps open macOS dialogs and write to the Keychain, and the
      - First tell the user in the chat which secrets will be asked, and that for each one a macOS message appears first ("Copy it now, then click Continue"), then a hidden box to paste it into. **Never ask for a secret in the chat, and never accept one there.** If the user pastes a secret in the chat anyway, don't repeat it; tell them to change that secret, because the chat is sent to the AI provider.
      - Then run **one** command for all missing secrets: `bash scripts/configure-user.sh secrets` (allow up to 10 minutes; Claude Code: timeout 600000 ms) and show its output. Only when the user asked for a single secret (e.g. `/flow-configure-user gitlab-token`), run `bash scripts/configure-user.sh secret <item>` instead.
      - After `gitlab-token`, the script also checks the token and saves the GitLab username when the VPN is on.
+   - **playwright** (for checking web cards with `flow-verify`, D67): first tell the user, and wait for a clear yes: "This installs Playwright for checking web cards: the `@playwright/test` packages from npm and the Chromium browser from Playwright's servers: a download of about 150 MB, about 430 MB on disk, into closio-agent's `e2e/` folder and your user's browser cache. OK to download?" On yes, run `bash scripts/configure-user.sh playwright` (allow up to 15 minutes; Claude Code: timeout 900000 ms) and show its output. On no, leave it: `/flow-doctor` reminds them, and `/flow-configure-user playwright` does it later.
    - **gitlab-username:** run `bash scripts/configure-user.sh gitlab-username-from-token`. If it can't (VPN off or no token), ask the user to type their GitLab username in the chat (it's not a secret), then run `bash scripts/configure-user.sh set gitlab-username <name>`.
 6. **Finish:** run `bash scripts/configure-user.sh show` again and show it. Then tell the user to run `/flow-doctor` (Codex: `$flow-doctor`) for the full check.
 

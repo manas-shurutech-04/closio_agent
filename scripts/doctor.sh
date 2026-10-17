@@ -376,6 +376,13 @@ else
   pass "Cards in progress: $cards_n (see them with /flow-status)"
 fi
 
+section "Checking web cards (Playwright, flow-verify)"
+if bash "$AGENT_ROOT/scripts/e2e.sh" check >/dev/null 2>&1; then
+  pass "Playwright is set up (e2e/ packages and the Chromium browser)"
+else
+  warn "Playwright isn't set up yet (needed to check web cards)" "Run /flow-configure-user playwright (Codex: \$flow-configure-user playwright); it asks before the download."
+fi
+
 section "Repos (config/repos/)"
 
 yaml_get() { # <file> <key>: value of a flat "key: value" line

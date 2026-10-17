@@ -261,6 +261,15 @@ show() {
   done
 
   echo
+  echo "Playwright (for checking web cards, D67)"
+  if [ -f "$AGENT_ROOT/e2e/node_modules/@playwright/test/package.json" ] && ls -d "${PLAYWRIGHT_BROWSERS_PATH:-$HOME/Library/Caches/ms-playwright}"/chromium-* >/dev/null 2>&1; then
+    ok "Playwright is set up (e2e/ packages and the Chromium browser)"
+  else
+    bad "Playwright isn't set up" "Run $CMD playwright (a download of about 150 MB, about 430 MB on disk; it asks you first)."
+    missing=$((missing + 1))
+  fi
+
+  echo
   echo "Result: $missing to set up."
 }
 
@@ -286,7 +295,8 @@ case "${1:-}" in
     [ $# -eq 2 ] && valid_secret_item "$2" || { bad "Unknown secret: ${2:-none}" "Use one of: $KEYCHAIN_PERSONAL_ITEMS"; exit 1; }
     store_secret_from_stdin_item "$2" ;;
   gitlab-username-from-token) gitlab_username_from_token ;;
+  playwright) bash "$AGENT_ROOT/scripts/e2e.sh" setup ;;
   *)
-    echo "Usage: bash scripts/configure-user.sh check-folder | show | set <item> <value> | secrets | secret <item> | gitlab-username-from-token"
+    echo "Usage: bash scripts/configure-user.sh check-folder | show | set <item> <value> | secrets | secret <item> | gitlab-username-from-token | playwright"
     exit 1 ;;
 esac

@@ -1,0 +1,8 @@
+{
+  "name": "closio-agent-e2e",
+  "private": true,
+  "description": "closio-agent's Playwright project for checking web cards (D24, D67). Each card's tests live in runs/<CARD-KEY>/e2e/; run them with: bash scripts/e2e.sh run <CARD-KEY>",
+  "devDependencies": {
+    "@playwright/test": "1.48.2"
+  }
+}
