@@ -34,4 +34,12 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     `docs/commands.md`, a section and an index row in `docs/user-guide.md`, and update the Claude artifact of the guide from
     `docs/user-guide.md` (its link is at the top of the guide), then set the guide's "mirrored" line (the date and every command).
     Only Claude Code can reach the artifact: a change made in Codex is finished in Claude Code. `bash scripts/help.sh check`
-    (also run by flow-doctor) fails until all of this is done.
+    (also run by flow-doctor) fails until all of this is done.12. In the card phases (flow-status, flow-start, flow-develop, flow-verify, flow-push, flow-finish; rule A17, D62): before every
+    step, re-read this file and `docs/agent-rules.md`, and read the user-created memory (the entries the user made with
+    flow-memory, in `local/memory/`): `bash scripts/memory.sh for <phase> <repos>`. Apply both, and write in the card's
+    `runs/<CARD-KEY>/history.md` which rules and entries you applied. Skip nothing.
+13. Planning a card (rule A18, D63): first pull the base branches and read the current code of every repo involved (routes,
+    controllers, services, utils, constants, middlewares, migrations, locale files); never plan from the card alone. List every
+    difference between the card and the code (error codes, statuses, messages, fields, anything the card names that isn't in the
+    code) and ask the user about them first; wait for the answers. Only then draft the plan. Nothing is saved or pushed before
+    the user approves the plan in chat; that approval is strictly necessary.
