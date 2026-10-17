@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # flow-start
 
-Picks up one card and plans it (C2; Phases 1 and 2 of [architecture.md](../../../docs/architecture.md); D61). It ends when the user has approved the plan. Everything it does is remembered in `runs/<CARD-KEY>/` on the card's branch of closio-agent (`runs/<CARD-KEY>`, never `main`), so it can be paused and continued: run it again and it carries on from the last finished step.
+Picks up one card and plans it (C2; Phases 1 and 2 of [architecture.md](../../../docs/architecture.md); D61). It ends when the user has approved the plan. Everything it does is remembered in `runs/<CARD-KEY>/`, saved to the card's branch of closio-agent (`runs/<CARD-KEY>`, never `main`; this folder itself stays on `main`), so it can be paused and continued: run it again and it carries on from the last finished step.
 
 ## Usage
 
@@ -29,12 +29,12 @@ The first memory step runs here automatically:
 
 ## Steps
 
-**1. Start.** Run `bash scripts/run.sh check-folder`; if it fails, show the fix and stop. Read the card key typed after the command (in Claude Code it may also appear as `ARGUMENTS: …`); if it isn't like `SCRUM-567`, show the usage and stop. If `bash scripts/run.sh state <KEY>` shows a run folder, this is a continuation: read its `step:` line and **go straight to that step** (the steps before are done). **If that step is 8, 9 or 10 (planning), go to step 7 first:** the latest code is always read again before planning goes on (rule A18), and a draft plan is never saved before the approval, so it's made again. Then connect the VPN with the `flow-connectivity` agent (rule A5): GitLab is needed in step 5. If it fails, show its fix and stop.
+**1. Start.** Run `bash scripts/run.sh check-folder`; if it fails, show the fix and stop. Read the card key typed after the command (in Claude Code it may also appear as `ARGUMENTS: …`); if it isn't like `SCRUM-567`, show the usage and stop. If `bash scripts/run.sh state <KEY>` shows a run folder, this is a continuation: run `bash scripts/run.sh branch <KEY>` first (it brings the card's run folder onto this Mac without switching this folder; ❌ = show the fix and stop), then read its `step:` line and **go straight to that step** (the steps before are done). **If that step is 8, 9 or 10 (planning), go to step 7 first:** the latest code is always read again before planning goes on (rule A18), and a draft plan is never saved before the approval, so it's made again. Then connect the VPN with the `flow-connectivity` agent (rule A5): GitLab is needed in step 5. If it fails, show its fix and stop.
 
 **2. The card.** Read the card from Jira with your Jira tools (key, summary, issue type, status, assignee, sprint, description). Read only here.
    - A **Spike**: say "the agent doesn't pick up Spikes (D58)" and stop. Nothing is created.
    - Status **not To Do**, or **assigned to someone else**: say so and ask whether to go on. Stop until the user answers; on no, stop.
-   - Then: `bash scripts/run.sh branch <KEY>` (the card's branch of closio-agent; a teammate's run folder comes along if there is one), `bash scripts/run.sh create <KEY> "<summary>"`, and `bash scripts/run.sh set <KEY> type <issue type>`, `… set <KEY> jira_status <status>`.
+   - Then: `bash scripts/run.sh branch <KEY>` (makes the card's branch of closio-agent ready without switching this folder; a teammate's run folder comes along if there is one), `bash scripts/run.sh create <KEY> "<summary>"`, and `bash scripts/run.sh set <KEY> type <issue type>`, `… set <KEY> jira_status <status>`.
    - Save the card's text to `runs/<KEY>/card.md` with your file-writing tool, exactly as Jira returns it (the same layout as `flow-check-card`: a title line, a `_Type · Status · Read on <date>_` line, then the description). Then run `bash scripts/card-check.sh runs/<KEY>/card.md` and show its output.
    - On any ❌: list the gaps and **wait**. The user fixes the card in Jira (then read it again) or explains in chat; write what they explain under a heading `## Explained at pick-up` at the end of `card.md`. A **Bug** may keep its gaps after the explanation (D58). Go on only when the user says so.
    - Log the step; `bash scripts/run.sh set <KEY> step 3`.
@@ -73,7 +73,7 @@ The first memory step runs here automatically:
 
 **10. ✋ Manual approval (rule A18), strictly necessary.** Ask the user to approve the plan. On changes, change it and show it again, until they say yes in so many words. Nothing is written to the run folder and nothing is pushed before that. Log the step.
 
-**11. Save and finish.** Write the approved plan to `runs/<KEY>/plan.md` with your file-writing tool (the shape above, `# <KEY> — plan` as its title, "Approved by the user on <date>" under it). Then `bash scripts/run.sh set <KEY> phase develop`, `set <KEY> step 1`, `set <KEY> next "/flow-develop <KEY>"`, log "plan approved and saved", and `bash scripts/run.sh save <KEY> "plan approved"`. Show the save's output and end with one line: `Done: <KEY> is planned. Next: /flow-develop <KEY> (coming; Codex: $flow-develop <KEY>).`
+**11. Save and finish.** Write the approved plan to `runs/<KEY>/plan.md` with your file-writing tool (the shape above, `# <KEY> — plan` as its title, "Approved by the user on <date>" under it). Then `bash scripts/run.sh set <KEY> phase develop`, `set <KEY> step 1`, `set <KEY> next "/flow-develop <KEY>"`, log "plan approved and saved", and `bash scripts/run.sh save <KEY> "plan approved"`. Show the save's output and end with one line: `Done: <KEY> is planned. Next: /flow-develop <KEY> (Codex: $flow-develop <KEY>), or say "develop <KEY>".`
 
 ## Rules
 - Every step writes its history line with the rules and memory applied (A1, A17). Pausing is just stopping; the next `/flow-start <KEY>` carries on.
