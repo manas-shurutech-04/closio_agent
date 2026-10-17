@@ -362,6 +362,20 @@ printf '%s\n' "$help_out"
 to_fix=$((to_fix + $(printf '%s\n' "$help_out" | grep -c '^❌')))
 to_look=$((to_look + $(printf '%s\n' "$help_out" | grep -c '^⚠️')))
 
+# ---------------------------------------------------------------- Cards in progress (C1, D61)
+section "Cards in progress (runs/, flow-status)"
+cards_n="$(bash "$AGENT_ROOT/scripts/run.sh" count 2>/dev/null)"
+cards_problems="$(bash "$AGENT_ROOT/scripts/run.sh" problems 2>/dev/null)"
+if [ -n "$cards_problems" ]; then
+  printf '%s\n' "$cards_problems"
+  to_fix=$((to_fix + $(printf '%s\n' "$cards_problems" | grep -c '^❌')))
+fi
+if [ "${cards_n:-0}" -eq 0 ]; then
+  pass "No card in progress (pick one up with /flow-start <CARD-KEY>)"
+else
+  pass "Cards in progress: $cards_n (see them with /flow-status)"
+fi
+
 section "Repos (config/repos/)"
 
 yaml_get() { # <file> <key>: value of a flat "key: value" line

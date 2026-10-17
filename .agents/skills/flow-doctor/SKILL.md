@@ -12,7 +12,7 @@ Symbols: ✅ fine, ⚠️ worth a look (doesn't fail), ❌ must fix. Every ⚠�
 
 ## Usage
 
-- `/flow-doctor`: check this Mac's setup (project, tools, VPN and GitLab, personal settings, user memory, commands documented, repos, repo setup, Keychain names, Jira) and show how to fix each problem.
+- `/flow-doctor`: check this Mac's setup (project, tools, VPN and GitLab, personal settings, user memory, commands documented, cards in progress, repos, repo setup, Keychain names, Jira) and show how to fix each problem.
 - Codex: `$flow-doctor` (approve running it with network access, so the GitLab checks can run).
 
 ## Steps
