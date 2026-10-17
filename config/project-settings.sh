@@ -46,6 +46,16 @@ LOCAL_RABBITMQ_PORT="${LOCAL_RABBITMQ_PORT:-5672}"
 # Running a repo's own commands (C3, D65): scripts/repo-run.sh (checks, tests + coverage gate, migrate, seed)
 REPO_RUN_TIMEOUT="${REPO_RUN_TIMEOUT:-900}"   # seconds for one command (15 minutes)
 
+# Verifying a card (C4, D67): scripts/repo-run.sh start, scripts/api-call.sh, scripts/api-check.sh, scripts/db-run.sh, scripts/e2e.sh
+SERVER_START_TIMEOUT="${SERVER_START_TIMEOUT:-120}"   # seconds for a repo's server to answer on its health URL
+API_CALL_TIMEOUT="${API_CALL_TIMEOUT:-30}"             # seconds for one API call
+WS1_REPO="${WS1_REPO:-nodejs-ws1closio}"               # the BFF: calls to it are made logged in as the user
+WS1_APP_VERSION="${WS1_APP_VERSION:-1.0.0+1}"          # X-Application-Version for WS1 calls (architecture.md, Phase 6)
+WS1_NAPP_PK="${WS1_NAPP_PK:-4}"                        # the WS1 login's napp_pk and client_type: the same for everyone
+WS1_CLIENT_TYPE="${WS1_CLIENT_TYPE:-web}"
+WEB_REPO="${WEB_REPO:-closio-web-v2}"                  # the web app the Playwright tests open
+E2E_TIMEOUT="${E2E_TIMEOUT:-900}"                      # seconds for one Playwright run, and for its setup
+
 # Card run folders (C1, D61): committed and pushed on a branch of closio-agent per card, never main
 RUN_BRANCH_PREFIX="${RUN_BRANCH_PREFIX:-runs/}"   # the card's branch is runs/<CARD-KEY>
 GIT_REMOTE="${GIT_REMOTE:-origin}"
