@@ -17,3 +17,16 @@ One line per step (rule A1). The last column says which team rules and user-memo
 | 2026-10-17 17:09 | plan 9 | Draft plan shown in chat (WS2: migration, model, seeder, route/controller/service, tests; WS1: schema, route, controller). Ruleset file backend/story-implementation-workflow.md isn't in closio-agent yet (D26: to be refined), so the plan follows the repos' sibling patterns, Express 5 | rules: A16, A18, D26, D51, A17 · memory: — |
 | 2026-10-17 17:10 | plan 10 | User approved the plan in chat ("plan approved") | rules: A18, A17 · memory: — |
 | 2026-10-17 17:11 | plan 11 | plan approved and saved | rules: A1, A18, A17 · memory: — |
+| 2026-10-17 21:50 | develop 1 | started from plain words (phase develop); run folder brought in; VPN connected, GitLab reachable | rules: A4 (D61 plain-words check), A5, A17 · memory: — |
+| 2026-10-17 21:50 | develop 2 | folder access ok for both repos; card branch updated from develop (WS2 b4d221d, WS1 7f3e74e) | rules: A15, G1, A17 · memory: — |
+| 2026-10-17 21:53 | develop 3 | read plan.md, card.md, the ruleset (BE: all of it) and the sibling ageing-deduction-config files in WS2 (migration, model, seeder, service, controller, routes, tests, verifyClientAuth, createError) and WS1 (route, controller, schema, helperFunctions, createError, target-sales locale) | rules: A16, A19, A6, A17 · memory: — |
+| 2026-10-17 21:53 | develop 4 | WS2: new migration, seeder, model, service, controller, route; changed appConstants.js, models/incentives/index.js, routes/incentives/index.js | rules: A16, A19, G3, A17 · memory: — |
+| 2026-10-17 21:55 | develop 5 | WS2: new tests controller spec, service spec, API spec (AC1-AC10, invalid status, DB error); repo-run test ✅ 2788 passing, 6 pending; coverage 92.56/82.95/91.07/93.31 | rules: A13, D25, A17 · memory: — |
+| 2026-10-17 21:55 | develop 6 | WS2: repo-run check ✅ lint passed on the 12 changed files, check:circular passed | rules: A13, D65, A17 · memory: — |
+| 2026-10-17 21:58 | develop 7 | WS2: user said yes; npm run migrate ✅. npm run seed (db:seed:all) not run: it reruns all 7 seeders and seed-incentive-schemas would hit uq_schema_partner; user runs only the new seeder by hand (db:seed --seed), result pending | rules: D21, D12, A11, A17 · memory: — |
+| 2026-10-17 21:58 | develop 8 | WS2 summary written in develop.md (repo 1 of 2); next: nodejs-ws1closio | rules: A1, A17 · memory: — |
+| 2026-10-17 21:59 | develop 4 | WS1: new schema getTraderStockDaysMultiplierConfigs.js, controller incentiveTraderStockDaysMultiplierConfigController.js, route incentiveTraderStockDaysMultiplierConfigRoutes.js; changed routes/incentives/index.js; no locale change | rules: A16, A19, G3, A17 · memory: — |
+| 2026-10-17 21:59 | develop 5 | WS1: no test suite (D25), no tests | rules: D25, A17 · memory: — |
+| 2026-10-17 21:59 | develop 6 | WS1: repo-run check ✅ lint passed on the 4 changed files, check:circular passed | rules: A13, D65, A17 · memory: — |
+| 2026-10-17 21:59 | develop 7 | WS1: no migrations or seeders (migration_tool: none) | rules: D21, A17 · memory: — |
+| 2026-10-17 21:59 | develop 8 | WS1 summary written in develop.md (repo 2 of 2); next: the review | rules: A1, A17 · memory: — |
