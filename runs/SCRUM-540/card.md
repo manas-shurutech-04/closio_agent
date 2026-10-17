@@ -179,3 +179,27 @@ Explained by the user on 2026-10-17, in answer to the card check:
 
 * `## Objective` is the card's Context.
 * The AC headings (`### AC1 — …`) are fine as they are.
+
+## Decided before planning
+
+Decided with the user on 2026-10-17, after reading the code on the card's branch (rule A18):
+
+0. **Scope:** this card also builds SCRUM-539 in WS2: the `trader_stock_days_multiplier_configs` migration and the `TraderStockDaysMultiplierConfig` model (registered in `src/models/incentives/index.js`), with SCRUM-539's table spec. SCRUM-539 itself is left as it is in Jira (the agent changes only this card).
+1. **`updated_at`:** nullable with no default, like `ar_ageing_deduction_configs` today (`20261009100000-alter-ar-ageing-deduction-configs-updated-at-nullable.js`), not `NOT NULL DEFAULT NOW()` as in SCRUM-539.
+2. **Seeded default config:** a seeder adds one default active config (`multiplier_days` 30) for partner `e3d8f926-a1bf-4890-9524-cc2d610152f9`.
+   * 2a. Its period is the **current month**, from its first to its last day, worked out in UTC when the seeder runs (e.g. run in October 2026 → `2026-10-01` to `2026-10-31`).
+3. **`multiplier_days` in the response:** converted to a number (`NUMERIC(8,2)` comes back as a string).
+4. **No business check:** the list is filtered by `partner_id` only (no `assertBusiness1Partner`).
+5. **No pagination:** the response is `{ status, data: { configs } }` only.
+6. **Invalid `status`:** 400 `VALIDATION_ERROR`, message `status must be one of: active, inactive`, no `details` (as in the sibling list APIs). New constant approved: `VALID_TRADER_STOCK_DAYS_MULTIPLIER_CONFIG_STATUSES = ['active', 'inactive']` in `appConstants.js`.
+7. **Order:** `created_at DESC`.
+8. **Fields:** exactly the 8 of AC4 (`id`, `valid_from`, `valid_to`, `multiplier_days`, `status`, `created_by`, `created_by_name`, `created_at`).
+9. **`created_at`:** the code's default JSON date (`2026-06-01T10:00:00.000Z`).
+10. **DB failure:** 500 `INTERNAL_ERROR`, message `could not fetch trader stock days multiplier configs` (new message approved), same pattern as the sibling service.
+11. **WS1:** route + controller + schema file, no service file (WS1 has no service layer).
+12. **Routes registered in** `src/routes/incentives/index.js` in both repos (not `src/routes/index.js`).
+13. **WS1 missing partner:** 400 `PARTNER_ID_MISSING` with the message in the locale files, `X-Partner-Id header is required`.
+14. **WS1 checks the WS2 success response:** `status === 'success'`, `data` exists, `data.configs` is an array; otherwise 500 `INTERNAL_SERVER_ERROR`, `Something went wrong. Please try again later.`
+15. **WS1 query parameters:** only `status` allowed; anything else → 400 `GENERAL_ERROR` `Invalid schema` (the sibling schema pattern).
+16. **File names:** WS2 `traderStockDaysMultiplierConfigRoutes.js` / `…Controller.js` / `…Service.js` under `incentives/`, migration `YYYYMMDDHHMMSS-create-trader-stock-days-multiplier-configs.js`; WS1 `incentiveTraderStockDaysMultiplierConfigRoutes.js`, `incentiveTraderStockDaysMultiplierConfigController.js`, schema `getTraderStockDaysMultiplierConfigs.js`.
+17. **Tests:** WS2 only (unit: controller, service; API spec), coverage at or above 80/70/80/80. WS1 has no test setup.
