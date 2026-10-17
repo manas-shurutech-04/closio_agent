@@ -3,6 +3,9 @@
 # Personal, per-user settings and local repo paths (F4/F5): stay on your Mac only
 /local/
 
+# Card run folders: committed only to their card's branch runs/<CARD-KEY> by scripts/run.sh, never on main (D61)
+/runs/*/
+
 # Secrets must never be committed (D33, D34, A6)
 .env
 .env.*

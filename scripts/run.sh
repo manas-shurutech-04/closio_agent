@@ -3,18 +3,23 @@
 # Run it from the closio-agent folder:  bash scripts/run.sh <action>
 #
 #   check-folder                     Is this session in the closio-agent folder? (strict rule, D42)
-#   branch <KEY>                     Creates (or checks out) the card's branch of closio-agent, runs/<KEY>:
-#                                    from origin/runs/<KEY> if a teammate pushed it, else from origin/main. Never main.
+#   branch <KEY>                     Makes the card's branch of closio-agent, runs/<KEY>, ready on this Mac WITHOUT
+#                                    switching this folder to it (the folder always stays on main with the current
+#                                    tools, D61): from origin/runs/<KEY> if a teammate pushed it, else from origin/main;
+#                                    brings runs/<KEY>/ onto disk from that branch when it isn't here (or a teammate's
+#                                    newer save, when there's nothing unsaved here).
 #   create <KEY> "<title>"           Creates runs/<KEY>/ with state.md and history.md (run `branch` first)
 #   state <KEY>                      Prints the card's state (from this Mac, else from the pushed branch)
 #   get <KEY> <field>                One field of the state
 #   set <KEY> <field> <value...>     Changes one field (and 'updated')
 #   log <KEY> <step> "<what>" ["<rules and memory applied>"]
 #                                    Appends one history line (rule A1; the last column is rule A17)
-#   save <KEY> "<message>"           Commits runs/<KEY>/ on the card's branch and pushes it (D61)
+#   save <KEY> "<message>"           Commits runs/<KEY>/ to the card's branch and pushes it (D61), without switching
+#                                    this folder: a temporary git index, so the working tree and its changes are untouched
 #   list                             Every card in progress, from the run branches on this Mac and on origin
 #   count | problems                 For flow-doctor
 #
+# runs/<KEY>/ folders are git-ignored on main (/runs/*/ in .gitignore); they're committed only to their card's branch.
 # Files (plain markdown, never a secret):
 #   runs/<KEY>/state.md     key: value lines (card, title, type, phase, step, jira_status, repos, branch, run_branch, next, updated)
 #   runs/<KEY>/history.md   a table: when · step · what happened · rules and memory applied
@@ -53,6 +58,31 @@ rel_runs() { # the runs folder relative to the git root (for git commands and `g
   local root; root="$(git -C "$AGENT_ROOT" rev-parse --show-toplevel 2>/dev/null)" || { echo runs; return; }
   printf '%s' "$RUNS_DIR" | sed -E "s#^$(printf '%s' "$root" | sed 's/[.[\*^$]/\\&/g')/##"
 }
+git_root() { git -C "$AGENT_ROOT" rev-parse --show-toplevel 2>/dev/null; }
+# The tree hash of runs/<KEY>/ as it is on disk ("" when the folder isn't there), via a temporary index.
+disk_tree() { # <key>
+  local key="$1" rel tmp tree
+  rel="$(rel_runs)/$key"
+  [ -d "$(run_dir "$key")" ] || return 0
+  tmp="$(mktemp -d)" || return 0
+  GIT_INDEX_FILE="$tmp/index" git -C "$(git_root)" add -f -- "$rel" 2>/dev/null &&
+    tree="$(GIT_INDEX_FILE="$tmp/index" git -C "$(git_root)" write-tree 2>/dev/null)" &&
+    git -C "$(git_root)" rev-parse -q --verify "$tree:$rel" 2>/dev/null
+  rm -rf "$tmp"
+  return 0
+}
+branch_tree() { # <ref> <key>: the tree hash of runs/<KEY>/ on that branch ("" when it has none)
+  git -C "$(git_root)" rev-parse -q --verify "$1:$(rel_runs)/$2" 2>/dev/null
+  return 0
+}
+# Writes runs/<KEY>/ from a branch onto disk (the folder is replaced; only call when nothing here is unsaved).
+unpack() { # <ref> <key>
+  local ref="$1" key="$2" rel
+  rel="$(rel_runs)/$key"
+  rm -rf "$(run_dir "$key")"
+  git -C "$(git_root)" archive "$ref" "$rel" | tar -x -C "$(git_root)"
+}
+
 need_key() { # <key>
   if [ -z "${1:-}" ] || ! valid_key "$1"; then
     bad "'${1:-}' isn't a card key" "Give the key as in Jira, e.g. $JIRA_PROJECT_KEY-567."; exit 2
@@ -100,26 +130,46 @@ do_check_folder() {
 }
 
 do_branch() { # <key>
-  local key="$1" br cur changed
-  br="$(run_branch "$key")"
+  local key="$1" br rmt d has_local=0 has_remote=0 here mine theirs from
+  br="$(run_branch "$key")"; rmt="$GIT_REMOTE/$br"; d="$(run_dir "$key")"
   git_here rev-parse --is-inside-work-tree >/dev/null 2>&1 || { bad "closio-agent isn't a git repository here" "Clone it from GitHub (setup guide, section 1) and start again."; return 1; }
-  cur="$(current_branch)"
-  if [ "$cur" = "$br" ]; then ok "On the card's branch $br"; return 0; fi
-  git_here fetch -q "$GIT_REMOTE" 2>/dev/null || look "Couldn't fetch from $GIT_REMOTE (no network?)" "A teammate's run branch may be missed; the branch is made from what's on this Mac."
-  changed="$(git_here status --porcelain --untracked-files=no | wc -l | tr -d ' ')"
-  if git_here show-ref --verify --quiet "refs/heads/$br"; then
-    git_here checkout -q "$br" || { bad "Couldn't switch to $br" "Commit or stash your changes in closio-agent, then run: bash scripts/run.sh branch $key"; return 1; }
-    ok "Switched to the card's branch $br (it already existed on this Mac)"
-  elif git_here show-ref --verify --quiet "refs/remotes/$GIT_REMOTE/$br"; then
-    git_here checkout -q -b "$br" --track "$GIT_REMOTE/$br" || { bad "Couldn't create $br from $GIT_REMOTE/$br" "Commit or stash your changes in closio-agent, then run: bash scripts/run.sh branch $key"; return 1; }
-    ok "Created the card's branch $br from $GIT_REMOTE (a teammate already worked on this card; its run folder is here now)"
-  else
-    local from="$GIT_REMOTE/main"
-    git_here show-ref --verify --quiet "refs/remotes/$GIT_REMOTE/main" || from="main"
-    git_here checkout -q -b "$br" "$from" || { bad "Couldn't create $br from $from" "Commit or stash your changes in closio-agent, then run: bash scripts/run.sh branch $key"; return 1; }
-    ok "Created the card's branch $br from $from (closio-agent's main is never used for run folders, D61)"
+  git_here fetch -q "$GIT_REMOTE" 2>/dev/null || look "Couldn't fetch from $GIT_REMOTE (no network?)" "A teammate's newer save may be missed; carrying on with what's on this Mac."
+  git_here show-ref --verify --quiet "refs/heads/$br" && has_local=1
+  git_here show-ref --verify --quiet "refs/remotes/$rmt" && has_remote=1
+  if [ "$has_local" -eq 0 ]; then
+    if [ "$has_remote" -eq 1 ]; then
+      git_here branch -q "$br" "$rmt" || { bad "Couldn't make the branch $br from $rmt" "Check 'git status' in the closio-agent folder."; return 1; }
+      ok "The card's branch $br came from $GIT_REMOTE (a teammate already worked on this card)"
+    else
+      from="$GIT_REMOTE/main"
+      git_here show-ref --verify --quiet "refs/remotes/$GIT_REMOTE/main" || from="main"
+      git_here branch -q "$br" "$from" || { bad "Couldn't make the branch $br from $from" "Check 'git status' in the closio-agent folder."; return 1; }
+      ok "The card's branch $br is made (from $from); run folders are saved there, never on main (D61)"
+    fi
+  elif [ "$has_remote" -eq 1 ] && [ "$(git_here rev-parse "$br")" != "$(git_here rev-parse "$rmt")" ]; then
+    if git_here merge-base --is-ancestor "$br" "$rmt"; then
+      # A teammate saved newer work. Take it only when nothing here is unsaved.
+      here="$(disk_tree "$key")"; mine="$(branch_tree "$br" "$key")"
+      if [ -n "$here" ] && [ "$here" != "$mine" ]; then
+        bad "A teammate saved newer work on $br, and runs/$key here has changes that aren't saved" "Ask the user which to keep. Theirs: move runs/$key aside, then run this again. Yours: run: bash scripts/run.sh save $key \"<message>\" first (the push will then ask you to merge by hand: git fetch, then compare the two runs/$key folders)."
+        return 1
+      fi
+      git_here update-ref "refs/heads/$br" "$(git_here rev-parse "$rmt")" || { bad "Couldn't update $br" "Check 'git status' in the closio-agent folder."; return 1; }
+      unpack "$br" "$key"
+      ok "Brought a teammate's newer save of runs/$key from $GIT_REMOTE"
+    elif ! git_here merge-base --is-ancestor "$rmt" "$br"; then
+      bad "$br on this Mac and on $GIT_REMOTE have both moved on (two people saved this card)" "Ask the user which to keep; compare them with: git log --oneline $br $rmt"
+      return 1
+    fi
   fi
-  [ "$changed" -gt 0 ] && look "$changed uncommitted change(s) in closio-agent came along to $br" "They're untouched; 'save' commits only the run folder. Commit them on their own branch when you're ready."
+  if [ -f "$d/state.md" ]; then
+    ok "The run folder runs/$key is on this Mac (saved on the branch $br; this folder stays on $(current_branch))"
+  elif [ -n "$(branch_tree "$br" "$key")" ]; then
+    unpack "$br" "$key"
+    ok "Brought runs/$key onto this Mac from the branch $br (this folder stays on $(current_branch))"
+  else
+    ok "The card's branch $br is ready; no run folder yet (create it next)"
+  fi
   return 0
 }
 
@@ -127,7 +177,7 @@ do_create() { # <key> <title>
   local key="$1" title="${2:-}" d
   d="$(run_dir "$key")"
   if [ -f "$(state_file "$key")" ]; then look "The run folder runs/$key already exists (resuming)" "See where it stands: bash scripts/run.sh state $key"; return 0; fi
-  [ "$(current_branch)" = "$(run_branch "$key")" ] || { bad "Not on the card's branch $(run_branch "$key")" "Run first: bash scripts/run.sh branch $key"; return 1; }
+  git_here show-ref --verify --quiet "refs/heads/$(run_branch "$key")" || { bad "The card's branch $(run_branch "$key") isn't ready" "Run first: bash scripts/run.sh branch $key"; return 1; }
   mkdir -p "$d" || { bad "Couldn't create $d" "Check the folder's permissions."; return 1; }
   {
     echo "# $key — ${title:-(title not read yet)}"
@@ -192,17 +242,37 @@ do_log() { # <key> <step> <what> [<rules and memory>]
 }
 
 do_save() { # <key> <message>
-  local key="$1" msg="${2:-update}" br rel
-  br="$(run_branch "$key")"; rel="$(rel_runs)/$key"
+  local key="$1" msg="${2:-update}" br rel tmp tree parent commit root
+  br="$(run_branch "$key")"; rel="$(rel_runs)/$key"; root="$(git_root)"
   [ -d "$(run_dir "$key")" ] || { bad "No run folder runs/$key to save" "Run: bash scripts/run.sh branch $key, then create it."; return 1; }
-  [ "$(current_branch)" = "$br" ] || { bad "Not on the card's branch $br (on $(current_branch))" "Run: bash scripts/run.sh branch $key, then save again. Run folders never go on main (D61)."; return 1; }
-  git_here add -- "$rel" || { bad "Couldn't stage runs/$key" "Check git in the closio-agent folder."; return 1; }
-  if git_here diff --cached --quiet -- "$rel"; then ok "Nothing new to save in runs/$key"; return 0; fi
-  git_here commit -q -m "$key: $msg" -- "$rel" || { bad "Couldn't commit runs/$key" "Check 'git status' in the closio-agent folder (a merge in progress? git name and email set?)."; return 1; }
-  if git_here push -q -u "$GIT_REMOTE" "$br" 2>/dev/null; then
-    ok "Saved and pushed: runs/$key on $br ($key: $msg)"
+  git_here show-ref --verify --quiet "refs/heads/$br" || { bad "The card's branch $br isn't ready" "Run: bash scripts/run.sh branch $key, then save again."; return 1; }
+  parent="$(git_here rev-parse "$br")"
+  tmp="$(mktemp -d)" || { bad "Couldn't make a temporary folder" "Check the disk, then save again."; return 1; }
+  # The branch's tree, with runs/<KEY>/ replaced by what's on disk; this folder's own index and files aren't touched.
+  if ! { GIT_INDEX_FILE="$tmp/index" git -C "$root" read-tree "$br" &&
+         GIT_INDEX_FILE="$tmp/index" git -C "$root" rm -r -q -f --cached --ignore-unmatch -- "$rel" >/dev/null &&
+         GIT_INDEX_FILE="$tmp/index" git -C "$root" add -f -- "$rel" &&
+         tree="$(GIT_INDEX_FILE="$tmp/index" git -C "$root" write-tree)"; }; then
+    rm -rf "$tmp"; bad "Couldn't stage runs/$key for $br" "Check 'git status' in the closio-agent folder."; return 1
+  fi
+  rm -rf "$tmp"
+  if [ "$tree" = "$(git_here rev-parse "$br^{tree}")" ]; then
+    if git_here show-ref --verify --quiet "refs/remotes/$GIT_REMOTE/$br" && [ "$(git_here rev-parse "$GIT_REMOTE/$br")" = "$parent" ]; then
+      ok "Nothing new to save in runs/$key"; return 0
+    fi
   else
-    bad "Committed on $br, but the push to $GIT_REMOTE failed" "Check your network and GitHub login, then run: bash scripts/run.sh save $key \"$msg\" (it pushes the commit that's already made)."
+    commit="$(git_here commit-tree "$tree" -p "$parent" -m "$key: $msg")" || { bad "Couldn't commit runs/$key" "Check that git's name and email are set (/flow-configure-user), then save again."; return 1; }
+    git_here update-ref "refs/heads/$br" "$commit" "$parent" || { bad "Couldn't update the branch $br" "Check 'git status' in the closio-agent folder, then save again."; return 1; }
+  fi
+  if git_here push -q "$GIT_REMOTE" "refs/heads/$br:refs/heads/$br" 2>/dev/null; then
+    ok "Saved and pushed: runs/$key on $br ($key: $msg); this folder stays on $(current_branch)"
+  else
+    if git_here fetch -q "$GIT_REMOTE" 2>/dev/null && git_here show-ref --verify --quiet "refs/remotes/$GIT_REMOTE/$br" &&
+       ! git_here merge-base --is-ancestor "$GIT_REMOTE/$br" "$br"; then
+      bad "Saved on $br on this Mac, but a teammate saved newer work on $GIT_REMOTE first, so the push was refused" "Ask the user which to keep; compare them with: git log --oneline $br $GIT_REMOTE/$br (nothing is lost: both are kept)."
+    else
+      bad "Saved on $br on this Mac, but the push to $GIT_REMOTE failed" "Check your network and GitHub login, then run: bash scripts/run.sh save $key \"$msg\" (it pushes what's already saved)."
+    fi
     return 1
   fi
 }
@@ -227,7 +297,11 @@ do_list() {
 do_count() { all_keys | grep -c '' ; return 0; }
 
 do_problems() { # for flow-doctor: ❌ lines only
-  local key f field
+  local key f field cur
+  cur="$(current_branch)"
+  case "$cur" in "$RUN_BRANCH_PREFIX"*)
+    bad "The closio-agent folder is on the run branch $cur" "Switch back: git checkout main (run folders are saved to their branch without switching this folder, D61; your runs/ folders stay where they are)." ;;
+  esac
   for d in "$RUNS_DIR"/*/; do
     [ -d "$d" ] || continue
     key="$(basename "$d")"
