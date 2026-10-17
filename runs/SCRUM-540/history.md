@@ -30,3 +30,18 @@ One line per step (rule A1). The last column says which team rules and user-memo
 | 2026-10-17 21:59 | develop 6 | WS1: repo-run check ✅ lint passed on the 4 changed files, check:circular passed | rules: A13, D65, A17 · memory: — |
 | 2026-10-17 21:59 | develop 7 | WS1: no migrations or seeders (migration_tool: none) | rules: D21, A17 · memory: — |
 | 2026-10-17 21:59 | develop 8 | WS1 summary written in develop.md (repo 2 of 2); next: the review | rules: A1, A17 · memory: — |
+| 2026-10-17 21:59 | develop 9 | develop.md complete; saved and pushed to runs/SCRUM-540 (developed, waiting for the review) | rules: A1, A17 · memory: — |
+| 2026-10-17 22:25 | review 10 | change asked: seeder seeds October 2026 only (fixed dates) instead of the current month; back to step 4 for nodejs-ws2targetsalesincentive | rules: A17, A16 · memory: — |
+| 2026-10-17 22:25 | develop 4 | WS2 (review change): seeder now seeds fixed October 2026 (2026-10-01 to 2026-10-31); down deletes exactly that row | rules: G3, A17 · memory: — |
+| 2026-10-17 22:26 | develop 5 | WS2 (review change): repo-run test ✅ 2788 passing, 6 pending; coverage 92.59/82.95/91.14/93.35 | rules: A13, A17 · memory: — |
+| 2026-10-17 22:26 | develop 6 | WS2 (review change): repo-run check ✅ lint (12 files), check:circular | rules: A13, D65, A17 · memory: — |
+| 2026-10-17 22:26 | develop 7 | WS2 (review change): nothing new to run; the seeder is still run by the user by hand | rules: D21, A17 · memory: — |
+| 2026-10-17 22:26 | develop 8 | WS2 summary in develop.md updated for the review change; back to the review | rules: A1, A17 · memory: — |
+| 2026-10-17 22:42 | review 10 | change asked: WS1 schema also lists updated_by, updated_by_name, updated_at (optional) in the 200 config items; back to step 4 for nodejs-ws1closio | rules: A17, A16 · memory: — |
+| 2026-10-17 22:42 | develop 4 | WS1 (review change): schema 200 config items now also list updated_by, updated_by_name, updated_at as ['string','null'], not required | rules: A16, G3, A17 · memory: — |
+| 2026-10-17 22:42 | develop 5 | WS1 (review change): no test suite (D25) | rules: D25, A17 · memory: — |
+| 2026-10-17 22:43 | develop 6 | WS1 (review change): repo-run check ✅ lint (4 files), check:circular | rules: A13, D65, A17 · memory: — |
+| 2026-10-17 22:43 | develop 7 | WS1 (review change): no migrations or seeders | rules: D21, A17 · memory: — |
+| 2026-10-17 22:43 | develop 8 | WS1 summary in develop.md updated for the review change; back to the review | rules: A1, A17 · memory: — |
+| 2026-10-17 23:05 | review 10 | review approved by the user ("review approved") | rules: A17 · memory: — |
+| 2026-10-17 23:05 | review 11 | review approved; phase verify, next /flow-verify SCRUM-540 | rules: A1, A17, G3 · memory: — |

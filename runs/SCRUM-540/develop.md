@@ -14,9 +14,9 @@ New:      src/migrations/20261017100000-create-trader-stock-days-multiplier-conf
           test/unit/services/incentives/traderStockDaysMultiplierConfigService.spec.js,
           test/api/traderStockDaysMultiplierConfig.api.spec.js
 Changed:  src/constants/appConstants.js, src/models/incentives/index.js, src/routes/incentives/index.js
-Tests:    ✅ 2788 passing, 6 pending · coverage 92.56% stmts, 82.95% branches, 91.07% funcs, 93.31% lines (gate 80/70/80/80)
+Tests:    ✅ 2788 passing, 6 pending · coverage 92.59% stmts, 82.95% branches, 91.14% funcs, 93.35% lines (gate 80/70/80/80)
 Checks:   passed · lint: passed (12 changed files) · check:circular: passed
-Not in the plan: the seeder is run by hand (see below); nothing else
+Not in the plan: the seeder is run by hand (see below); at the review, the seeder seeds October 2026 only (see Review)
 Next:     nodejs-ws1closio
 ```
 
@@ -29,7 +29,7 @@ New:      src/schemas/v1/incentives/getTraderStockDaysMultiplierConfigs.js,
 Changed:  src/routes/incentives/index.js
 Tests:    no test suite (D25)
 Checks:   passed · lint: passed (4 changed files) · check:circular: passed
-Not in the plan: none
+Not in the plan: at the review, the schema also lists updated_by, updated_by_name, updated_at (optional; see Review)
 Next:     your review
 ```
 
@@ -39,3 +39,9 @@ Next:     your review
 - For the deployment doc: on each environment, run the migration, then **only this seeder** (`db:seed --seed …`), not `db:seed:all`.
 
 ## Review
+- 2026-10-17, change asked by the user: the seeder adds the config for October only (fixed `2026-10-01` to `2026-10-31`), not "the current month when it runs" (plan answer 2a). Repo: nodejs-ws2targetsalesincentive.
+  Done: `VALID_FROM = '2026-10-01'`, `VALID_TO = '2026-10-31'` replace the current-month helper; `down` now deletes exactly that row (partner, no creator, 30 days, those two dates). Tests ✅ and checks ✅ again.
+- 2026-10-17, change asked by the user: the WS1 schema `getTraderStockDaysMultiplierConfigs.js` also lists `updated_by`, `updated_by_name`, `updated_at` in the 200 config items, optional (`['string', 'null']`, not required), as in `getAgeingDeductionConfigs.js`. Repo: nodejs-ws1closio. The WS2 response is unchanged (still the 8 fields of AC4).
+  Done: tests (no suite) and checks ✅ again.
+
+Approved by the user on 2026-10-17.
