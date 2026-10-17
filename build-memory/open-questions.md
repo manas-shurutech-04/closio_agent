@@ -19,6 +19,8 @@
 - **Watch:** Codex's updater process still runs with Node v18; if Codex falls back to v18 after an update, restart the service again (fallback: `nvm alias default 22`). How to restart the updater itself is not checked yet (documented as such in the setup guide).
 - **Backend allow list (security):** `japfa/backend/.claude/settings.local.json` allows `echo $GITLAB_TOKEN` / `echo $GITLAB_PRIVATE_TOKEN` without asking. Suggested removing them; user's call.
 - **Split cards:** skipped for now (user, 2026-10-09). Come back to it later.
+- **`repo-run.sh <repo> seed` runs every seeder (found in the SCRUM-540 test, 2026-10-17):** `npm run seed` is `db:seed:all`, which reruns all 7 seeders of ws2targetsalesincentive; `seed-incentive-schemas` would hit `uq_schema_partner`, so the agent didn't run it and the user ran the card's seeder by hand. Proposed fix (to draft): `seed <seeder file> confirmed` runs only that seeder (`npx sequelize-cli db:seed --seed <file>`), after the A23 review.
+- **ws2jauth lint (seen 2026-10-17):** `npm run lint` fails on its current code (`src/configs/appConfig.js`: `path` unused). Not closio-agent's; a card touching ws2jauth will see ❌ at the check step until it's fixed.
 
 ## Resolved
 
@@ -89,3 +91,7 @@
 - The 5 fixes from the C1 + C2 tests and the ruleset copy: drafted, answered and built (2026-10-17, D64, rule A19).
 - Where the ruleset lives and who changes it: in closio-agent, the builders; users only through memory (D64).
 - User tests of the C1 + C2 fixes: skipped by the user (2026-10-17: "no need for testing we can move ahead"). The first real card run will show them (latest develop at step 7, resume at steps 8–10, `next:` line, Cards group, the plan's `Ruleset:` line).
+- C3 `flow-develop` draft answered and built (2026-10-17, D65).
+- The three fixes found before the C3 test (run branch never checked out, flow-start continue, lint as warnings on the card's files): approved and built 2026-10-17 (D61, D65).
+- New develop rules A20–A23 (request validation: WS1 schema presence/type/format, WS2 everything + business logic; no redundant code; every WS1 response field; migration review): settled ("with option A… That should be the final rule") and built 2026-10-17 (D66).
+- C3 user test passed (user, 2026-10-17: "The testing is done"), on SCRUM-540.
