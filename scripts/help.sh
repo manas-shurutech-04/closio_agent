@@ -21,11 +21,12 @@ SKILLS_DIR="${SKILLS_DIR:-$AGENT_ROOT/.agents/skills}"
 COMMANDS_DOC="${COMMANDS_DOC:-$AGENT_ROOT/docs/commands.md}"
 GUIDE_DOC="${GUIDE_DOC:-$AGENT_ROOT/docs/user-guide.md}"
 
-# Groups shown by "list", in this order. A command that isn't named here still shows, under "Other".
+# Groups shown by "list", in this order. A command that isn't named here still shows, under "Other",
+# and "check" fails until it's in a group (rule R17).
 GROUP_NAMES="Setup, once, in this order|Every day|Cards|Any time"
 GROUP_1="flow-ping flow-doctor flow-configure-user flow-configure-repo flow-setup-repo"
 GROUP_2="flow-vpn flow-memory"
-GROUP_3="flow-check-card"
+GROUP_3="flow-check-card flow-start flow-status"
 GROUP_4="flow-help"
 
 to_fix=0
@@ -131,8 +132,19 @@ do_show() { # <command>
 }
 
 # ---------------------------------------------------------------- check (rule R17)
+grouped_commands() { # every command named in a GROUP_ line, one per line
+  local i=1 members
+  while :; do
+    eval "members=\"\${GROUP_$i:-}\""
+    [ -n "$members" ] || break
+    printf '%s\n' $members
+    i=$((i + 1))
+  done
+}
+
 do_check() {
-  local name count=0 missing_usage="" missing_doc="" missing_guide="" missing_mirror="" line
+  local name count=0 missing_usage="" missing_doc="" missing_guide="" missing_mirror="" missing_group="" line grouped
+  grouped=" $(grouped_commands | tr '\n' ' ') "
   while IFS= read -r name; do
     count=$((count + 1))
     [ -n "$(usage_of "$name" | grep -E '^- ')" ] || missing_usage="$missing_usage $name"
@@ -142,6 +154,7 @@ do_check() {
     if [ -f "$GUIDE_DOC" ]; then
       grep -q -E "^\|.*\`$name\`" "$GUIDE_DOC" || missing_guide="$missing_guide $name"
     fi
+    case "$grouped" in *" $name "*) ;; *) missing_group="$missing_group $name" ;; esac
   done < <(all_commands)
 
   if [ "$count" -eq 0 ]; then
@@ -152,6 +165,11 @@ do_check() {
     fail "No \"## Usage\" block in SKILL.md:$missing_usage" "Add a \"## Usage\" section with one \"- \`/flow-…\`: …\" line per form (rule R17); flow-help reads it from there."
   else
     pass "Every command ($count) has its \"## Usage\" block (what flow-help shows)"
+  fi
+  if [ -n "$missing_group" ]; then
+    fail "Not in a flow-help group (flow-help shows them under \"Other\"):$missing_group" "Add each one to the right GROUP_ line at the top of scripts/help.sh (rule R17)."
+  else
+    pass "Every command is in a flow-help group"
   fi
   if [ ! -f "$COMMANDS_DOC" ]; then
     fail "docs/commands.md is missing" "Restore it from git."
