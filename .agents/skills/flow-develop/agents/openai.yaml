@@ -1,0 +1,3 @@
+# Codex: this command also starts from plain words, but only for a card whose plan is approved (D61, the one exception to D44)
+policy:
+  allow_implicit_invocation: true

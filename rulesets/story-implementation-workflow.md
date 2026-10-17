@@ -6,7 +6,7 @@
 > - **Your own changes go in your user memory** (`flow-memory`): an entry may change a point of this ruleset for you, and the plan names which entry changed which point. The agent rules (`AGENTS.md`, [docs/agent-rules.md](../docs/agent-rules.md)) always win over both.
 > - **Backend repos** (`type: BE` in `config/repos/`) follow all of it.
 > - **The web app** (`type: FE`) follows its common practices until a frontend ruleset exists: read the card, explore and read the closest existing pattern, the plan format, tests mapped to the ACs, verify. It skips the parts about WS1/WS2, mocha, Sequelize and the S2S curl checks. Its tests are Vitest in the repo; Playwright stays outside the repo ([D24](../docs/design-decisions.md#d24)).
-> - **Where it came from:** the SCRUM-517 session (2026-10-02), copied from `japfa/backend/story-implementation-workflow.md` on 2026-10-17. Changed since: Steps instead of Phases, each mapped to its command; works in Claude Code and Codex; Express 5; `validateSchema` before `isAuthenticated` in WS1; migrations and seeders only after the user's yes; keys never pasted into chat; each repo's own test commands and Node version; one plan format with `flow-start`; the card's error codes checked against the code; GitLab MCP, `glab` and the session stats removed.
+> - **Where it came from:** the SCRUM-517 session (2026-10-02), copied from `japfa/backend/story-implementation-workflow.md` on 2026-10-17. Changed since: Steps instead of Phases, each mapped to its command; works in Claude Code and Codex; Express 5; `validateSchema` before `isAuthenticated` in WS1; migrations and seeders only after the user's yes; keys never pasted into chat; each repo's own test commands and Node version; one plan format with `flow-start`; the card's error codes checked against the code; GitLab MCP, `glab` and the session stats removed; the tests written and run in `flow-develop` (D65), with `scripts/repo-run.sh`.
 
 ---
 
@@ -18,9 +18,9 @@
 | 2. Explore | Answer four questions about the codebase | `flow-start` (step 7) |
 | 3. Targeted file reads | Read the ~15–20 files to copy patterns from | `flow-start` (step 7) |
 | 4. Plan | List all files, map the ACs, get approval | `flow-start` (steps 8–10) |
-| 5. Implement | Write new files, edit index files | `flow-develop` (coming) |
-| 6. Write tests | Unit tests (controller + service) + API integration tests | `flow-verify` (coming) |
-| 7. Run tests | Run the repo's test commands, fix failures | `flow-verify` (coming) |
+| 5. Implement | Write new files, edit index files | `flow-develop` |
+| 6. Write tests | Unit tests (controller + service) + API integration tests | `flow-develop` |
+| 7. Run tests | Run the repo's test commands, fix failures | `flow-develop` (`flow-verify` runs them again) |
 | 8. Curl checks | API smoke tests against the running servers | `flow-verify` (coming) |
 | 9. Verify | Read edited files, sanity check, MR description | `flow-verify`, `flow-push` (coming) |
 
@@ -304,7 +304,7 @@ describe('API: GET /endpoint', () => {
 
 **Goal:** Execute tests and fix any failures.
 
-Run them in the repo's folder, with the repo's own commands (`test_unit_command`, `test_api_command`, `coverage_command` in `config/repos/<repo>.yaml`), after switching to the repo's Node version in the same command (rule A13; `node_version` in the same file):
+closio-agent runs them with `bash scripts/repo-run.sh <repo> test`: the repo's own coverage command (every test and the coverage gate in one run), in the repo's folder, on its Node version (rule A13). By hand, in the repo's folder, after switching to the repo's Node version in the same command (`node_version` in `config/repos/<repo>.yaml`):
 
 ```bash
 # Only the new test files
@@ -328,7 +328,7 @@ In ws2notification, ws2pricingengine and ws2targetsalesincentive, husky also run
 ### Prerequisites
 - WS2 (nodejs-ws2targetsalesincentive) running on its configured port
 - WS1 (nodejs-ws1closio) running on its configured port
-- **Migrations and seeders:** started from this Mac with the repo's own `npm run migrate` and `npm run seed`, against the database the repo's `.env` names (today the dev database). **Only after the user's yes in chat, for every run**, naming the repo and what will run. They also go into the card's deployment doc ([D12](../docs/design-decisions.md#d12)).
+- **Migrations and seeders:** started from this Mac with the repo's own `npm run migrate` and `npm run seed` (closio-agent: `bash scripts/repo-run.sh <repo> migrate confirmed`), against the database the repo's `.env` names (today the dev database). **Only after the user's yes in chat, for every run**, naming the repo and what will run. They also go into the card's deployment doc ([D12](../docs/design-decisions.md#d12)).
 - **Keys and cookies are never pasted into chat** (rule A6). The WS2 client ID and secret come from the repo's `.env` ([D34](../docs/design-decisions.md#d34)); the WS1 session comes from the login API with your logins in the Keychain ([D20](../docs/design-decisions.md#d20)). closio-agent runs these checks with its own script in `flow-verify` (coming); until then, the developer runs them in a terminal.
 
 ### WS2 Direct Tests (S2S)
@@ -462,6 +462,7 @@ Read: WS1 routes/incentives/index.js   → route registered?
 - [ ] WS2 service unit test written
 - [ ] WS2 API integration test written
 - [ ] Tests pass (the repo's commands, on its Node version)
+- [ ] Lint on the card's changed files looked at (warnings only; older lint errors in the repo are left alone)
 - [ ] Coverage gate passes (`npm run coverage:check`)
 - [ ] Migrations and seeders run only after the user's yes
 - [ ] Curl verification — WS2 happy path (200)

@@ -26,7 +26,7 @@ GUIDE_DOC="${GUIDE_DOC:-$AGENT_ROOT/docs/user-guide.md}"
 GROUP_NAMES="Setup, once, in this order|Every day|Cards|Any time"
 GROUP_1="flow-ping flow-doctor flow-configure-user flow-configure-repo flow-setup-repo"
 GROUP_2="flow-vpn flow-memory"
-GROUP_3="flow-check-card flow-start flow-status"
+GROUP_3="flow-check-card flow-start flow-develop flow-status"
 GROUP_4="flow-help"
 
 to_fix=0
