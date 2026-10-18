@@ -76,8 +76,8 @@ secret_description() {
     gitlab-token) echo "your GitLab personal access token (scope: api; setup guide, section 4.2)" ;;
     fe-login-id) echo "your login ID for the Closio web app" ;;
     fe-login-password) echo "your password for the Closio web app" ;;
-    ws1-login-userid) echo "your userid for the WS1 login API" ;;
-    ws1-login-password) echo "your password for the WS1 login API" ;;
+    ws1-login-userid) echo "your userid for the dev WS1 login (every check logs in on dev, rule A24)" ;;
+    ws1-login-password) echo "your password for the dev WS1 login (rule A24)" ;;
     *) return 1 ;;
   esac
 }

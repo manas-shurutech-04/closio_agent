@@ -53,8 +53,13 @@ WS1_REPO="${WS1_REPO:-nodejs-ws1closio}"               # the BFF: calls to it ar
 WS1_APP_VERSION="${WS1_APP_VERSION:-1.0.0+1}"          # X-Application-Version for WS1 calls (architecture.md, Phase 6)
 WS1_NAPP_PK="${WS1_NAPP_PK:-4}"                        # the WS1 login's napp_pk and client_type: the same for everyone
 WS1_CLIENT_TYPE="${WS1_CLIENT_TYPE:-web}"
+WS1_LOGIN_URL="${WS1_LOGIN_URL:-https://dev-closio-ws1-apiprivate.japfacomfeed.co.id/api/v1/login}"   # every WS1 login goes to dev (rule A24)
+WS1_LOCAL_SESSION_COOKIE="${WS1_LOCAL_SESSION_COOKIE:-closio_session_local}"   # the session cookie name of the WS1 on this Mac (A24)
 WEB_REPO="${WEB_REPO:-closio-web-v2}"                  # the web app the Playwright tests open
 E2E_TIMEOUT="${E2E_TIMEOUT:-900}"                      # seconds for one Playwright run, and for its setup
+
+# Shipping a card (C5, D70): scripts/gitlab-mr.sh
+GITLAB_API_TIMEOUT="${GITLAB_API_TIMEOUT:-30}"     # seconds for one GitLab API call
 
 # Card run folders (C1, D61): committed and pushed on a branch of closio-agent per card, never main
 RUN_BRANCH_PREFIX="${RUN_BRANCH_PREFIX:-runs/}"   # the card's branch is runs/<CARD-KEY>

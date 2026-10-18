@@ -33,8 +33,8 @@ queues: none
 local_services: none
 calls: none
 env_file: .env
-dev_keys: ws2-client-id, ws2-client-secret
-dev_keys_optional: db-user, db-password
+dev_keys: none   # WS1 sends this WS2 its PRICING_ENGINE_* pair: save it as the optional ws2-client-* keys (D37)
+dev_keys_optional: ws2-client-id, ws2-client-secret, db-user, db-password   # ws2-client-*: the PRICING_ENGINE_* pair WS1 sends here
 dev_db_host:
 dev_db_port:
 dev_db_name:

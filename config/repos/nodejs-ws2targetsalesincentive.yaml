@@ -33,7 +33,7 @@ queues: BullMQ (queues defined in: src/workers/target/workerServer.js src/worker
 local_services: redis, bullmq
 calls: nodejs-ws2closio
 env_file: .env
-dev_keys: ws2-client-id, ws2-client-secret
+dev_keys: none   # the caller's pair is WS1's, saved under nodejs-ws1closio (D37)
 dev_keys_optional: db-user, db-password
 dev_db_host:
 dev_db_port:

@@ -13,6 +13,7 @@ dev_command: npm run dev
 start_command: npm start
 port: from the repo's .env (PORT)
 health_url: /api/v1/health-checker
+dev_base_url: https://dev-closio-ws1-apiprivate.japfacomfeed.co.id   # the repo on the dev environment (D72)
 check_commands: npm run lint, npm run check:circular
 test_command: none
 test_framework: none
@@ -24,7 +25,7 @@ queues: none
 local_services: redis
 calls: nodejs-ws2closio, nodejs-ws2notification, nodejs-ws2pricingengine, nodejs-ws2targetsalesincentive, ws2jauth
 env_file: .env
-dev_keys: none
+dev_keys: ws1-client-id, ws1-client-secret   # WS1's own pair, sent to the WS2s on direct calls (D37)
 dev_keys_optional: none
 mr_target_branch: develop
 mr_labels: none   # optional default; confirmed or changed when each MR is created (D51)
