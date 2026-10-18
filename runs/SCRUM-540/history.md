@@ -46,3 +46,14 @@ One line per step (rule A1). The last column says which team rules and user-memo
 | 2026-10-17 23:05 | review 10 | review approved by the user ("review approved") | rules: A17 · memory: — |
 | 2026-10-17 23:05 | review 11 | review approved; phase verify, next /flow-verify SCRUM-540 | rules: A1, A17, G3 · memory: — |
 | 2026-10-17 23:23 | develop 7 | WS2: the user ran seeder 20261017100001-seed-trader-stock-days-multiplier-configs.js by hand (db:seed --seed): ✅ success; written in develop.md | rules: D21, D12, A17 · memory: — |
+| 2026-10-18 14:29 | verify 1 | started; run folder on this Mac; VPN connected; B quick check | rules: A1, A5, A17 · memory: — |
+| 2026-10-18 14:30 | verify 2 | read card, plan, develop.md and the code changes in both repos (backend card; no earlier verify.md); B: no QMetry | rules: A16, A20, A22, A17 · memory: — |
+| 2026-10-18 14:31 | verify 3 | WS2 then WS1 started on Node 22, both answer on their health URL (backend card: no Playwright) | rules: A13, A6, A17 · memory: — |
+| 2026-10-18 15:38 | verify 4 | B scenarios worked out from the card, plan and code: 10 ACs plus 3 extra (invalid status, unknown query param, no session); setup fixed on the way: WS1 login goes to dev WS1, WS1 points at the local WS2, the S2S secret matched, WS2 RUN_MODE=api; logged-in partner e3d8f926-… | rules: A16, A20, A22, A6, A11, A17 · memory: — |
+| 2026-10-18 16:01 | verify 1 | resumed at step 5 (B quick check chosen earlier); run folder on this Mac; VPN and GitLab ok (flow-doctor just before); both servers still running | rules: A1, A5, A17 · memory: — |
+| 2026-10-18 16:04 | verify 5 | test data shown and approved (clear yes); 3 test configs added (created_by_name 'SCRUM-540 QA'); no write calls | rules: A23, A6, A17 · memory: — |
+| 2026-10-18 16:04 | verify 6 | B checks: 22 scenarios across AC1-AC10, all ✅ (WS1 and direct WS2); written in verify.md | rules: A16, A22, A6, A17 · memory: — |
+| 2026-10-18 16:05 | verify 7 | repo tests again: WS2 2788 passing, coverage gate passed, lint and check:circular passed; WS1 no suite, lint and check:circular passed | rules: A13, A17 · memory: — |
+| 2026-10-18 16:05 | verify 8 | story check skipped (B quick check) | rules: A17 · memory: — |
+| 2026-10-18 16:07 | verify 9 | cleanup shown and approved (clear yes): 3 test configs deleted; servers stopped; WS1 logged out; quick-check files removed | rules: A23, A6, A17 · memory: — |
+| 2026-10-18 16:07 | verify 10 | verified (B quick check) | rules: A1, A17 · memory: — |
