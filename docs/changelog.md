@@ -2,6 +2,11 @@
 
 Dated list of what changed in closio-agent. Newest first.
 
+## 2026-10-19
+
+- **Plainer to use** ([D74](design-decisions.md#d74)): no decision or rule codes on screen any more (new rule 20); `/flow-status` says where a card stands in words ("waiting for the merge"); "the card's folder" and "the card's saved copy" instead of "run folder" and "run branch". Your memory can answer three repeat questions (full or quick check, MR reviewers and labels, standing notes for the deployment doc). Long steps say before they start what they do and roughly how long. In Codex, the `$` menu shows each command's options in its description line (Codex can't do more today).
+- **A "Start here" picture for new users:** at the top of the user guide and its Claude artifact, every command in order (7 setup steps, then the 5 commands of every card) with what each one needs from you; the details stay further down. The artifact's link is now in `README.md` and `docs/README.md` too.
+
 ## 2026-10-18
 
 - **Claude Code suggests each flow command's options while you type** ([D73](design-decisions.md#d73)): type `/flow-setup-repo n` and it offers `nodejs-…`; `/flow-verify SCRUM-540 q` offers `quick`. Everything comes from closio-agent at that moment (the commands' Usage blocks, `config/repos/`, your cards, the items), so it's never out of date. It works in the terminal and in the desktop app's chat, by itself, in every session started in the closio-agent folder; nothing to install. It starts from the first letter of an option. Not in Codex.

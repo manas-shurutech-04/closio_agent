@@ -8,7 +8,7 @@
 
 > Status: every command is built, the setup commands and every card phase (2026-10-18; see [architecture.md](architecture.md)); they're being tried on real cards. Commands: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card`, `flow-help`, `flow-status`, `flow-start`, `flow-develop`, `flow-verify`, `flow-ac-check`, `flow-push`, `flow-finish`, see [commands.md](commands.md).
 
-> **New to closio-agent?** Start with [user-guide.md](user-guide.md): the whole process step by step, in plain words (also as a Claude artifact, link at its top). The details of each setup step are in [setup-guide.md](setup-guide.md); the whole flow is in [architecture.md](architecture.md).
+> **New to closio-agent?** Start with [user-guide.md](user-guide.md): the whole process step by step, in plain words. The same guide in pictures, starting with every command in order and what each one needs: https://claude.ai/code/artifact/a83b1e2a-0e5a-4378-b791-26b9f34e8b7a (a Claude artifact). The details of each setup step are in [setup-guide.md](setup-guide.md); the whole flow is in [architecture.md](architecture.md).
 >
 > **Every time:** start Claude Code or Codex **in the closio-agent folder**, after `nvm use v22` ([setup guide](setup-guide.md#how-to-start-claude-code-or-codex-every-time), [D41](design-decisions.md#d41), [D42](design-decisions.md#d42)).
 
@@ -21,7 +21,7 @@
 | [setup-guide.md](setup-guide.md) | Access needed, installation, configuration, first run | Available: setup with the commands (`flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`), with the manual steps kept as a backup |
 | [commands.md](commands.md) | Every agent command: purpose, usage, inputs, outputs, example | Available: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card`, `flow-help`, `flow-status`, `flow-start`, `flow-develop`, `flow-verify`, `flow-ac-check`, `flow-push`, `flow-finish` |
 | [architecture.md](architecture.md) | How the pipeline stages connect and what each one takes in and produces | Available (phases approved; first commands built) |
-| [agent-rules.md](agent-rules.md) | Every rule the agent follows when it runs (G1–G4, A1–A24), each with its decision and where it's applied today | Available (added 2026-10-15) |
+| [agent-rules.md](agent-rules.md) | Every rule the agent follows when it runs (G1–G4, A1–A25), each with its decision and where it's applied today | Available (added 2026-10-15) |
 | [jira-card-template.md](jira-card-template.md) | What a Jira card looks like: the sections, the AC and QA rules, code alignment, how a card is drafted, the ready checklist | Available (added 2026-10-17, F7) |
 | [jira-card-examples.md](jira-card-examples.md) | Two real cards (SCRUM-559, SCRUM-567) in the template's shape | Available (added 2026-10-17, F7) |
 | [changelog.md](changelog.md) | Dated list of what changed in the agent | Available |

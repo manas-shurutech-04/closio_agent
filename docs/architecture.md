@@ -139,7 +139,7 @@ Built in C6 ([D72](design-decisions.md#d72)); the step-by-step is in [commands.m
 
 ## Applies across all phases
 
-- **All agent rules in one place:** [agent-rules.md](agent-rules.md) lists every rule (G1–G4, A1–A24), with its decision and where it's applied today. The bullets below explain the ones that shape every phase.
+- **All agent rules in one place:** [agent-rules.md](agent-rules.md) lists every rule (G1–G4, A1–A25), with its decision and where it's applied today. The bullets below explain the ones that shape every phase.
 - **Where sessions start (rule A10, [D42](design-decisions.md#d42)):** Claude Code and Codex are **always started in the closio-agent folder**, never inside a code repo. The agent adds the code repos a card needs as extra folders and finds its own files (`runs/`, `config/`, `scripts/`, `local/`) by relative path. The setup commands state and check this.
 - **Always give the fix (rule A11):** whenever anything fails (a check, a step, a command), in setup and in every phase, the agent tells the user the exact steps to fix it.
 - **Branch names (rule A12, [D50](design-decisions.md#d50)):** strictly `SCRUM-<number>/<short-description>`, lowercase words joined by `-`, at most 5 words, the same name in every repo of a card. `scripts/branch-name.sh` makes and checks them.

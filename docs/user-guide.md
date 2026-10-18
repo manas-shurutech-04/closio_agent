@@ -1,10 +1,29 @@
 # closio-agent, step by step
 
-**Claude artifact:** https://claude.ai/code/artifact/a83b1e2a-0e5a-4378-b791-26b9f34e8b7a · mirrored on 2026-10-18 · commands: flow-ac-check, flow-check-card, flow-configure-repo, flow-configure-user, flow-develop, flow-doctor, flow-finish, flow-help, flow-memory, flow-ping, flow-push, flow-setup-repo, flow-start, flow-status, flow-verify, flow-vpn
+**Claude artifact:** https://claude.ai/code/artifact/a83b1e2a-0e5a-4378-b791-26b9f34e8b7a · mirrored on 2026-10-19 · commands: flow-ac-check, flow-check-card, flow-configure-repo, flow-configure-user, flow-develop, flow-doctor, flow-finish, flow-help, flow-memory, flow-ping, flow-push, flow-setup-repo, flow-start, flow-status, flow-verify, flow-vpn
 
 This guide walks you through closio-agent from the first minute: which command to type, in what order, what each one asks you, and what you get back. It's written for anyone on the team, even if you've never used an AI tool before.
 
 This file is the source and holds the full text. The Claude artifact linked above shows the same information as pictures with less text, for reading in your browser: one picture per command (when to use it, every way to type it, what you see) and flowcharts for the steps. Both are kept up to date by a rule ([section 9](#9-where-to-read-more)), and `/flow-doctor` tells you if the artifact falls behind.
+
+## Start here
+
+Type these in order. Each box says what the command needs from you. The details of every command come further down (in the artifact: its own picture).
+
+```mermaid
+flowchart TB
+    b["Before: get closio-agent, install the tools,<br/>then in its folder: nvm use v22, then claude"]
+    subgraph S["Set up your Mac (once)"]
+        direction TB
+        s1["1. /flow-ping<br/>needs nothing: checks the commands are there"] --> s2["2. /flow-doctor<br/>needs nothing: lists what's missing"] --> s3["3. /flow-configure-user<br/>needs your GitLab token and your two test logins"] --> s4["4. /flow-configure-repo<br/>needs your own clone of each repo (clone it on the VPN)"] --> s5["5. /flow-setup-repo all<br/>needs time: up to 15 min per repo"] --> s6["6. /flow-vpn connect<br/>needs your Mac password and the Japfa SSO login"] --> s7["7. /flow-doctor<br/>everything ✅ or ⚠️ means your Mac is ready"]
+    end
+    subgraph K["For every card"]
+        direction TB
+        k1["/flow-start SCRUM-123<br/>needs a To Do card; you approve the plan"] --> k2["/flow-develop SCRUM-123<br/>you review the code"] --> k3["/flow-verify SCRUM-123<br/>you choose: full or quick check"] --> k4["/flow-push SCRUM-123<br/>you approve the commits and the push"] --> k5["/flow-finish SCRUM-123<br/>needs the merge requests merged and deployed on dev"] --> r["Ready for Test"]
+    end
+    b --> S --> K
+    a["Any time: /flow-status · /flow-help · /flow-doctor"]
+```
 
 ## 1. What closio-agent is
 
@@ -23,7 +42,7 @@ Every command starts with `flow-`.
 | Claude Code | a slash, then the name | `/flow-doctor` |
 | Codex | a dollar sign, then the name | `$flow-doctor` |
 
-Some commands take a word after the name, e.g. `/flow-vpn connect`. In Claude Code, the `/` menu shows a command's options next to its name (e.g. `/flow-vpn  connect | status | disconnect`): `[…]` is optional, `|` means one of them, `<…>` is yours to fill in. Then, as soon as you type the first letter of an option, Claude Code suggests the words that fit there, read from closio-agent at that moment: the command's options, the repo names, your card keys, the items. Pick one with Tab or Enter. This works in the terminal and in the desktop app's chat, by itself, in every session started in the closio-agent folder (`flow-autocomplete`, [D73](design-decisions.md#d73)). Codex doesn't show hints or suggestions; there, `$flow-help <command>` lists the options. This guide shows the Claude Code form; in Codex, replace `/` with `$`.
+Some commands take a word after the name, e.g. `/flow-vpn connect`. In Claude Code, the `/` menu shows a command's options next to its name (e.g. `/flow-vpn  connect | status | disconnect`): `[…]` is optional, `|` means one of them, `<…>` is yours to fill in. Then, as soon as you type the first letter of an option, Claude Code suggests the words that fit there, read from closio-agent at that moment: the command's options, the repo names, your card keys, the items. Pick one with Tab or Enter. This works in the terminal and in the desktop app's chat, by itself, in every session started in the closio-agent folder (`flow-autocomplete`, [D73](design-decisions.md#d73)). Codex can't suggest while you type; its `$` menu shows each command's options in its one description line (e.g. `$flow-setup-repo [<repo-name>|all] [install | services | dev-address [<url>]] · Gets a registered repo ready…`; hidden in a narrow window), and `$flow-help <command>` lists them in full. This guide shows the Claude Code form; in Codex, replace `/` with `$`.
 
 A command only runs when **you** type it. The AI never starts one by itself, with one exception: `flow-develop` also starts when you ask in plain words to develop a card whose plan is approved ("develop SCRUM-567").
 
@@ -188,7 +207,7 @@ Two rules that never change: **start in the closio-agent folder** (never inside 
 
 - **What it is:** your private memory: short notes on how you like to work (e.g. "write plans as short numbered steps"). Every command reads them first and follows them. They stay on your Mac and are never pushed. Team rules always win over them.
 - **Options:** `/flow-memory` (list); `/flow-memory add <text>` (everywhere); `/flow-memory add <repo> <text>` (one repo only); `/flow-memory edit <id> <new text>`; `/flow-memory edit <id> phases <phases>`; `/flow-memory remove <id>`; `/flow-memory clear` (all, after showing them and asking); `/flow-memory clear <repo>`.
-- **Also:** when you correct the AI during a command, it offers once to save the correction here. It saves only after you say yes.
+- **Also:** when you correct the AI during a command, it offers once to save the correction here. It saves only after you say yes. Your memory can also answer three repeat questions for you (section 6, "Make it ask you less").
 
 ### `/flow-check-card`
 
@@ -205,6 +224,24 @@ Two rules that never change: **start in the closio-agent folder** (never inside 
 ## 6. Working on a card
 
 Every step is built: picking a card up, planning it, developing it with you, checking it, pushing it with its merge requests, and finishing it after the merge.
+
+**Words you'll see**
+
+- **The card's folder** (`runs/SCRUM-567/`): where closio-agent keeps a card's notes: the card, the plan, what was built and checked, and its history.
+- **The card's saved copy** (the branch `runs/SCRUM-567`): that folder saved on GitHub, so you or a teammate can carry on from another Mac. It never goes into `main`.
+- **Where a card stands:** being picked up · planning · in development · being checked · ready to push · waiting for the merge · finished.
+- **Full or quick check:** the two ways `/flow-verify` checks a card: full saves test cases and runs them; quick checks each AC directly against the running code.
+- **MR:** a merge request on GitLab.
+
+**Make it ask you less.** The commands stop before anything that matters: the plan, test data, the commits, the push, a migration. Three questions can be answered by your memory instead, once and for all:
+
+- full or quick check: `/flow-memory add Always use the quick check in flow-verify`
+- your MR reviewers and labels: `/flow-memory add My MR reviewers are ana.s and budi`
+- standing notes for the deployment doc: `/flow-memory add Deployment doc: deploy WS2 repos one at a time`
+
+The command then says in one line which entry it used, and you can still say otherwise.
+
+**Long steps say how long.** Before a step that takes a while, the AI says what it's doing and roughly how long it takes, from real runs (e.g. "Writing the test cases: about 12 minutes for 26 cases on a web card").
 
 ```mermaid
 flowchart TB
@@ -278,7 +315,7 @@ The ✋ boxes are where the agent stops and waits for you. A failed AC check or 
 ### `/flow-status`
 
 - **When:** any time you want to know where a card stands, or which cards are in progress.
-- **Options:** `/flow-status` (every card, on this Mac and pushed by teammates), `/flow-status SCRUM-567` (that card: phase, step, branch, what to type next).
+- **Options:** `/flow-status` (every card, on this Mac and pushed by teammates), `/flow-status SCRUM-567` (that card: where it stands in plain words, what to type next, its Jira status and branch).
 - **Good to know:** it only reads.
 
 | Phase | What happens | Command |

@@ -8,10 +8,12 @@ It runs as commands inside **Claude Code** (`/flow-start`) and **Codex** (`$flow
 
 ## Start here
 
+> **The guide in pictures:** https://claude.ai/code/artifact/a83b1e2a-0e5a-4378-b791-26b9f34e8b7a (a Claude artifact; its first picture is every command in order, with what each one needs).
+
 > **Every time you use it:** open a terminal in **this folder**, run `nvm use v22`, then start `claude` or `codex`. Never start it inside a code repo; the agent adds the repos it needs itself ([D41](docs/design-decisions.md#d41), [D42](docs/design-decisions.md#d42)).
 
 0. **Get it (one-time):** `git clone https://github.com/manas-shurutech-04/closio_agent.git closio-agent`. The repo is private, so ask Manas for access first. The `closio-agent` at the end names the folder the way the docs expect.
-1. **Set up your Mac, step by step:** [docs/user-guide.md](docs/user-guide.md) (plain words, every command in order; also as a Claude artifact, link at its top). The details: [docs/setup-guide.md](docs/setup-guide.md) (VPN, GitLab token, Keychain secrets, repos).
+1. **Set up your Mac, step by step:** [docs/user-guide.md](docs/user-guide.md) (plain words, every command in order; also in pictures as the Claude artifact above). The details: [docs/setup-guide.md](docs/setup-guide.md) (VPN, GitLab token, Keychain secrets, repos).
 2. **Understand the flow:** [docs/architecture.md](docs/architecture.md), the rules the agent always follows: [docs/agent-rules.md](docs/agent-rules.md), and what a Jira card must look like: [docs/jira-card-template.md](docs/jira-card-template.md).
 3. **Check it works:** type `/flow-ping`, then `/flow-doctor` (Codex: `$flow-ping`, `$flow-doctor`). See [docs/commands.md](docs/commands.md).
 4. **Why things are the way they are:** [docs/design-decisions.md](docs/design-decisions.md).
