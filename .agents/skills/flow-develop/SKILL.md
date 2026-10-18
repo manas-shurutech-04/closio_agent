@@ -1,6 +1,7 @@
 ---
 name: flow-develop
-description: Develops a planned Jira card together with the user (Phases 3 and 4): the code and its unit tests from the approved plan, the ruleset and the user's memory, the repo checks, then the user's review. Starts when the user types /flow-develop (Claude Code) or $flow-develop (Codex), or when they ask in plain words to develop a card whose plan is approved (they name the card, or exactly one card is in the develop phase). Never for any other request.
+description: "Develops a planned Jira card together with the user (Phases 3 and 4): the code and its unit tests from the approved plan, the ruleset and the user's memory, the repo checks, then the user's review. Starts when the user types /flow-develop (Claude Code) or $flow-develop (Codex), or when they ask in plain words to develop a card whose plan is approved (they name the card, or exactly one card is in the develop phase). Never for any other request."
+argument-hint: '<CARD-KEY>'
 disable-model-invocation: false
 ---
 

@@ -1,6 +1,7 @@
 ---
 name: flow-help
 description: Lists every flow command with what it does and how it's typed, or shows one command in full. Runs only when the user types /flow-help (Claude Code) or $flow-help (Codex).
+argument-hint: '[<command>]'
 disable-model-invocation: true
 ---
 

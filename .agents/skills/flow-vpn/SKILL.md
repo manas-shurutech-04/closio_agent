@@ -1,6 +1,7 @@
 ---
 name: flow-vpn
 description: Connects, checks or disconnects the Japfa VPN (connect, status, disconnect). Runs only when the user types /flow-vpn (Claude Code) or $flow-vpn (Codex).
+argument-hint: 'connect | status | disconnect'
 disable-model-invocation: true
 ---
 

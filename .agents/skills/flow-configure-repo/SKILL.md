@@ -1,6 +1,7 @@
 ---
 name: flow-configure-repo
 description: Registers a repo with closio-agent (shared facts in config/repos/), or sets it up on your Mac (local path and dev keys). The only way to add a repo. Runs only when the user types /flow-configure-repo (Claude Code) or $flow-configure-repo (Codex).
+argument-hint: '[<repo-name> | <clone path>] [key <name> | path <path|not-cloned>]'
 disable-model-invocation: true
 ---
 

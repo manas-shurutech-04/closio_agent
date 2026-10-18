@@ -4,9 +4,10 @@
 #
 #   list (or nothing)     Every flow command, grouped: a one-line summary and each way to type it
 #   show <command>        One command in full (the "flow-" part can be left out)
-#   check                 Rule R17: every command folder has a "## Usage" block, a section in docs/commands.md,
-#                         an index row in docs/user-guide.md, and is covered by the guide's "mirrored" line
-#                         (the Claude artifact of the guide). ❌ with the fix for anything missing (rule A11).
+#   check                 Rule R17: every command folder has a "## Usage" block, an "argument-hint" when it takes
+#                         arguments (what Claude Code's / menu shows), a section in docs/commands.md, an index row in
+#                         docs/user-guide.md, and is covered by the guide's "mirrored" line (the Claude artifact of
+#                         the guide). ❌ with the fix for anything missing (rule A11).
 #
 # The text comes from the commands' own files: every folder .agents/skills/flow-*/ is a command; its SKILL.md
 # gives the one-line "description:" and the "## Usage" block. So a new command can't be missing from the help.
@@ -29,7 +30,7 @@ GUIDE_DOC="${GUIDE_DOC:-$AGENT_ROOT/docs/user-guide.md}"
 GROUP_NAMES="Setup, once, in this order|Every day|Cards|Any time"
 GROUP_1="flow-ping flow-doctor flow-configure-user flow-configure-repo flow-setup-repo"
 GROUP_2="flow-vpn flow-memory"
-GROUP_3="flow-check-card flow-start flow-develop flow-verify flow-ac-check flow-status"
+GROUP_3="flow-check-card flow-start flow-develop flow-verify flow-ac-check flow-push flow-finish flow-status"
 GROUP_4="flow-help"
 
 to_fix=0
@@ -84,7 +85,8 @@ skill_file() { echo "$SKILLS_DIR/$1/SKILL.md"; }
 description_of() { # <command>
   local f; f="$(skill_file "$1")"
   [ -f "$f" ] || return 0
-  sed -n 's/^description:[[:space:]]*//p' "$f" | head -n 1 | sed -E 's/[[:space:]]*(Runs only|Starts) when the user types.*$//'
+  # a description in quotes (needed in YAML when it holds ": ") is shown without them
+  sed -n 's/^description:[[:space:]]*//p' "$f" | head -n 1 | sed -E 's/^"(.*)"[[:space:]]*$/\1/; s/[[:space:]]*(Runs only|Starts) when the user types.*$//'
 }
 # A one-line summary for the list: the description's first sentence, without the parts in brackets, up to its first colon.
 summary_of() { # <command>
@@ -108,6 +110,12 @@ forms_of() { # <command>
   usage_of "$1" | grep -E '^- `' | grep -v -E '^- Codex' | sed -E 's/^- `([^`]*)`.*/\1/'
 }
 is_command() { [ -d "$SKILLS_DIR/$1" ] && [ -f "$(skill_file "$1")" ]; }
+# The "argument-hint:" line of the frontmatter (what Claude Code's / menu shows after the name), "" when there's none.
+hint_of() { # <command>
+  awk 'NR == 1 && /^---/ { on = 1; next } on && /^---/ { exit } on && /^argument-hint:/ { sub(/^argument-hint:[[:space:]]*/, ""); print; exit }' "$(skill_file "$1")"
+}
+# Does the command take arguments? Some form in its usage block has more than the command's name.
+takes_args() { forms_of "$1" | grep -v -x -F "/$1" | grep -q .; }
 # The guide's "mirrored" line: the Claude artifact link, the date and the commands it covers.
 mirrored_line() { [ -f "$GUIDE_DOC" ] && grep -m 1 -E 'mirrored on [0-9]{4}-[0-9]{2}-[0-9]{2}.*commands:' "$GUIDE_DOC"; return 0; }
 artifact_url() { mirrored_line | grep -o -E 'https://[^ )>]+' | head -n 1; }
@@ -243,11 +251,12 @@ grouped_commands() { # every command named in a GROUP_ line, one per line
 }
 
 do_check() {
-  local name count=0 missing_usage="" missing_doc="" missing_guide="" missing_mirror="" missing_group="" line grouped
+  local name count=0 missing_usage="" missing_hint="" missing_doc="" missing_guide="" missing_mirror="" missing_group="" line grouped
   grouped=" $(grouped_commands | tr '\n' ' ') "
   while IFS= read -r name; do
     count=$((count + 1))
     [ -n "$(usage_of "$name" | grep -E '^- ')" ] || missing_usage="$missing_usage $name"
+    if takes_args "$name" && [ -z "$(hint_of "$name")" ]; then missing_hint="$missing_hint $name"; fi
     if [ -f "$COMMANDS_DOC" ]; then
       grep -q -E "^###[[:space:]]+\`$name\`" "$COMMANDS_DOC" || missing_doc="$missing_doc $name"
     fi
@@ -265,6 +274,11 @@ do_check() {
     fail "No \"## Usage\" block in SKILL.md:$missing_usage" "Add a \"## Usage\" section with one \"- \`/flow-…\`: …\" line per form (rule R17); flow-help reads it from there."
   else
     pass "Every command ($count) has its \"## Usage\" block (what flow-help shows)"
+  fi
+  if [ -n "$missing_hint" ]; then
+    fail "No argument-hint in SKILL.md, though the command takes arguments:$missing_hint" "Add a line \"argument-hint: '<its forms, from its ## Usage block>'\" under \"description:\" (e.g. argument-hint: '<CARD-KEY> [full|quick]'); Claude Code shows it in the / menu (rule R17)."
+  else
+    pass "Every command that takes arguments has its argument-hint (what Claude Code's / menu shows)"
   fi
   if [ -n "$missing_group" ]; then
     fail "Not in a flow-help group (flow-help shows them under \"Other\"):$missing_group" "Add each one to the right GROUP_ line at the top of scripts/help.sh (rule R17)."

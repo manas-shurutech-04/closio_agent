@@ -1,6 +1,7 @@
 ---
 name: flow-configure-user
 description: Sets up your personal closio-agent settings (Jira account, GitLab username, workspace folder, AI tools, optional VPN username, git name and email) and your 5 secrets in the macOS Keychain. Runs only when the user types /flow-configure-user (Claude Code) or $flow-configure-user (Codex).
+argument-hint: '[jira-account-id|gitlab-username|workspace-dir|ai-tools|vpn-username|git-name|git-email|gitlab-token|fe-login-id|fe-login-password|ws1-login-userid|ws1-login-password|playwright]'
 disable-model-invocation: true
 ---
 

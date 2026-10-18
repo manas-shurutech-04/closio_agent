@@ -1,6 +1,7 @@
 ---
 name: flow-ping
 description: Checks that the flow commands are installed and loading in this tool. Runs only when the user types /flow-ping (Claude Code) or $flow-ping (Codex).
+argument-hint: '[any text]'
 disable-model-invocation: true
 ---
 

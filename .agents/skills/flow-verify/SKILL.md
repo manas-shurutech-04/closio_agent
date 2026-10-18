@@ -1,6 +1,7 @@
 ---
 name: flow-verify
-description: Checks a developed Jira card (Phases 5 and 6) in one of two ways you pick: A, a full check (test cases saved for every acceptance criterion, run with the repo tests and a story check), or B, a quick check (every acceptance criterion checked directly against the running code, nothing saved but the record of the run). Then it moves the card to the push or tells you what's wrong. Runs only when the user types /flow-verify (Claude Code) or $flow-verify (Codex).
+description: "Checks a developed Jira card (Phases 5 and 6) in one of two ways you pick: A, a full check (test cases saved for every acceptance criterion, run with the repo tests and a story check), or B, a quick check (every acceptance criterion checked directly against the running code, nothing saved but the record of the run). Then it moves the card to the push or tells you what's wrong. Runs only when the user types /flow-verify (Claude Code) or $flow-verify (Codex)."
+argument-hint: '<CARD-KEY> [full|quick] [<QMetry export.xlsx>]'
 disable-model-invocation: true
 ---
 
@@ -97,7 +98,7 @@ Repos: … · Ruleset: rulesets/story-implementation-workflow.md · Memory appli
 ### Test data
 ### Result
 ```
-   - **Everything passed** (every AC ✅, tests and checks ✅, A: no ❌ in the story check): `bash scripts/run.sh set <KEY> phase ship`, `set <KEY> step 1`, `set <KEY> next "/flow-push <KEY>"`, log "verified (A full check | B quick check)", `bash scripts/run.sh save <KEY> "verified"`. End with: `Done: <KEY> is verified. Next: /flow-push <KEY> (coming; Codex: $flow-push <KEY>).`
+   - **Everything passed** (every AC ✅, tests and checks ✅, A: no ❌ in the story check): `bash scripts/run.sh set <KEY> phase ship`, `set <KEY> step 1`, `set <KEY> next "/flow-push <KEY>"`, log "verified (A full check | B quick check)", `bash scripts/run.sh save <KEY> "verified"`. End with: `Done: <KEY> is verified. Next: /flow-push <KEY> (Codex: $flow-push <KEY>).`
    - **Something failed:** the card stays in the verify phase (`set <KEY> step 1`, `set <KEY> next "/flow-verify <KEY>"`). Under `### Result`, and in chat, list **each failure with what's wrong and what you suggest**: a code problem → `/flow-develop <KEY>` (it offers to go back and fix the list in `verify.md`); A, a test case that's wrong → `/flow-ac-check <KEY> <AC> "<what to change>"`; B, a scenario checked the wrong way → the user says what to check instead, then `/flow-verify <KEY> quick` again; missing data or a setup problem → the exact fix (rule A11). **Don't start any of them: the user decides how to go on.** Log "verify: N failure(s), waiting for the user", `bash scripts/run.sh save <KEY> "verify: N failure(s)"`.
 
 ## Rules

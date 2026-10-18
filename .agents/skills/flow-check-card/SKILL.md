@@ -1,6 +1,7 @@
 ---
 name: flow-check-card
 description: Checks a Jira card (by key, or a local markdown file) against the team's card template and shows what to fix. Runs only when the user types /flow-check-card (Claude Code) or $flow-check-card (Codex).
+argument-hint: '<CARD-KEY> | local/cards/<file>.md'
 disable-model-invocation: true
 ---
 

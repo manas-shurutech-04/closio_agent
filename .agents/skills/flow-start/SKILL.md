@@ -1,6 +1,7 @@
 ---
 name: flow-start
-description: Picks up a Jira card and plans it (Phases 1 and 2): the card checked, moved to In Development and assigned to you, a branch in every repo it needs, the plan made from the code and approved by you. Runs only when the user types /flow-start (Claude Code) or $flow-start (Codex).
+description: "Picks up a Jira card and plans it (Phases 1 and 2): the card checked, moved to In Development and assigned to you, a branch in every repo it needs, the plan made from the code and approved by you. Runs only when the user types /flow-start (Claude Code) or $flow-start (Codex)."
+argument-hint: '<CARD-KEY>'
 disable-model-invocation: true
 ---
 

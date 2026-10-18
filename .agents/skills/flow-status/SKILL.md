@@ -1,6 +1,7 @@
 ---
 name: flow-status
 description: Shows where a Jira card stands in closio-agent (phase, step, branch, what to type next), or every card in progress. Runs only when the user types /flow-status (Claude Code) or $flow-status (Codex).
+argument-hint: '[<CARD-KEY>]'
 disable-model-invocation: true
 ---
 
