@@ -57,3 +57,14 @@ One line per step (rule A1). The last column says which team rules and user-memo
 | 2026-10-18 16:05 | verify 8 | story check skipped (B quick check) | rules: A17 · memory: — |
 | 2026-10-18 16:07 | verify 9 | cleanup shown and approved (clear yes): 3 test configs deleted; servers stopped; WS1 logged out; quick-check files removed | rules: A23, A6, A17 · memory: — |
 | 2026-10-18 16:07 | verify 10 | verified (B quick check) | rules: A1, A17 · memory: — |
+| 2026-10-18 16:08 | push 1 | started; run folder on this Mac; VPN on, GitLab reachable; both repo folders open to this session | rules: A5, A15, A17 · memory: — |
+| 2026-10-18 16:08 | push 2 | read card, plan, develop.md; verify.md Run 1 (B quick check): everything passed | rules: A17 · memory: — |
+| 2026-10-18 16:08 | push 3 | status: WS2 12 files, WS1 4 files, all named in develop.md; 0 commits yet; MR target develop | rules: G3, A17 · memory: — |
+| 2026-10-18 16:08 | push 4 | stash, rebase, stash pop: WS2 onto develop b4d221d, WS1 onto develop 7f3e74e; no conflicts; all files back | rules: G1, G2, A17 · memory: — |
+| 2026-10-18 16:09 | push 5 | after the rebase: WS2 2788 passing, coverage gate, lint, check:circular passed; WS1 no suite, lint and check:circular passed | rules: A13, A17 · memory: — |
+| 2026-10-18 16:10 | push 6 | 5 atomic commits approved and made (WS2 66398b7, 73c1f89, 421d230; WS1 33e4cb3, 274a428), hooks passed; written in ship.md | rules: G3, A17 · memory: — |
+| 2026-10-18 16:10 | push 7 | MR titles, targets (develop), assignee, labels/reviewers (defaults none) and descriptions written (mr-<repo>.md) | rules: A17 · memory: — |
+| 2026-10-18 16:12 | push 8 | final yes from the user: push and create both MRs (no labels, no reviewers) | rules: G4, A17 · memory: — |
+| 2026-10-18 16:13 | push 9 | one push per repo, not forced; MRs created: WS2 !248, WS1 !561; descriptions set via the GitLab API; written in ship.md | rules: G4, A6, A17 · memory: — |
+| 2026-10-18 16:13 | push 10 | Jira: card had no MR links; one comment added with both MR links; moved to Code Review (transition 31) | rules: A3, A17 · memory: — |
+| 2026-10-18 16:13 | push 11 | pushed, MRs created, Code Review | rules: A1, A17 · memory: — |
