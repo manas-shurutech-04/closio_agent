@@ -1,3 +1,6 @@
 # Codex: only run this command when the user types $flow-doctor (D44)
 policy:
   allow_implicit_invocation: false
+# What Codex's $ menu shows: the options and a one-line summary (D74); made with: bash scripts/help.sh codex-line flow-doctor
+interface:
+  short_description: "$flow-doctor · Checks that this Mac is set up correctly for the flow commands and shows how to fix each problem."

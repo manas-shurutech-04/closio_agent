@@ -1,3 +1,6 @@
 # Codex: only run this command when the user types $flow-push (D44)
 policy:
   allow_implicit_invocation: false
+# What Codex's $ menu shows: the options and a one-line summary (D74); made with: bash scripts/help.sh codex-line flow-push
+interface:
+  short_description: "$flow-push <CARD-KEY> · Ships a verified Jira card."

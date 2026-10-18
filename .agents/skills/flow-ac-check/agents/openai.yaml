@@ -1,3 +1,6 @@
 # Codex: only run this command when the user types $flow-ac-check (D44)
 policy:
   allow_implicit_invocation: false
+# What Codex's $ menu shows: the options and a one-line summary (D74); made with: bash scripts/help.sh codex-line flow-ac-check
+interface:
+  short_description: "$flow-ac-check <CARD-KEY> <AC number> [\"what to change\"] · Adds or changes the test cases of one acceptance criterion of a card, runs that AC's cases once and saves them in the card's folder."

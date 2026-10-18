@@ -4,10 +4,13 @@
 #
 #   list (or nothing)     Every flow command, grouped: a one-line summary and each way to type it
 #   show <command>        One command in full (the "flow-" part can be left out)
+#   codex-line <command>  The lines for the command's agents/openai.yaml that Codex's $ menu shows: its options and
+#                         a one-line summary (Codex shows no argument hints of its own, D74)
 #   check                 Rule R17: every command folder has a "## Usage" block, an "argument-hint" when it takes
-#                         arguments (what Claude Code's / menu shows), a section in docs/commands.md, an index row in
-#                         docs/user-guide.md, and is covered by the guide's "mirrored" line (the Claude artifact of
-#                         the guide). ❌ with the fix for anything missing (rule A11).
+#                         arguments (what Claude Code's / menu shows), its Codex menu line (codex-line) in
+#                         agents/openai.yaml, a section in docs/commands.md, an index row in docs/user-guide.md, and is
+#                         covered by the guide's "mirrored" line (the Claude artifact of the guide). ❌ with the fix for
+#                         anything missing (rule A11).
 #
 # The text comes from the commands' own files: every folder .agents/skills/flow-*/ is a command; its SKILL.md
 # gives the one-line "description:" and the "## Usage" block. So a new command can't be missing from the help.
@@ -47,7 +50,7 @@ fail() {
   to_fix=$((to_fix + 1))
 }
 usage() {
-  echo "Usage: bash scripts/help.sh [list | show <command> | check]"
+  echo "Usage: bash scripts/help.sh [list | show <command> | codex-line <command> | check]"
 }
 
 # ---------------------------------------------------------------- output format
@@ -114,6 +117,15 @@ is_command() { [ -d "$SKILLS_DIR/$1" ] && [ -f "$(skill_file "$1")" ]; }
 hint_of() { # <command>
   awk 'NR == 1 && /^---/ { on = 1; next } on && /^---/ { exit } on && /^argument-hint:/ { sub(/^argument-hint:[[:space:]]*/, ""); print; exit }' "$(skill_file "$1")"
 }
+# The line Codex's $ menu shows for the command (interface.short_description in agents/openai.yaml, D74): the command,
+# its options from the argument-hint, and the one-line summary; written as a YAML double-quoted value.
+codex_line() { # <command>
+  local hint text
+  hint="$(hint_of "$1" | sed -E "s/^'(.*)'$/\1/")"
+  text="\$$1${hint:+ $hint} · $(summary_of "$1")"
+  printf '  short_description: "%s"\n' "$(printf '%s' "$text" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')"
+}
+codex_file() { echo "$SKILLS_DIR/$1/agents/openai.yaml"; }
 # Does the command take arguments? Some form in its usage block has more than the command's name.
 takes_args() { forms_of "$1" | grep -v -x -F "/$1" | grep -q .; }
 # The guide's "mirrored" line: the Claude artifact link, the date and the commands it covers.
@@ -174,7 +186,7 @@ print_command() { # <command>
 $forms
 EOF_FORMS
     else
-      echo "- ⚠️ no \`## Usage\` block in its SKILL.md yet (rule R17)"
+      echo "- ⚠️ no \`## Usage\` block in its SKILL.md yet"
     fi
     echo
   else
@@ -185,7 +197,7 @@ EOF_FORMS
 $forms
 EOF_FORMS
     else
-      wrap 6 "⚠️ no \"## Usage\" block in its SKILL.md yet (rule R17)"
+      wrap 6 "⚠️ no \"## Usage\" block in its SKILL.md yet"
     fi
     echo
   fi
@@ -210,7 +222,7 @@ do_show() { # <command>
       echo
       printf '%s\n' "$lines"
     else
-      warn "No \"## Usage\" block in its SKILL.md yet" "Add one (rule R17); flow-help reads it from there."
+      warn "No \"## Usage\" block in its SKILL.md yet" "Add one; flow-help reads it from there."
     fi
     echo
     echo "More: section \`$name\` in \`docs/commands.md\` · step by step: \`docs/user-guide.md\`"
@@ -232,7 +244,7 @@ do_show() { # <command>
 $lines
 EOF_LINES
     else
-      warn "No \"## Usage\" block in its SKILL.md yet" "Add one (rule R17); flow-help reads it from there."
+      warn "No \"## Usage\" block in its SKILL.md yet" "Add one; flow-help reads it from there."
     fi
     echo
     wrap 0 "${C_DIM}More: section \"$name\" in docs/commands.md · step by step: docs/user-guide.md${C_OFF}"
@@ -251,12 +263,13 @@ grouped_commands() { # every command named in a GROUP_ line, one per line
 }
 
 do_check() {
-  local name count=0 missing_usage="" missing_hint="" missing_doc="" missing_guide="" missing_mirror="" missing_group="" line grouped
+  local name count=0 missing_usage="" missing_hint="" missing_codex="" missing_doc="" missing_guide="" missing_mirror="" missing_group="" line grouped
   grouped=" $(grouped_commands | tr '\n' ' ') "
   while IFS= read -r name; do
     count=$((count + 1))
     [ -n "$(usage_of "$name" | grep -E '^- ')" ] || missing_usage="$missing_usage $name"
     if takes_args "$name" && [ -z "$(hint_of "$name")" ]; then missing_hint="$missing_hint $name"; fi
+    grep -q -x -F "$(codex_line "$name")" "$(codex_file "$name")" 2>/dev/null || missing_codex="$missing_codex $name"
     if [ -f "$COMMANDS_DOC" ]; then
       grep -q -E "^###[[:space:]]+\`$name\`" "$COMMANDS_DOC" || missing_doc="$missing_doc $name"
     fi
@@ -271,44 +284,49 @@ do_check() {
     return 1
   fi
   if [ -n "$missing_usage" ]; then
-    fail "No \"## Usage\" block in SKILL.md:$missing_usage" "Add a \"## Usage\" section with one \"- \`/flow-…\`: …\" line per form (rule R17); flow-help reads it from there."
+    fail "No \"## Usage\" block in SKILL.md:$missing_usage" "Add a \"## Usage\" section with one \"- \`/flow-…\`: …\" line per form; flow-help reads it from there."
   else
     pass "Every command ($count) has its \"## Usage\" block (what flow-help shows)"
   fi
   if [ -n "$missing_hint" ]; then
-    fail "No argument-hint in SKILL.md, though the command takes arguments:$missing_hint" "Add a line \"argument-hint: '<its forms, from its ## Usage block>'\" under \"description:\" (e.g. argument-hint: '<CARD-KEY> [full|quick]'); Claude Code shows it in the / menu (rule R17)."
+    fail "No argument-hint in SKILL.md, though the command takes arguments:$missing_hint" "Add a line \"argument-hint: '<its forms, from its ## Usage block>'\" under \"description:\" (e.g. argument-hint: '<CARD-KEY> [full|quick]'); Claude Code shows it in the / menu."
   else
     pass "Every command that takes arguments has its argument-hint (what Claude Code's / menu shows)"
   fi
+  if [ -n "$missing_codex" ]; then
+    fail "Codex's menu line is missing or out of date:$missing_codex" "For each: bash scripts/help.sh codex-line <command>, and put the lines it prints in .agents/skills/<command>/agents/openai.yaml (under interface:)."
+  else
+    pass "Every command has its Codex menu line (its options in Codex's \$ menu)"
+  fi
   if [ -n "$missing_group" ]; then
-    fail "Not in a flow-help group (flow-help shows them under \"Other\"):$missing_group" "Add each one to the right GROUP_ line at the top of scripts/help.sh (rule R17)."
+    fail "Not in a flow-help group (flow-help shows them under \"Other\"):$missing_group" "Add each one to the right GROUP_ line at the top of scripts/help.sh."
   else
     pass "Every command is in a flow-help group"
   fi
   if [ ! -f "$COMMANDS_DOC" ]; then
     fail "docs/commands.md is missing" "Restore it from git."
   elif [ -n "$missing_doc" ]; then
-    fail "No section in docs/commands.md:$missing_doc" "Add a \"### \`<command>\`\" section for it (purpose, usage, what it does, files) and a row in the command list (rule R17)."
+    fail "No section in docs/commands.md:$missing_doc" "Add a \"### \`<command>\`\" section for it (purpose, usage, what it does, files) and a row in the command list."
   else
     pass "Every command has its section in docs/commands.md"
   fi
   if [ ! -f "$GUIDE_DOC" ]; then
     fail "docs/user-guide.md is missing" "Restore it from git."
   elif [ -n "$missing_guide" ]; then
-    fail "No row in the command index of docs/user-guide.md:$missing_guide" "Add a step-by-step section and a row in \"Every command and its options\" (rule R17), then update the Claude artifact."
+    fail "No row in the command index of docs/user-guide.md:$missing_guide" "Add a step-by-step section and a row in \"Every command and its options\", then update the Claude artifact."
   else
     pass "Every command has its row in docs/user-guide.md"
   fi
   if [ -f "$GUIDE_DOC" ]; then
     line="$(mirrored_line)"
     if [ -z "$line" ]; then
-      fail "docs/user-guide.md has no \"mirrored\" line for the Claude artifact" "Put at the top of the guide: **Claude artifact:** <link> · mirrored on <YYYY-MM-DD> · commands: <every command, comma-separated> (rule R17)."
+      fail "docs/user-guide.md has no \"mirrored\" line for the Claude artifact" "Put at the top of the guide: **Claude artifact:** <link> · mirrored on <YYYY-MM-DD> · commands: <every command, comma-separated>."
     else
       while IFS= read -r name; do
         printf '%s' "$line" | grep -q -E "commands:.*(^|[ ,])$name([ ,]|$)" || missing_mirror="$missing_mirror $name"
       done < <(all_commands)
       if [ -n "$missing_mirror" ]; then
-        fail "The Claude artifact of the guide is behind; not in its \"mirrored\" line:$missing_mirror" "In Claude Code: update the artifact from docs/user-guide.md (link at the top of the guide), then set the \"mirrored\" line to today's date and every command (rule R17, AGENTS.md rule 11). From Codex this can't be done: finish it in Claude Code."
+        fail "The Claude artifact of the guide is behind; not in its \"mirrored\" line:$missing_mirror" "In Claude Code: update the artifact from docs/user-guide.md (link at the top of the guide), then set the \"mirrored\" line to today's date and every command (the rule in AGENTS.md). From Codex this can't be done: finish it in Claude Code."
       else
         pass "The Claude artifact covers every command ($(printf '%s' "$line" | sed -E 's/.*mirrored on ([0-9-]+).*/\1/'))"
       fi
@@ -322,6 +340,7 @@ action="${1:-list}"
 case "$action" in
   list) do_list ;;
   show) [ $# -ge 2 ] && [ -n "$2" ] || { usage; exit 2; }; do_show "$2" || exit 1 ;;
+  codex-line) [ $# -eq 2 ] && is_command "$2" || { usage; exit 2; }; echo "interface:"; codex_line "$2" ;;
   check) do_check || exit 1 ;;
   -h|--help|help) usage ;;
   *) usage; exit 2 ;;

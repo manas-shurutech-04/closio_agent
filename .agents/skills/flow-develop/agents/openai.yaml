@@ -1,3 +1,6 @@
 # Codex: this command also starts from plain words, but only for a card whose plan is approved (D61, the one exception to D44)
 policy:
   allow_implicit_invocation: true
+# What Codex's $ menu shows: the options and a one-line summary (D74); made with: bash scripts/help.sh codex-line flow-develop
+interface:
+  short_description: "$flow-develop <CARD-KEY> · Develops a planned Jira card together with the user."

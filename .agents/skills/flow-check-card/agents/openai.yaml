@@ -1,3 +1,6 @@
 # Codex: only run this command when the user types $flow-check-card (D44)
 policy:
   allow_implicit_invocation: false
+# What Codex's $ menu shows: the options and a one-line summary (D74); made with: bash scripts/help.sh codex-line flow-check-card
+interface:
+  short_description: "$flow-check-card <CARD-KEY> | local/cards/<file>.md · Checks a Jira card against the team's card template and shows what to fix."

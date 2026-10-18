@@ -1,3 +1,6 @@
 # Codex: only run this command when the user types $flow-memory (D44)
 policy:
   allow_implicit_invocation: false
+# What Codex's $ menu shows: the options and a one-line summary (D74); made with: bash scripts/help.sh codex-line flow-memory
+interface:
+  short_description: "$flow-memory [add [<repo>] <text> | edit <id> <text> | edit <id> phases <phases> | remove <id> | clear [<repo>]] · Shows and manages your user memory, the private preferences and corrections every flow command follows."

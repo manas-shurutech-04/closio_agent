@@ -1,3 +1,6 @@
 # Codex: only run this command when the user types $flow-configure-repo (D44)
 policy:
   allow_implicit_invocation: false
+# What Codex's $ menu shows: the options and a one-line summary (D74); made with: bash scripts/help.sh codex-line flow-configure-repo
+interface:
+  short_description: "$flow-configure-repo [<repo-name> | <clone path>] [key <name> | path <path|not-cloned>] · Registers a repo with closio-agent, or sets it up on your Mac."
