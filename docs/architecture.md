@@ -1,6 +1,6 @@
 # Architecture — Pipeline Flow
 
-> Status: the phase structure was approved on 2026-10-09 and updated the same day with the developer-testing phase ([D18](design-decisions.md#d18)). Built so far (foundation, Phase 0): `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card`, `flow-help`, the `flow-connectivity` agent ([commands.md](commands.md)), the Jira card template ([jira-card-template.md](jira-card-template.md)) and the step-by-step guide ([user-guide.md](user-guide.md)). **Of the card phases: `flow-status`, `flow-start` (Phases 1 and 2, built 2026-10-17, C1 + C2) `flow-develop` (Phases 3 and 4, built 2026-10-17, C3) and `flow-verify` + `flow-ac-check` (Phases 5 and 6, built 2026-10-18, C4).** The card phases' commands and the order of building are decided in [D61](design-decisions.md#d61) (2026-10-17): `flow-start` (Phases 1–2, **built**), `flow-develop` (3–4, **built**), `flow-verify` (5–6, **built**), `flow-push` (7–8), `flow-finish` (9), plus `flow-status` (**built**). Every command starts with **`flow-`** ([D43](design-decisions.md#d43)). In Claude Code a command is typed as `/flow-…`; in Codex as `$flow-…` ([D16](design-decisions.md#d16)). Commands only run when the user types them ([D44](design-decisions.md#d44)).
+> Status: the phase structure was approved on 2026-10-09 and updated the same day with the developer-testing phase ([D18](design-decisions.md#d18)). Built so far (foundation, Phase 0): `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card`, `flow-help`, the `flow-connectivity` agent ([commands.md](commands.md)), the Jira card template ([jira-card-template.md](jira-card-template.md)) and the step-by-step guide ([user-guide.md](user-guide.md)). **Of the card phases: `flow-status`, `flow-start` (Phases 1 and 2, built 2026-10-17, C1 + C2) `flow-develop` (Phases 3 and 4, built 2026-10-17, C3) `flow-verify` + `flow-ac-check` (Phases 5 and 6, built 2026-10-18, C4) `flow-push` (Phases 7 and 8, built 2026-10-18, C5) and `flow-finish` (Phase 9, built 2026-10-18, C6): every card phase has its command.** The card phases' commands and the order of building are decided in [D61](design-decisions.md#d61) (2026-10-17): `flow-start` (Phases 1–2, **built**), `flow-develop` (3–4, **built**), `flow-verify` (5–6, **built**), `flow-push` (7–8, **built**), `flow-finish` (9, **built**), plus `flow-status` (**built**). Every command starts with **`flow-`** ([D43](design-decisions.md#d43)). In Claude Code a command is typed as `/flow-…`; in Codex as `$flow-…` ([D16](design-decisions.md#d16)). Commands only run when the user types them ([D44](design-decisions.md#d44)).
 
 ## Overview
 
@@ -12,9 +12,9 @@ Phase 3  Develop                 flow-develop <CARD-KEY>          (C3, built 202
 Phase 4  Human review            part of flow-develop · ✋
 Phase 5  Check against ACs       flow-verify <CARD-KEY>           (C4, built 2026-10-18) every AC's test cases; flow-ac-check <CARD-KEY> <AC> edits one AC's
 Phase 6  Developer testing       part of flow-verify · the repo tests again + the story check; a failure: the user decides (e.g. back to Phase 3)
-Phase 7  Ship                    flow-push <CARD-KEY>             (C5) push (also creates, assigns and describes the MRs)
+Phase 7  Ship                    flow-push <CARD-KEY>             (C5, built 2026-10-18) rebase, the commits you approve, one push (also creates, assigns and describes the MRs)
 Phase 8  Merge Request           part of flow-push · MRs linked on Jira → card to Code Review
-Phase 9  After merge             flow-finish <CARD-KEY>           (C6) deployment doc → test on dev → card to Ready for Test
+Phase 9  After merge             flow-finish <CARD-KEY>           (C6, built 2026-10-18) merged? → you say it's deployed → every AC on dev → deployment doc (run folder + Jira card) → Ready for Test
 Any time flow-status [<CARD-KEY>]  (C1, built 2026-10-17) where a card stands; the run folder runs/<CARD-KEY>/ remembers it
 ```
 
@@ -104,38 +104,42 @@ Local test environment ([D21](design-decisions.md#d21)):
 
 Test credentials ([D20](design-decisions.md#d20)): per person, asked once in setup, stored in the macOS Keychain under `closio-agent.<name>` ([D33](design-decisions.md#d33)), and read by scripts at run time.
 - **FE:** login ID and password (different from the WS1 login).
-- **BE, WS1:** session cookie, fetched from the login API with the stored login ID and password:
+- **BE, WS1:** session cookie, fetched from the **dev** login API with the stored login ID and password, always, also for the checks on this Mac; the cookie is then sent to the WS1 on this Mac (rule A24, [D71](design-decisions.md#d71)):
   - `POST https://dev-closio-ws1-apiprivate.japfacomfeed.co.id/api/v1/login`
   - Headers: `accept: application/json`, `X-Secure-Transmission-Type: x`, `X-Application-Version: 1.0.0+1`, `Content-Type: application/json`
   - Body: `userid` and `password` (per person), `napp_pk: 4` and `client_type: "web"` (the same for everyone)
-- **BE, WS2:** each service's own client ID and secret (`x-client-id` / `x-client-secret` headers). For the checks on this Mac, `flow-verify` uses the keys saved with `/flow-configure-repo <repo> key ws2-client-id` and `… ws2-client-secret` (Keychain, [D37](design-decisions.md#d37)); the local WS2 accepts them when its `.env` lists the same client ([D67](design-decisions.md#d67)).
+- **BE, WS2:** the **caller's** client ID and secret (`x-client-id` / `x-client-secret` headers): WS1 sends its own pair (`WS1_AUTH_CLIENT_ID` / `WS1_AUTH_SECRET_KEY` in its `.env`, `src/utils/axiosInstances.js`) to target sales and notifications, and its `PRICING_ENGINE_*` pair to the pricing engine; the WS2 checks it against its `SERVICE_CREDENTIALS`. For the checks on this Mac, `api-call.sh` sends WS1's pair saved with `/flow-configure-repo nodejs-ws1closio key ws1-client-id` and `… ws1-client-secret` (Keychain, [D37](design-decisions.md#d37)); a pair saved under a WS2 repo (`ws2-client-*`) is used instead for that WS2 (the pricing engine).
 
-_Details still open: how the coverage check that runs on every commit affects atomic commits._
+The coverage gate that husky runs on every commit (ws2targetsalesincentive, ws2notification, ws2pricingengine) runs on each atomic commit in Phase 7: slower, never skipped ([D70](design-decisions.md#d70)).
 
-### Phase 7 — Ship (`flow-push`)
-1. The connectivity agent connects the VPN if needed ([D30](design-decisions.md#d30)).
-2. Stash the changes.
-3. Fetch the base branch and rebase onto it.
-4. Pop the stash.
-5. ✋ If the rebase or stash pop causes a conflict, a person resolves it, then the agent continues.
-6. Re-run the checks.
-7. Create atomic commits.
-8. Show the repo's default MR **labels and reviewers** (optional, from `config/repos/<repo>.yaml`) and let the user confirm or change them ([D51](design-decisions.md#d51)).
-9. Push once per repo. The same push **creates the MR and assigns it to the user** with git push options ([D31](design-decisions.md#d31)). Right after, a script sets the **full description** through the GitLab REST API, using the token from the Keychain ([D32](design-decisions.md#d32)).
+### Phase 7 — Ship (`flow-push <CARD-KEY>`, Phases 7 and 8)
+Built in C5 ([D70](design-decisions.md#d70)); the step-by-step is in [commands.md](commands.md#flow-push).
+1. The connectivity agent connects the VPN if needed ([D30](design-decisions.md#d30)); the card must be verified.
+2. Per repo, `scripts/card-branch.sh <repo> rebase <branch>`: stash the changes (new files too), fetch the base branch and rebase onto it, pop the stash ([D10](design-decisions.md#d10), G2).
+3. ✋ If the rebase or the stash pop causes a conflict, the user resolves it in their editor, then `rebase-continue` carries on.
+4. Re-run the repo's tests and checks.
+5. ✋ The AI proposes the atomic commits per repo, each layer's code with its own tests, messages `SCRUM-<n>: <what this commit does>`; the user approves the list; `scripts/ship.sh <repo> commit` makes them, the repo's git hooks running every time (G3).
+6. The MRs: title `SCRUM-<n>: <card title>`, ready for review, into `mr_target_branch`, assigned to the user; the repo's default **labels and reviewers** confirmed or changed by the user ([D51](design-decisions.md#d51)); the description: the Jira link and the migrations and seeders to run (nothing more, D70).
+7. ✋ Everything shown; pushed only after the user's explicit yes.
+8. Push once per repo, never forced (G4): `scripts/ship.sh <repo> push` **creates the MR and assigns it to the user** with git push options ([D31](design-decisions.md#d31)). Right after, `scripts/gitlab-mr.sh <repo> describe` sets the **full description and the reviewers** through the GitLab REST API, using the token from the Keychain ([D32](design-decisions.md#d32)).
 
 ### Phase 8 — Merge Request
-1. The MRs already exist, created, assigned and fully described in Phase 7 ([D31](design-decisions.md#d31), [D32](design-decisions.md#d32)).
-2. Link the MRs on the Jira card.
-3. Move the card to **Code Review**.
+Part of `flow-push`.
+1. The MRs exist, created, assigned and described in Phase 7.
+2. The Jira card shows each MR (GitLab's Jira link usually adds it); a missing one gets one comment with the links.
+3. Move the card to **Code Review** ([D11](design-decisions.md#d11)). The run folder's `ship.md` keeps the commits and the MR links; the card waits for the merge (phase `after-merge`).
 
 ### Phase 9 — After merge (`flow-finish <CARD-KEY>`)
-1. Create the deployment doc in the card's run folder: migrations, seeders, API calls, etc.
-2. Once deployed, test the change on the **dev environment** ([D22](design-decisions.md#d22)): through dev WS1 with the login cookie, and directly against each WS2 service with its dev client ID/secret from the Keychain ([D37](design-decisions.md#d37)).
-3. Move the card to **Ready for Test**.
+Built in C6 ([D72](design-decisions.md#d72)); the step-by-step is in [commands.md](commands.md#flow-finish).
+1. Check that every MR of the card is merged (`scripts/gitlab-mr.sh <repo> status`); one still open: stop.
+2. The user says the card is deployed on the **dev environment** (nothing checks it by itself).
+3. Test the change on dev ([D22](design-decisions.md#d22)): the quick check (B) with `--env dev`: through dev WS1 with the dev login (rule A24), directly against each WS2 with WS1's client pair ([D37](design-decisions.md#d37)), web cards on the dev web app; each repo's dev address (`dev_base_url`) is asked once by `flow-setup-repo`. Test data and calls that write only after a yes (A23); a new run in `verify.md`.
+4. Create the deployment doc in the card's run folder, `deployment.md` ([D12](design-decisions.md#d12)): the deploy order; per repo the MR and merge commit, the migrations (with the rollback) and seeders to run (reviewed by the user first, A23), new `.env` variable names, after-deploy steps; an API card's APIs with their WS1 and WS2 dev URLs, a web card's breadcrumb, a consumer card's test steps, the user's special instructions. The same doc goes on the Jira card as one comment.
+5. Move the card to **Ready for Test**. The run branch `runs/<CARD-KEY>` stays as the card's record; it isn't merged into `main` (D72).
 
 ## Applies across all phases
 
-- **All agent rules in one place:** [agent-rules.md](agent-rules.md) lists every rule (G1–G4, A1–A23), with its decision and where it's applied today. The bullets below explain the ones that shape every phase.
+- **All agent rules in one place:** [agent-rules.md](agent-rules.md) lists every rule (G1–G4, A1–A24), with its decision and where it's applied today. The bullets below explain the ones that shape every phase.
 - **Where sessions start (rule A10, [D42](design-decisions.md#d42)):** Claude Code and Codex are **always started in the closio-agent folder**, never inside a code repo. The agent adds the code repos a card needs as extra folders and finds its own files (`runs/`, `config/`, `scripts/`, `local/`) by relative path. The setup commands state and check this.
 - **Always give the fix (rule A11):** whenever anything fails (a check, a step, a command), in setup and in every phase, the agent tells the user the exact steps to fix it.
 - **Branch names (rule A12, [D50](design-decisions.md#d50)):** strictly `SCRUM-<number>/<short-description>`, lowercase words joined by `-`, at most 5 words, the same name in every repo of a card. `scripts/branch-name.sh` makes and checks them.

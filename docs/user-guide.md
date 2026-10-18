@@ -1,6 +1,6 @@
 # closio-agent, step by step
 
-**Claude artifact:** https://claude.ai/code/artifact/a83b1e2a-0e5a-4378-b791-26b9f34e8b7a · mirrored on 2026-10-18 · commands: flow-ac-check, flow-check-card, flow-configure-repo, flow-configure-user, flow-develop, flow-doctor, flow-help, flow-memory, flow-ping, flow-setup-repo, flow-start, flow-status, flow-verify, flow-vpn
+**Claude artifact:** https://claude.ai/code/artifact/a83b1e2a-0e5a-4378-b791-26b9f34e8b7a · mirrored on 2026-10-18 · commands: flow-ac-check, flow-check-card, flow-configure-repo, flow-configure-user, flow-develop, flow-doctor, flow-finish, flow-help, flow-memory, flow-ping, flow-push, flow-setup-repo, flow-start, flow-status, flow-verify, flow-vpn
 
 This guide walks you through closio-agent from the first minute: which command to type, in what order, what each one asks you, and what you get back. It's written for anyone on the team, even if you've never used an AI tool before.
 
@@ -10,7 +10,7 @@ This file is the source and holds the full text. The Claude artifact linked abov
 
 closio-agent is a helper that lives in your AI tool (Claude Code or Codex). It takes a Jira card from the SCRUM board through the whole delivery flow: pick up the card, plan, develop with you, test, push with tidy commits, create the merge requests, and write the deployment doc.
 
-Today the **setup part** is built: the commands that get your Mac ready and keep it healthy. Of the **card part**, the pick-up, the plan, the development and the checks are built (`flow-start`, `flow-develop`, `flow-verify`, `flow-ac-check`, `flow-status`); the push and the after-merge steps come next ([section 6](#6-working-on-a-card)).
+Today the **setup part** is built: the commands that get your Mac ready and keep it healthy. Of the **card part**, every phase is built: the pick-up, the plan, the development, the checks, the push and the after-merge step (`flow-start`, `flow-develop`, `flow-verify`, `flow-ac-check`, `flow-push`, `flow-finish`, `flow-status`; [section 6](#6-working-on-a-card)).
 
 You never run scripts by hand. You type a command, the AI runs the right script and shows you the result. Every problem comes with the steps to fix it.
 
@@ -23,7 +23,7 @@ Every command starts with `flow-`.
 | Claude Code | a slash, then the name | `/flow-doctor` |
 | Codex | a dollar sign, then the name | `$flow-doctor` |
 
-Some commands take a word after the name, e.g. `/flow-vpn connect`. This guide shows the Claude Code form; in Codex, replace `/` with `$`.
+Some commands take a word after the name, e.g. `/flow-vpn connect`. In Claude Code, the `/` menu shows a command's options next to its name (e.g. `/flow-vpn  connect | status | disconnect`): `[…]` is optional, `|` means one of them, `<…>` is yours to fill in. Then, as soon as you type the first letter of an option, Claude Code suggests the words that fit there, read from closio-agent at that moment: the command's options, the repo names, your card keys, the items. Pick one with Tab or Enter. This works in the terminal and in the desktop app's chat, by itself, in every session started in the closio-agent folder (`flow-autocomplete`, [D73](design-decisions.md#d73)). Codex doesn't show hints or suggestions; there, `$flow-help <command>` lists the options. This guide shows the Claude Code form; in Codex, replace `/` with `$`.
 
 A command only runs when **you** type it. The AI never starts one by itself, with one exception: `flow-develop` also starts when you ask in plain words to develop a card whose plan is approved ("develop SCRUM-567").
 
@@ -56,7 +56,7 @@ flowchart LR
         direction TB
         d1["Start the tool in the folder"] --> d2["/flow-vpn connect for GitLab"] --> d3["/flow-memory: how you work"] --> d4["/flow-check-card: a card"] --> d5["/flow-help: every command"]
     end
-    subgraph K["3. Cards (pick-up, plan and develop built; the rest coming)"]
+    subgraph K["3. Cards (every step built)"]
         direction TB
         k1["Pick up the card"] --> k2["Plan: you approve it"] --> k3["Develop together"] --> k4["Review, AC check, tests"] --> k5["Push + merge requests"] --> k6["After the merge: deploy doc"] --> k7["Ready for Test"]
     end
@@ -80,14 +80,14 @@ You set up once, left to right; then every day you only need the middle box; the
 4. `/flow-check-card` before a card is picked up.
 5. `/flow-help` whenever you forget a command.
 
-**Working on a card** (section 6; the first four steps are built):
+**Working on a card** (section 6; every step is built):
 
 1. `/flow-start SCRUM-567`: pick up the card.
 2. Plan: the code first, your answers, your approval (part of `/flow-start`).
 3. `/flow-develop SCRUM-567`: develop together (the code and its unit tests), then your review.
 4. `/flow-verify SCRUM-567`: every AC checked, the full way (saved test cases, the story check) or the quick way (straight against the code); the tests again.
-5. Push and create the merge requests.
-6. After the merge: deployment doc, then Ready for Test.
+5. `/flow-push SCRUM-567`: your approved commits, one push per repo with the merge requests, the card to Code Review.
+6. `/flow-finish SCRUM-567`: after the merge, the checks on dev, the deployment doc (run folder and Jira card), Ready for Test.
 
 ## 4. One-time setup, in this order
 
@@ -117,7 +117,7 @@ The `closio-agent` at the end names the folder the way these docs expect.
 
 You need: Homebrew, git, nvm with Node 22, openfortivpn (the VPN), Claude Code and/or Codex (installed with npm inside Node 22), and Docker or Homebrew copies of Redis and RabbitMQ. The exact commands are in the [setup guide, section 1](setup-guide.md#1-what-you-need-before-starting).
 
-You'll also need access to Jira (project SCRUM), the Japfa GitLab, the Japfa VPN (SSO), and your test logins for the Closio web app and the WS1 login API.
+You'll also need access to Jira (project SCRUM), the Japfa GitLab, the Japfa VPN (SSO), and your test logins for the Closio web app and the WS1 login API (your login on the **dev** WS1: every check logs in there).
 
 ### Step 3: Start Claude Code or Codex the right way
 
@@ -129,7 +129,7 @@ nvm use v22
 claude        # or: codex
 ```
 
-Two rules that never change: **start in the closio-agent folder** (never inside a code repo), and **run `nvm use v22` first**. The first time, the tool asks whether you trust the folder: say yes. That lets our own scripts run without asking you for permission each time.
+Two rules that never change: **start in the closio-agent folder** (never inside a code repo), and **run `nvm use v22` first**. The first time, the tool asks whether you trust the folder: say yes. That lets our own scripts run without asking you for permission each time, and turns on Claude Code's suggestions while you type a flow command.
 
 ### Step 4: `/flow-ping`
 
@@ -144,7 +144,7 @@ Two rules that never change: **start in the closio-agent folder** (never inside 
 - **When:** now, and again after every fix. Also any time something feels wrong.
 - **What it does:** checks your whole setup and tells you how to fix each problem. It only reads.
 - **Options:** `/flow-doctor` on its own. In Codex, approve running it with network access.
-- **You see:** sections (Project, Tools, VPN and GitLab, Personal settings, Repos, Repo setup, User memory, Commands documented, Keychain, Jira), one ✅/⚠️/❌ line per check, and at the end `Result: N to fix, M to look at.`
+- **You see:** a heading per section (Project, Tools, VPN and GitLab, Personal settings, User memory, Commands documented, Cards in progress, Checking web cards, Repos, Repo setup, Keychain, Jira), one ✅/⚠️/❌ line per check, each problem in bold with its **Fix:** or **Tip:** under it, commands in color, and at the end **Result: N to fix, M to look at.** `bash scripts/doctor.sh` in a terminal shows the same, in color (without the Jira check).
 - **If ❌:** do what the "Fix:" line says, then run `/flow-doctor` again. The first time, expect ❌ for the personal settings, the Keychain items and the repos: the next steps fill them in.
 
 ### Step 6: `/flow-configure-user`
@@ -160,7 +160,7 @@ Two rules that never change: **start in the closio-agent folder** (never inside 
 
 - **When:** once per repo you'll work on. The 7 Closio repos are already registered for the team; you only tell closio-agent where your clone is and give the repo's dev keys.
 - **Before it:** clone the repo yourself, on the VPN (`/flow-vpn connect`, then `git clone <GitLab address> <your workspace folder>/<repo>`). closio-agent never clones.
-- **What it does:** with a repo name, records where your clone is and asks for that repo's dev keys (WS2 client ID and secret; database user and password are optional). With a path to a clone of a new repo, registers that repo for the whole team (the AI suggests every value from the repo, you confirm or change them, and the new file is committed so everyone gets it).
+- **What it does:** with a repo name, records where your clone is and asks for that repo's dev keys (for WS1: its own client ID and secret, which it sends to the WS2s and which the checks send on direct WS2 calls; a WS2 needs no keys of its own; database user and password are optional). With a path to a clone of a new repo, registers that repo for the whole team (the AI suggests every value from the repo, you confirm or change them, and the new file is committed so everyone gets it).
 - **Options:** `/flow-configure-repo` (list the repos and their state on your Mac); `/flow-configure-repo <repo-name>` (set up a registered repo on your Mac); `/flow-configure-repo <full path of a clone>` (register a new repo); `/flow-configure-repo <repo-name> key <name>` (add or replace one dev key); `/flow-configure-repo <repo-name> path <full path | not-cloned>` (change where the clone is).
 - **You see:** the repo's facts and ✅/⚠️ per item. Missing dev keys show ⚠️, not ❌: they're only needed to test that repo on the dev environment.
 
@@ -168,8 +168,8 @@ Two rules that never change: **start in the closio-agent folder** (never inside 
 
 - **When:** once per repo after step 7 (`all` does every repo you've cloned), and again after a big change in the repo.
 - **What it does:** gets the repo ready to work on: switches to the repo's own Node version (installs it if missing), installs the packages when needed, finds or starts the local Redis and RabbitMQ (Homebrew or Docker), checks that the repo's `.env` has every variable and points to those local copies (it never shows a value: if something is off, it opens the file for you with the lines to set), runs the tests once, and gives the AI tool access to the repo folder. It never changes branches and needs no VPN.
-- **Options:** `/flow-setup-repo` (each repo's setup state); `/flow-setup-repo <repo-name>`; `/flow-setup-repo all`; add `install` to force a reinstall of the packages; add `services` to choose Homebrew or Docker again for Redis and RabbitMQ.
-- **You see:** one block per repo (clone, Node, env file, packages, local services, `.env` check, tests, folder access) and a result line. It can take a while (tests up to 15 minutes per repo). macOS dialogs may appear when you have to choose something.
+- **Options:** `/flow-setup-repo` (each repo's setup state); `/flow-setup-repo <repo-name>`; `/flow-setup-repo all`; add `install` to force a reinstall of the packages; add `services` to choose Homebrew or Docker again for Redis and RabbitMQ; `/flow-setup-repo <repo-name> dev-address` (or `… dev-address <url>`) sets or changes only that repo's dev address, and `/flow-setup-repo all dev-address` every repo's at once.
+- **You see:** one block per repo (clone, Node, env file, packages, local services, `.env` check, tests, folder access) and a result line. If the repo's address on the dev environment isn't saved yet, the AI asks you for it (once, for the whole team: it goes in the shared repo file; `/flow-finish` uses it). With `dev-address`, only that is done, in seconds: you see the old and the new address, and a reminder to commit the shared repo file. It can take a while (tests up to 15 minutes per repo). macOS dialogs may appear when you have to choose something.
 - **If ⚠️ on `.env`:** the file is open in your editor with the exact lines to set. Change it yourself, save, run the command again. In Codex, start it again with the `codex --add-dir …` command shown at the end, so it can use the repo folders.
 
 ### Step 9: `/flow-vpn connect`, then `/flow-doctor` again
@@ -204,7 +204,7 @@ Two rules that never change: **start in the closio-agent folder** (never inside 
 
 ## 6. Working on a card
 
-The first pieces are built: picking a card up, planning it, developing it with you, and checking it. The push and the after-merge steps are designed but **not built yet**; they're built one piece at a time.
+Every step is built: picking a card up, planning it, developing it with you, checking it, pushing it with its merge requests, and finishing it after the merge.
 
 ```mermaid
 flowchart TB
@@ -245,7 +245,7 @@ The ✋ boxes are where the agent stops and waits for you. A failed AC check or 
 - **Web cards, both ways:** before any test is written it lists the APIs the card's screens call and asks you which are available on dev right now (every run). One that isn't is mocked: you send its exact 200 response once. Right before the run it checks the GET APIs on dev, and asks again about one that doesn't answer. `verify.md` says which APIs were real and which were mocked.
 - **Both ways:** it starts the card's repos on your Mac; if the checks need **test data** or send calls that **write** (POST, PUT, DELETE), it shows you those and their cleanup first and runs them only after your yes; at the end it cleans up after your yes and stops the servers.
 - **Options:** `/flow-verify SCRUM-567` (it asks A or B), `/flow-verify SCRUM-567 full`, `/flow-verify SCRUM-567 quick`, or `/flow-verify SCRUM-567 full ~/Downloads/<QMetry export>.xlsx` when you have the card's QMetry test cases. QMetry is optional, only for A, and never asked for: with an export its cases are the base; without one the test cases are written from the card and the code.
-- **You see:** ✅ / ❌ per AC and per case or scenario, the repo tests, and (A) the story check. With a QMetry export (A), also one line: how many of its test cases were covered (e.g. `QMetry: 18 of 22 test cases covered (82%)`). All ✅: `Done: SCRUM-567 is verified. Next: /flow-push SCRUM-567 (coming)`. Something ❌: each failure with a suggestion (fix the code with `/flow-develop`, change a test case with `/flow-ac-check` for A, or a setup fix), and **you decide** what to do.
+- **You see:** ✅ / ❌ per AC and per case or scenario, the repo tests, and (A) the story check. With a QMetry export (A), also one line: how many of its test cases were covered (e.g. `QMetry: 18 of 22 test cases covered (82%)`). All ✅: `Done: SCRUM-567 is verified. Next: /flow-push SCRUM-567`. Something ❌: each failure with a suggestion (fix the code with `/flow-develop`, change a test case with `/flow-ac-check` for A, or a setup fix), and **you decide** what to do.
 - **Where it's remembered:** `runs/SCRUM-567/verify.md` records **every run** (what was tested and the results, newest first, never overwritten); A's test cases in `runs/SCRUM-567/api-checks/` or `runs/SCRUM-567/e2e/`. B's one-off files stay on your Mac only and are removed at the end.
 - **Good to know:** web cards need Playwright (`/flow-configure-user playwright`). Your logins and keys are added by the scripts and never shown.
 
@@ -254,6 +254,26 @@ The ✋ boxes are where the agent stops and waits for you. A failed AC check or 
 - **When:** you want a new test case for an AC, a case changed, or an AC's cases written again.
 - **Options:** `/flow-ac-check SCRUM-567 3` (AC 3's cases written again from the card and the code), `/flow-ac-check SCRUM-567 3 "add a case for ?status=foo"` (added or changed as you say).
 - **You see:** for a web card, first the question which of the AC's APIs are available on dev; then what changed in the AC's cases, then that AC's result. Test data or calls that write, if needed, only after your yes. The run is recorded in `verify.md`. The next `/flow-verify` (full check) runs it with the rest.
+
+
+### `/flow-push`
+
+- **When:** after `/flow-verify` says the card is verified.
+- **What it does, in order:** brings each repo up to the latest base branch (your uncommitted work is put aside, the branch rebased, your work put back; a conflict waits for you to fix it in your editor); runs the repo's tests again; proposes the **atomic commits**, each layer's code with its own tests, messages like `SCRUM-567: Add the ageing config model`, and **you approve the list**; makes them (in the repos with husky, the coverage gate runs on every commit, so it takes a while); prepares each **merge request**: title `SCRUM-567: <card title>`, into the repo's MR branch, assigned to you, the labels and reviewers you confirm, and a short description (the Jira link, the migrations and seeders to run); shows you everything and pushes **only after your yes**, once per repo; then sets each MR's description and reviewers, checks the card shows the MRs (adds a comment if one is missing) and moves the card to **Code Review**.
+- **Options:** `/flow-push SCRUM-567` only. Run it again to continue where it stopped (e.g. after a conflict).
+- **You see:** the files per repo, the commit list to approve, the MRs to approve, then the MR links and `Done: SCRUM-567 is pushed and in Code Review.`
+- **Where it's remembered:** `runs/SCRUM-567/ship.md` (the commits, the pushes, the MR links) and each MR's description in `runs/SCRUM-567/mr-<repo>.md`.
+- **Good to know:** a push is never forced, and the repos' git hooks always run. Your GitLab token is read from the Keychain by the script and never shown.
+
+
+### `/flow-finish`
+
+- **When:** after the card's merge requests are merged and the card is deployed on dev.
+- **What it does, in order:** checks every MR is merged (it stops if one is still open); asks you whether the card is deployed on dev (nothing checks it by itself); checks every AC **on dev**, the quick way (test data or calls that write only after your yes); asks if there's anything special for the deployment doc; writes the **deployment doc**: the deploy order, the migrations and seeders to run (you review them first), new `.env` variable names, after-deploy steps, and, depending on the card, its APIs with their WS1 and WS2 dev URLs, the breadcrumb to the screen, or how to test a consumer; puts the doc on the Jira card as one comment; moves the card to **Ready for Test**.
+- **Options:** `/flow-finish SCRUM-567` only. Run it again to continue (e.g. once an MR is merged, or once it's deployed).
+- **You see:** the merge check, the dev checks per AC, the migrations to review, then `Done: SCRUM-567 is in Ready for Test.`
+- **Where it's remembered:** `runs/SCRUM-567/deployment.md`, the dev check as a new run in `verify.md`; the card's run branch stays as its record.
+- **Good to know:** each repo's dev address comes from its repo file (`/flow-setup-repo <repo-name> dev-address` sets it). A failure on dev is shown with a suggestion, and you decide.
 
 ### `/flow-status`
 
@@ -269,9 +289,9 @@ The ✋ boxes are where the agent stops and waits for you. A failed AC check or 
 | 4. Human review | you review the changes in your editor | part of `flow-develop` (built) |
 | 5. Check against the ACs | every AC checked with its test cases (API checks for the backend, Playwright for the web app) | `flow-verify <CARD-KEY>` (built) |
 | 6. Developer testing | the repo tests again (written in step 3) and a story check; a failure is shown to you with a suggestion, and you decide | part of `flow-verify` (built) |
-| 7. Ship | rebase, atomic commits, one push that also creates and assigns the merge requests | `flow-push <CARD-KEY>` (coming) |
-| 8. Merge request | the MRs are linked on the card; card to Code Review | part of `flow-push` (coming) |
-| 9. After the merge | deployment doc, test on dev, card to Ready for Test | `flow-finish <CARD-KEY>` (coming) |
+| 7. Ship | rebase, atomic commits you approve, one push that also creates and assigns the merge requests | `flow-push <CARD-KEY>` (built) |
+| 8. Merge request | the MRs' description and reviewers set; the MRs shown on the card; card to Code Review | part of `flow-push` (built) |
+| 9. After the merge | the merge checked, every AC checked on dev, the deployment doc (run folder and Jira card), card to Ready for Test | `flow-finish <CARD-KEY>` (built) |
 | Any time | where a card stands; every step is remembered in `runs/<CARD-KEY>/`, so a card can be paused and picked up again | `flow-status <CARD-KEY>` (built) |
 
 The full design is in [architecture.md](architecture.md).
@@ -286,7 +306,7 @@ Every flow command that exists is in this table. That's a rule: a new command is
 | [`flow-doctor`](commands.md#flow-doctor) | Checks your setup and shows how to fix each problem | `/flow-doctor` |
 | [`flow-configure-user`](commands.md#flow-configure-user) | Your personal settings and your 5 secrets | `/flow-configure-user` · `/flow-configure-user <item>` |
 | [`flow-configure-repo`](commands.md#flow-configure-repo) | Registers a repo, or sets it up on your Mac | `/flow-configure-repo` · `/flow-configure-repo <repo-name>` · `/flow-configure-repo <path of a clone>` · `/flow-configure-repo <repo-name> key <name>` · `/flow-configure-repo <repo-name> path <full path \| not-cloned>` |
-| [`flow-setup-repo`](commands.md#flow-setup-repo) | Gets a repo ready to work on | `/flow-setup-repo` · `/flow-setup-repo <repo-name>` · `/flow-setup-repo all` · add `install` or `services` |
+| [`flow-setup-repo`](commands.md#flow-setup-repo) | Gets a repo ready to work on, or sets its dev address | `/flow-setup-repo` · `/flow-setup-repo <repo-name>` · `/flow-setup-repo all` · add `install` or `services` · `/flow-setup-repo <repo-name> dev-address [<url>]` · `/flow-setup-repo all dev-address` |
 | [`flow-vpn`](commands.md#flow-vpn) | The Japfa VPN | `/flow-vpn connect` · `/flow-vpn status` · `/flow-vpn disconnect` |
 | [`flow-memory`](commands.md#flow-memory) | Your private memory, followed by every command | `/flow-memory` · `/flow-memory add <text>` · `/flow-memory add <repo> <text>` · `/flow-memory edit <id> <new text>` · `/flow-memory edit <id> phases <phases>` · `/flow-memory remove <id>` · `/flow-memory clear` · `/flow-memory clear <repo>` |
 | [`flow-check-card`](commands.md#flow-check-card) | Checks a Jira card against the card template | `/flow-check-card SCRUM-567` · `/flow-check-card <file.md>` |
@@ -296,6 +316,8 @@ Every flow command that exists is in this table. That's a rule: a new command is
 | [`flow-develop`](commands.md#flow-develop) | Develops a planned card with you, then your review | `/flow-develop <CARD-KEY>` · or in plain words: "develop <CARD-KEY>" |
 | [`flow-verify`](commands.md#flow-verify) | Checks a developed card, A full check or B quick check: every AC, the tests (A: the story) | `/flow-verify <CARD-KEY> [full\|quick]` |
 | [`flow-ac-check`](commands.md#flow-ac-check) | Adds or changes the test cases of one AC | `/flow-ac-check <CARD-KEY> <AC>` · `/flow-ac-check <CARD-KEY> <AC> "<what to change>"` |
+| [`flow-push`](commands.md#flow-push) | Ships a verified card: your approved commits, one push per repo with the MRs, Code Review | `/flow-push <CARD-KEY>` |
+| [`flow-finish`](commands.md#flow-finish) | After the merge: every AC checked on dev, the deployment doc (run folder and Jira card), Ready for Test | `/flow-finish <CARD-KEY>` |
 
 Codex: the same commands with `$` instead of `/`.
 
@@ -331,4 +353,4 @@ flowchart TB
 
 One change to a command fans out to four places, and `/flow-doctor` won't go green until all four are done.
 
-**How this guide stays up to date.** `docs/user-guide.md` is the source. Whenever a flow command is added or changed, the same step adds it to that command's own `## Usage` block and to a group in `/flow-help`, to `commands.md`, to this guide, and updates the Claude artifact from this file (there, each command is a picture, redrawn when the command changes), with the "mirrored" line at the top set to the date and every command. That's rule R17 for whoever builds closio-agent, and rule 11 in `AGENTS.md` for the AI. `/flow-doctor` runs the check ("Commands documented") and shows ❌ until it's done. Only Claude Code can update the artifact; a change made in Codex is finished in Claude Code.
+**How this guide stays up to date.** `docs/user-guide.md` is the source. Whenever a flow command is added or changed, the same step adds it to that command's own `## Usage` block (and its options to the `argument-hint` line Claude Code's `/` menu shows) and to a group in `/flow-help`, to `commands.md`, to this guide, and updates the Claude artifact from this file (there, each command is a picture, redrawn when the command changes), with the "mirrored" line at the top set to the date and every command. That's rule R17 for whoever builds closio-agent, and rule 11 in `AGENTS.md` for the AI. `/flow-doctor` runs the check ("Commands documented") and shows ❌ until it's done. Only Claude Code can update the artifact; a change made in Codex is finished in Claude Code.

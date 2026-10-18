@@ -1,6 +1,6 @@
 # Setup Guide — closio-agent for Japfa (Closio)
 
-> **Status (2026-10-16):** `closio-agent` is **in design.** The setup commands are built: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card` and `flow-help` ([commands.md](commands.md)), and the card commands `flow-status`, `flow-start`, `flow-develop`, `flow-verify` and `flow-ac-check`. The push and the after-merge steps come next. `flow-configure-user` also sets up Playwright, for checking web cards (it asks before that download).
+> **Status (2026-10-16):** `closio-agent` is **in design.** The setup commands are built: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card` and `flow-help` ([commands.md](commands.md)), and the card commands `flow-status`, `flow-start`, `flow-develop`, `flow-verify`, `flow-ac-check`, `flow-push` and `flow-finish`: every card phase. `flow-configure-user` also sets up Playwright, for checking web cards (it asks before that download).
 >
 > **Use the commands first** (see "First-time setup, in order" below, or the plain-words walkthrough in [user-guide.md](user-guide.md)). The manual steps in this guide stay as a backup and explain what the commands do. Steps marked **✅ verified** were tested on a real Mac (macOS 26.6.2). Steps marked **🛠 planned** aren't built yet.
 >
@@ -96,7 +96,7 @@ claude        # or: codex
 
 ### Approval prompts in Claude Code
 
-The first time you start Claude Code in this folder, it asks whether you trust it. Say yes: that turns on the shared file `.claude/settings.json`, which lets Claude Code run every script the flow commands use without asking you ([D49](design-decisions.md#d49), [D57](design-decisions.md#d57)). Anything else still asks.
+The first time you start Claude Code in this folder, it asks whether you trust it. Say yes: that turns on the shared file `.claude/settings.json`, which lets Claude Code run every script the flow commands use without asking you ([D49](design-decisions.md#d49), [D57](design-decisions.md#d57)). Anything else still asks. It also turns on the suggestions while you type a flow command (`.claude/skills/flow-autocomplete/`, [D73](design-decisions.md#d73)); `claude plugin list` in this folder shows `flow-autocomplete@skills-dir` as loaded.
 
 **Codex:** when Codex asks whether to trust this folder, say yes too. Then the shared file `.codex/rules/closio-agent.rules` lets Codex run the same scripts without asking (Codex calls these "rules"; they're still experimental).
 
@@ -269,14 +269,25 @@ security add-generic-password -U -a "$USER" -s "closio-agent.gitlab-token" -l "c
 | `closio-agent.gitlab-token` | Your GitLab personal access token (section 4.2) | Setting MR descriptions ([D32](design-decisions.md#d32)) |
 | `closio-agent.fe-login-id` | Your login ID for the Closio web app | Playwright tests of `closio-web-v2` ([D20](design-decisions.md#d20)) |
 | `closio-agent.fe-login-password` | Your password for the Closio web app | Same |
-| `closio-agent.ws1-login-userid` | Your `userid` for the WS1 login API | Fetching the WS1 session cookie for backend tests ([D20](design-decisions.md#d20)) |
-| `closio-agent.ws1-login-password` | Your password for the WS1 login API | Same |
-| `closio-agent.<repo>.ws2-client-id.dev` | **Dev-environment** client ID of that WS2 service, one item per WS2 repo (e.g. `closio-agent.nodejs-ws2closio.ws2-client-id.dev`) | Direct WS2 tests on dev after merge ([D37](design-decisions.md#d37)) |
-| `closio-agent.<repo>.ws2-client-secret.dev` | **Dev-environment** client secret of that WS2 service | Same |
+| `closio-agent.ws1-login-userid` | Your `userid` for the **dev** WS1 login API | Fetching the WS1 session cookie for backend tests: always on the dev WS1, then used on the WS1 on this Mac ([D20](design-decisions.md#d20), [D71](design-decisions.md#d71)) |
+| `closio-agent.ws1-login-password` | Your password for the **dev** WS1 login API | Same |
+| `closio-agent.nodejs-ws1closio.ws1-client-id.dev` | WS1's own client ID, which WS1 sends to the WS2s (the value of `WS1_AUTH_CLIENT_ID` in WS1's `.env`) | Every direct WS2 call in the checks sends it, as WS1 does ([D37](design-decisions.md#d37)) |
+| `closio-agent.nodejs-ws1closio.ws1-client-secret.dev` | WS1's own client secret (`WS1_AUTH_SECRET_KEY`) | Same |
+| `closio-agent.<repo>.ws2-client-id.dev`, `…ws2-client-secret.dev` | **Optional:** only for a WS2 to which WS1 sends another pair (the pricing engine: WS1's `PRICING_ENGINE_CLIENT_ID` / `PRICING_ENGINE_SECRET_KEY`); used instead of WS1's pair for that WS2 | Same |
 | `closio-agent.<repo>.db-user.dev`, `closio-agent.<repo>.db-password.dev` | **Optional:** your dev database user and password for that repo | Checking migrations on dev, writing QA steps ([D51](design-decisions.md#d51)) |
 | `closio-agent.<repo>.<name>.dev` | Any extra key a repo needs (e.g. a partner API key) | As registered for the repo |
 
 The per-repo keys above are asked by `/flow-configure-repo <repo>` (heads-up, then hidden box); the 5 personal ones by `/flow-configure-user`.
+
+**Which pair does a WS2 check?** The **caller's**, never a key of the WS2 itself. Each repo that calls a WS2 sends its own client ID and secret in `x-client-id` / `x-client-secret`, and the WS2 checks them against the callers listed in its `SERVICE_CREDENTIALS`. closio-agent's direct WS2 calls act as WS1, so you save **WS1's** pair once, under WS1: what WS1 sends (from its `src/utils/axiosInstances.js`):
+
+| WS2 repo | WS1 sends (variables in WS1's `.env`) | Save as |
+|---|---|---|
+| `nodejs-ws2targetsalesincentive`, `nodejs-ws2notification` (notifications) | `WS1_AUTH_CLIENT_ID`, `WS1_AUTH_SECRET_KEY` | `/flow-configure-repo nodejs-ws1closio key ws1-client-id` and `… ws1-client-secret` |
+| `nodejs-ws2pricingengine` | `PRICING_ENGINE_CLIENT_ID`, `PRICING_ENGINE_SECRET_KEY` | optional: `/flow-configure-repo nodejs-ws2pricingengine key ws2-client-id` and `… ws2-client-secret` |
+| `nodejs-ws2closio` | no pair in WS1's code yet | WS1's pair is sent; some WS2 APIs are called by other services, then that caller's pair |
+
+`WS1`'s `INCENTIVE_S2S_CLIENT_ID` / `…_SECRET` are for calls coming **into** WS1, not what it sends.
 
 For each row, run the 5.1 command with that service name and a matching `-l` label.
 

@@ -32,8 +32,8 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     already exist in every repo the card touches (constants, utils, controllers, middlewares, WS1 locale files). If the card lists
     error codes, check each one against the code and point out every difference; use the code's exact errors and messages for the
     right conditions. Never invent a new error code, status, message, field or constant; a truly new one needs the user's approval.
-11. Adding or changing a flow command (rule R17, D60): in the same step, give it a `## Usage` block in its `SKILL.md`, a place in
-    a `flow-help` group (the `GROUP_` lines in `scripts/help.sh`), a section in `docs/commands.md`, a section and an index row in
+11. Adding or changing a flow command (rule R17, D60): in the same step, give it a `## Usage` block in its `SKILL.md` (and, when it
+    takes arguments, an `argument-hint` line in its frontmatter: what Claude Code's `/` menu shows), a place in a `flow-help` group (the `GROUP_` lines in `scripts/help.sh`), a section in `docs/commands.md`, a section and an index row in
     `docs/user-guide.md`, and update the Claude artifact of the guide from `docs/user-guide.md` (its link is at the top of the
     guide), then set the guide's "mirrored" line (the date and every command).
     Only Claude Code can reach the artifact: a change made in Codex is finished in Claude Code. `bash scripts/help.sh check`
@@ -65,3 +65,7 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
 18. Migration review (rule A23, D66): before any migration or seeder runs, or the user is asked to run one on a server, show the
     files for review (the full up and down, what it changes, the repo, the database its `.env` names), then wait for a separate
     yes. Never run one without it.
+19. WS1 login (rule A24, D71): every WS1 login for a check goes to the dev WS1 login URL (`WS1_LOGIN_URL` in
+    `config/project-settings.sh`) with the WS1 login saved in the Keychain; `scripts/api-call.sh` does it. The session cookie it
+    returns is used for the calls to the WS1 on this Mac (under its own name, else as `closio_session_local`). Never log in on the
+    WS1 running on this Mac.

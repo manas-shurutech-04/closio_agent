@@ -14,9 +14,9 @@ Before you start: open a terminal **in the closio-agent folder**, run `nvm use v
 - **Your user memory is applied, every time ([D40](design-decisions.md#d40), [D56](design-decisions.md#d56), rules A7/A8).** Every command starts with `bash scripts/memory.sh for setup all`: Claude Code runs it by itself when the command loads; in Codex it's the command's first step. Team rules always win. See [`flow-memory`](#flow-memory).
 - **Shared logic lives in `scripts/`.** The command tells the AI which script to run, so both tools do the same thing.
 - **Every command follows the agent rules** in [agent-rules.md](agent-rules.md), e.g. every problem comes with the steps to fix it (A11).
-- **Every command is in the help and in the guide (rule R17, [D60](design-decisions.md#d60)).** `flow-help` reads each command's `## Usage` block, [user-guide.md](user-guide.md) walks through every command in order (and is mirrored into a Claude artifact), and `flow-doctor` checks that nothing is missing.
+- **Every command is in the help and in the guide (rule R17, [D60](design-decisions.md#d60)).** `flow-help` reads each command's `## Usage` block, Claude Code's `/` menu shows each command's `argument-hint` (its options, e.g. `[<repo-name>|all] [install | services | dev-address [<url>]]`) and, from the first letter of an option, suggests the words that fit, read live from closio-agent (`.claude/skills/flow-autocomplete/`, [D73](design-decisions.md#d73): the Usage block's options, repos, card keys, items, memory ids, dev keys, card files), [user-guide.md](user-guide.md) walks through every command in order (and is mirrored into a Claude artifact), and `flow-doctor` checks that nothing is missing.
 
-**No approval prompts for our own scripts ([D49](design-decisions.md#d49), [D57](design-decisions.md#d57)):** every script the commands run (`configure-user.sh`, `configure-repo.sh`, `setup-repo.sh`, `memory.sh`, `doctor.sh`, `vpn.sh`, `wait-seconds.sh`, `branch-name.sh`, `card-check.sh`, `help.sh`, `run.sh`, `card-branch.sh`, `repo-run.sh`, `api-call.sh`, `api-check.sh`, `db-run.sh`, `e2e.sh`, `qmetry-import.sh`, all their steps) runs without asking, and so does saving a card's text to `local/cards/` for `flow-check-card` and writing a card's run folder `runs/<CARD-KEY>/` for the card phases. **Claude Code:** the shared file `.claude/settings.json` (it applies once you've trusted the folder). It also pre-approves the **read-only Jira tools** the commands use through Claude's Atlassian connector (read a project or an issue, search issues, your account), so `flow-doctor`, `flow-configure-user`, `flow-check-card` and `flow-start` don't ask each session, and the two changes `flow-start` makes to a card (its status and its assignee, plus the sprint field) are pre-approved too ([D61](design-decisions.md#d61)). Those rules name the connector as claude.ai registers it (`mcp__claude_ai_Atlassian_MCP__…`, setup guide section 3); any other change to Jira still asks. **Codex:** the shared file `.codex/rules/closio-agent.rules` (Codex's "rules", still experimental; they apply when Codex trusts this folder, and the scripts then run outside its sandbox). Anything else still asks.
+**No approval prompts for our own scripts ([D49](design-decisions.md#d49), [D57](design-decisions.md#d57)):** every script the commands run (`configure-user.sh`, `configure-repo.sh`, `setup-repo.sh`, `memory.sh`, `doctor.sh`, `vpn.sh`, `wait-seconds.sh`, `branch-name.sh`, `card-check.sh`, `help.sh`, `run.sh`, `card-branch.sh`, `repo-run.sh`, `api-call.sh`, `api-check.sh`, `db-run.sh`, `e2e.sh`, `qmetry-import.sh`, `ship.sh`, `gitlab-mr.sh`, all their steps) runs without asking, and so does saving a card's text to `local/cards/` for `flow-check-card` and writing a card's run folder `runs/<CARD-KEY>/` for the card phases. **Claude Code:** the shared file `.claude/settings.json` (it applies once you've trusted the folder). It also pre-approves the **read-only Jira tools** the commands use through Claude's Atlassian connector (read a project or an issue, search issues, your account), so `flow-doctor`, `flow-configure-user`, `flow-check-card` and `flow-start` don't ask each session, and the two changes `flow-start` makes to a card (its status and its assignee, plus the sprint field) are pre-approved too ([D61](design-decisions.md#d61)), and so are `flow-push`'s move to Code Review and its comment with missing MR links ([D70](design-decisions.md#d70)). Those rules name the connector as claude.ai registers it (`mcp__claude_ai_Atlassian_MCP__…`, setup guide section 3); any other change to Jira still asks. **Codex:** the shared file `.codex/rules/closio-agent.rules` (Codex's "rules", still experimental; they apply when Codex trusts this folder, and the scripts then run outside its sandbox). Anything else still asks.
 
 ## Command list
 
@@ -34,10 +34,12 @@ Before you start: open a terminal **in the closio-agent folder**, run `nvm use v
 | [`flow-status`](#flow-status) | Where a card stands (phase, step, branch, what to type next), or every card in progress | Built 2026-10-17 (C1). Tested by the user (2026-10-17, on SCRUM-540) |
 | [`flow-start`](#flow-start) | Picks up a Jira card and plans it: the card checked, In Development and assigned to you, a branch in every repo, the plan made from the code and approved by you | Built 2026-10-17 (C2). Tested by the user (2026-10-17, on SCRUM-540) |
 | [`flow-develop`](#flow-develop) | Develops a planned card with you: the code and its unit tests from the approved plan, the repo checks, then your review | Built 2026-10-17 (C3). Tested by the user (2026-10-17, on SCRUM-540) |
-| [`flow-verify`](#flow-verify) | Checks a developed card: every AC with its test cases (API checks or Playwright), the repo tests again and the story check; then the push, or what's wrong for you to decide | Built 2026-10-18 (C4). Not yet tested by the user |
+| [`flow-verify`](#flow-verify) | Checks a developed card, a full check (saved test cases, the story check) or a quick check (straight against the code): every AC, the repo tests again; then the push, or what's wrong for you to decide | Built 2026-10-18 (C4, D68, D69). Tested by the user (2026-10-18, on SCRUM-540: the quick check); the full check and a web card's API questions not yet |
 | [`flow-ac-check`](#flow-ac-check) | Adds or changes the test cases of one AC and runs them once | Built 2026-10-18 (C4). Not yet tested by the user |
+| [`flow-push`](#flow-push) | Ships a verified card: rebase, the atomic commits you approve, one push per repo creating the MRs (description and reviewers set), the card to Code Review | Built 2026-10-18 (C5, D70). Tested by the user (2026-10-18, on SCRUM-540: MRs !248 and !561) |
+| [`flow-finish`](#flow-finish) | Finishes a card after its merge: the merge checked, every AC checked on dev once you say it's deployed, the deployment doc (run folder and Jira card), Ready for Test | Built 2026-10-18 (C6, D72). Not yet tested by the user |
 
-**Coming, in this order ([D61](design-decisions.md#d61), not built yet):** `flow-push`, `flow-finish`. See [architecture.md](architecture.md).
+**Every card phase now has its command** ([D61](design-decisions.md#d61)): `flow-start`, `flow-develop`, `flow-verify`, `flow-push`, `flow-finish`, plus `flow-status`. See [architecture.md](architecture.md).
 
 ---
 
@@ -83,6 +85,7 @@ $flow-doctor      (Codex: approve running it with network access, so the GitLab 
 | Project | Started in the closio-agent folder | [D42](design-decisions.md#d42) |
 | | Node v22 is active | [D41](design-decisions.md#d41). In Codex the fix also says to restart its background service |
 | | Every flow command has its Claude Code link | [D8](design-decisions.md#d8) |
+| | The suggestions while you type are in place (`.claude/skills/flow-autocomplete/`) | [D73](design-decisions.md#d73). Fix: `git checkout -- .claude/skills/flow-autocomplete` |
 | | Rules file `AGENTS.md` is in place, and no `CLAUDE.md` stops Claude Code reading it | [D45](design-decisions.md#d45) |
 | Tools | git installed, your name and email set | |
 | | Claude Code installed inside Node 22, no other copy | ❌ if missing |
@@ -98,7 +101,7 @@ $flow-doctor      (Codex: approve running it with network access, so the GitLab 
 | Personal settings | Jira account ID, GitLab username, workspace folder (exists), AI tools | Fix: `/flow-configure-user` ([D15](design-decisions.md#d15)) |
 | Repos | The ruleset file every card follows is there (`rulesets/story-implementation-workflow.md`, rule A19); each registered repo: clone exists and points at the right GitLab project; its Node version is installed in nvm; its dev keys are stored | ⚠️ for repos not set up on this Mac, and ⚠️ (not ❌) for missing dev keys: they're only needed to test on dev. Fix: `/flow-configure-repo <repo>` |
 | User memory | How many entries you have (never a warning when you have none); ⚠️ for lines in your memory files that aren't in the format | Fix: `/flow-memory` |
-| Commands documented | Every flow command has its `## Usage` block, is in a `flow-help` group, its section in this file, its row in [user-guide.md](user-guide.md), and is covered by the guide's Claude artifact ("mirrored" line) | Rule R17, [D60](design-decisions.md#d60). Fix: add what's missing; update the artifact in Claude Code |
+| Commands documented | Every flow command has its `## Usage` block (and its `argument-hint` when it takes arguments), is in a `flow-help` group, its section in this file, its row in [user-guide.md](user-guide.md), and is covered by the guide's Claude artifact ("mirrored" line) | Rule R17, [D60](design-decisions.md#d60). Fix: add what's missing; update the artifact in Claude Code |
 | Cards in progress | How many cards have a run folder or a run branch; ❌ for a broken run folder (no `state.md`, a missing line, a folder that isn't a card key) | [D61](design-decisions.md#d61). See them with `/flow-status` |
 | Checking web cards | Playwright is set up (`bash scripts/e2e.sh check`) | ⚠️ when it isn't: run `/flow-configure-user playwright` |
 | Repo setup | Each repo set up with `flow-setup-repo`: packages still installed, Claude Code can use its folder; one ⚠️ listing cloned repos not set up yet; the local Redis and RabbitMQ answer (when a set-up repo needs them) | Fix: `/flow-setup-repo <repo>` |
@@ -111,37 +114,40 @@ Later pieces add their own checks when they're built.
 
 The fixed values it uses (GitLab address, VPN gateway, certificate pin, Keychain names…) come from `config/project-settings.sh` ([D46](design-decisions.md#d46)).
 
-**Output example (shortened):**
+**Output example (shortened).** In Claude Code or Codex, the AI puts the script's formatted text (markdown) in its reply, and the tool draws it: a heading per section, one line per check, each problem in bold with its **Fix:** or **Tip:** under it, and commands in the tool's code color. The AI adds the Jira section and the last line. The text behind it:
 ```
-flow-doctor — checking your setup
+## flow-doctor: checking your setup
 
-Project
-✅ Started in the closio-agent folder
-✅ Node v22.14.0 is active
-✅ Every flow command has its Claude Code link
-✅ Rules file AGENTS.md is in place
+### Project
 
-Tools
-✅ Claude Code 2.1.296, installed inside Node 22
-⚠️ Docker is installed but not running
-   Tip: Open Docker Desktop before running backend tests.
+- ✅ Started in the closio-agent folder
+- ✅ Node v22.14.0 is active
 
-VPN and GitLab
-✅ VPN is on (another VPN client, e.g. the FortiClient app) and GitLab is reachable
-⚠️ Can't check the GitLab token: it isn't in the Keychain yet
-   Tip: See the Keychain section below.
+### Tools
 
-Keychain (names only, values are never read)
-❌ closio-agent.gitlab-token is missing
-   Fix: In your own terminal (not the AI chat) run: security add-generic-password -U -a "$USER" -s "closio-agent.gitlab-token" -l "closio-agent: gitlab-token" -w
-        It asks for the value twice, hidden (setup guide, section 5).
+- ✅ Claude Code 2.1.302, installed inside Node 22
+- ✅ Docker is installed (not running; you don't use it for Redis or RabbitMQ)
 
-Jira
-✅ Jira works: project SCRUM can be read
+### VPN and GitLab
 
-Result: 1 to fix, 2 to look at.
-Checked in Claude Code
+- ✅ VPN is on (openfortivpn) and GitLab is reachable
+- ⚠️ **Can't check the GitLab token: it isn't in the Keychain yet**
+  - **Tip:** See the Keychain section below.
+
+### Keychain · names only, values are never read
+
+- ❌ **`closio-agent.gitlab-token` is missing**
+  - **Fix:** Run `/flow-configure-user gitlab-token` (Codex: `$flow-configure-user gitlab-token`). It asks for the value in a hidden macOS box.
+  - Backup, in your own terminal (not the AI chat): `security add-generic-password -U -a "$USER" -s "closio-agent.gitlab-token" -w`
+
+### Jira
+
+- ✅ Jira works: project SCRUM can be read
+
+**Result: 1 to fix, 1 to look at.** · Checked in Claude Code
 ```
+
+**In a terminal** (`bash scripts/doctor.sh` typed by you): the same checks with real colors (cyan section headings, ⚠️ lines in yellow, ❌ lines in red, commands in yellow, the Result line red when something must be fixed, else green), each Fix or Tip wrapped under its line to the terminal's width (at most 100 characters). No colors with `NO_COLOR` set; when the output goes to a file or another program, it's the markdown text above (`DOCTOR_FORMAT=markdown`, `terminal` or `plain` picks one). The Jira check isn't there: only the AI can do it.
 
 **If something is wrong with the check itself:** see the [setup guide](setup-guide.md#check-that-the-flow-commands-work) (for example, restarting Codex's background service; watch out for Codex's updater).
 
@@ -266,7 +272,8 @@ It shows you the whole file `config/repos/<repo>.yaml` and saves it only after y
 
 | Dev key (Keychain: `closio-agent.<repo>.<key>.dev`) | For | Required? |
 |---|---|---|
-| `ws2-client-id`, `ws2-client-secret` | Calling a WS2 service directly on dev | Yes, for WS2 services |
+| `ws1-client-id`, `ws1-client-secret` (WS1 only) | WS1's own pair, which it sends to the WS2s (`WS1_AUTH_CLIENT_ID` / `WS1_AUTH_SECRET_KEY` in WS1's `.env`); every direct WS2 call in the checks sends it, as WS1 does | Yes, for WS1 |
+| `ws2-client-id`, `ws2-client-secret` | Only for a WS2 to which WS1 sends another pair (the pricing engine: WS1's `PRICING_ENGINE_*` pair); used instead of WS1's pair for that WS2 | Optional |
 | `db-user`, `db-password` | Reading the repo's dev database (check migrations, write QA steps) | Optional |
 | Any extra named key (e.g. a partner API key) | Whatever the repo needs | As registered |
 
@@ -284,7 +291,7 @@ It shows you the whole file `config/repos/<repo>.yaml` and saves it only after y
 
 ### `flow-setup-repo`
 
-**Purpose:** gets a registered repo ready to work on, on your Mac ([D54](design-decisions.md#d54)). It works only on a clone you made yourself (cloning is manual, [D53](design-decisions.md#d53)). It never switches branches, pulls, stashes or changes tracked files: the card phases do that. It needs no VPN.
+**Purpose:** gets a registered repo ready to work on, on your Mac ([D54](design-decisions.md#d54)), or only sets a repo's dev address ([D72](design-decisions.md#d72)). It works only on a clone you made yourself (cloning is manual, [D53](design-decisions.md#d53)). It never switches branches, pulls, stashes or changes tracked files: the card phases do that. It needs no VPN.
 
 **Usage:**
 ```
@@ -293,8 +300,13 @@ It shows you the whole file `config/repos/<repo>.yaml` and saves it only after y
 /flow-setup-repo all                         every repo cloned on this Mac, one after another
 /flow-setup-repo nodejs-ws2closio install    the same, but always reinstall the packages
 /flow-setup-repo nodejs-ws2closio services   choose Homebrew or Docker again for Redis and RabbitMQ
+/flow-setup-repo nodejs-ws1closio dev-address          only the dev address: shows it, asks for the new one
+/flow-setup-repo nodejs-ws1closio dev-address <url>    only the dev address: saves that one straight away
+/flow-setup-repo all dev-address                       every repo's dev address at once; change the ones you want
 $flow-setup-repo …                           (Codex: approve running it outside the sandbox)
 ```
+
+**Only the dev address (`dev-address`, [D72](design-decisions.md#d72)):** sets or changes a repo's address on the dev environment (what `/flow-finish` checks on) in seconds: nothing else runs (no packages, tests, services, `.env` or folder access), and the repo needn't be cloned on this Mac, only registered. With a URL it's saved straight away; without one, the AI shows the current address and asks for the new one ("keep" leaves it). `all dev-address` shows every registered repo's address (or "not set"), and you send the new ones as `<repo>: <url>` lines; a repo you leave out keeps its address. You see `✅ <repo>: dev address saved …` or `… changed …, from <old> to <new>` (or "unchanged"); a URL that isn't a plain web address (or has a user or password in it) gets ❌ with an example, and nothing is saved. It's a shared file: commit `config/repos/<repo>.yaml` so the whole team gets it.
 
 **What it does for each repo:**
 
@@ -308,6 +320,7 @@ $flow-setup-repo …                           (Codex: approve running it outsid
 | `.env` check | Reads `REDIS_HOST` / `REDIS_PORT` / `REDIS_USE_TLS` or `RABBITMQ_URL` from the repo's `.env` **itself** and says only whether they point to this Mac and whether that answers; **never a value**. If something doesn't match, it opens the file in your text editor and shows the exact lines to set. You change the file yourself ([setup guide §7](setup-guide.md#7-local-services-for-backend-tests)) |
 | Tests | Runs the repo's test command once (not the coverage check), with a 15-minute limit (`SETUP_TEST_TIMEOUT`). Full output in `local/logs/setup-<repo>.log`; you see a short summary. Skipped for repos without tests ([D25](design-decisions.md#d25)) |
 | Folder access | Adds the repo folder to your personal `.claude/settings.local.json` (`permissions.additionalDirectories`), so Claude Code can work in it. For Codex it shows the start command: `codex --add-dir "<repo>" …`. Then the AI checks that this session can really use the folder; if not, it asks you to give access (`/add-dir <folder>`, a new session, or Codex's start command) and waits (rule A15) |
+| Dev address | When the repo file has no `dev_base_url`, the AI asks you for the repo's address on the dev environment and saves it with `configure-repo.sh set-dev-url` (a shared file: commit it so the team gets it; [D72](design-decisions.md#d72)). `/flow-finish` uses it for the dev checks. To change it later: `dev-address` (above) |
 | Result | Saved in your private `local/repos/<repo>.yaml` (date and test result), so the status list shows it |
 
 At the end, if it started Docker Desktop only to look and nothing uses it, it quits Docker again.
@@ -448,7 +461,7 @@ Step by step: `docs/user-guide.md` · Claude artifact: https://claude.ai/code/ar
 ```
 `/flow-help <command>` shows the full description and every line of the command's `## Usage` block. **In a terminal** (`bash scripts/help.sh` typed by you): the same layout with real colors (cyan group headings, green names, yellow commands), wrapped to the terminal's width (at most 100 characters); no colors with `NO_COLOR` set, or when the output goes to a file.
 
-**The check behind it (rule R17):** `bash scripts/help.sh check`, run by `flow-doctor` ("Commands documented"), shows ❌ with the fix when any command folder has no `## Usage` block, isn't in a `flow-help` group (the `GROUP_` lines at the top of `scripts/help.sh`; it would show under "Other"), has no section in this file, no row in the user guide's command index, or isn't covered by the guide's "mirrored" line (the Claude artifact is behind).
+**The check behind it (rule R17):** `bash scripts/help.sh check`, run by `flow-doctor` ("Commands documented"), shows ❌ with the fix when any command folder has no `## Usage` block, takes arguments but has no `argument-hint` line (what Claude Code's `/` menu shows after the name), isn't in a `flow-help` group (the `GROUP_` lines at the top of `scripts/help.sh`; it would show under "Other"), has no section in this file, no row in the user guide's command index, or isn't covered by the guide's "mirrored" line (the Claude artifact is behind).
 
 **Files:** `.agents/skills/flow-help/`, `scripts/help.sh` (you can run `bash scripts/help.sh` in a terminal too), [user-guide.md](user-guide.md).
 
@@ -511,6 +524,67 @@ $flow-ac-check …                                        (Codex)
 **What it does:** checks the card is developed and the AC exists; the `flow-ac-checker` agent writes or changes the AC's cases and shows what changed; for a web card it first asks which of the AC's APIs are available on dev and mocks the others (your exact 200 response, [D69](design-decisions.md#d69)), then runs the API check; it starts the servers the AC needs, adds test data and sends calls that write only after your clear yes, runs just that AC (`api-check.sh <KEY> <AC>` or `e2e.sh run <KEY> <AC>`), cleans up after your yes, records the run in `verify.md` (`## Run <n> — … · flow-ac-check AC <n>`), stops the servers and saves the run folder.
 
 **Files:** `.agents/skills/flow-ac-check/`, the `flow-ac-checker` agent, the scripts above.
+
+---
+
+### `flow-push`
+
+**Purpose:** ships one card that's been verified: Phases 7 and 8 of [architecture.md](architecture.md) ([D70](design-decisions.md#d70)). Per repo: the card's work is rebased onto the latest base branch, the tests run again, the atomic commits you approved are made, and **one push** creates the merge request, assigned to you; its description and reviewers are set right after through the GitLab API. Then the card shows its MRs and moves to **Code Review**. Nothing is pushed before your explicit yes, and a push is never forced.
+
+**Usage:**
+```
+/flow-push SCRUM-567        ship the card, or continue where it stopped   (Claude Code)
+$flow-push SCRUM-567        (Codex: approve the scripts outside the sandbox: git, GitLab over the VPN, the push)
+```
+
+**What it does, step by step** (before every step: the team rules and your memory for `ship`, then `mr`; rule A17):
+
+| Step | What happens |
+|---|---|
+| 1 Start | The card must be in the ship phase (verified); brings in its run folder; connects the VPN; folder access for every repo (A15); continues at a saved step |
+| 2 Read | `card.md`, `plan.md`, `develop.md` (files, migrations and seeders run), the newest run in `verify.md` (it must have passed) |
+| 3 What will ship | `ship.sh <repo> status`: the branch, the uncommitted files, the commits not yet in the MR target; a file `develop.md` doesn't name is asked about |
+| 4 Rebase (G2, D10) | `card-branch.sh <repo> rebase <branch>`: stash (new files too), fetch, rebase onto the latest base branch, stash pop. A conflict (exit 4): you resolve the files in your editor ✋, then `card-branch.sh <repo> rebase-continue <branch>` |
+| 5 Tests again | `repo-run.sh <repo> test` and `check` (lint only warns); a failure: `/flow-develop` suggested, you decide |
+| 6 Commits (G3) | Per repo, the AI proposes the commits: each layer's code with its own tests, messages `SCRUM-567: <what this commit does>`. ✋ You approve the list, then `ship.sh <repo> commit "<message>" <files>` makes each one; the git hooks run (husky's coverage gate on every commit in ws2targetsalesincentive, ws2notification, ws2pricingengine) |
+| 7 The MRs | Per repo: title `SCRUM-567: <card title>`, target `mr_target_branch`, assigned to you, labels and reviewers you confirm (D51), and the description in `runs/<KEY>/mr-<repo>.md`: the Jira link, the migrations and seeders to run. Nothing more |
+| 8 ✋ Final yes | Everything shown per repo; pushed only after your clear yes |
+| 9 One push per repo (G4) | `ship.sh <repo> push "<title>"`: the push options create the MR, ready for review, assigned to you (D31); then `gitlab-mr.sh <repo> describe <branch> <file> [--reviewers …]` sets the description and reviewers through the GitLab API (D32). Never forced |
+| 10 Jira | The card's MR links checked (GitLab's Jira link usually adds them); a missing one: one comment with the links; then the card to **Code Review** (never Blocked, A3) |
+| 11 Save | `ship.md` (commits, pushes, MR links); phase `after-merge`; next `/flow-finish` once the MRs are merged |
+
+**`runs/<CARD-KEY>/ship.md`:** per repo, the commits (hash and message), the push and the MR link, the labels and reviewers. **`runs/<CARD-KEY>/mr-<repo>.md`:** each MR's description.
+
+**Files:** `.agents/skills/flow-push/`, `scripts/card-branch.sh` (`rebase`, `rebase-continue`), `scripts/ship.sh`, `scripts/gitlab-mr.sh`, `scripts/repo-run.sh`, the `flow-connectivity` agent.
+
+---
+
+### `flow-finish`
+
+**Purpose:** finishes one card after its merge requests are merged: Phase 9 of [architecture.md](architecture.md) ([D72](design-decisions.md#d72)). It checks the merge, checks every AC on the **dev** environment once you say the card is deployed (the quick check, B), writes the deployment doc in the run folder and on the Jira card, and moves the card to **Ready for Test**. A failure: what's wrong with a suggestion, and you decide. The card's run branch stays as its record (never merged into `main`).
+
+**Usage:**
+```
+/flow-finish SCRUM-567        finish the card once its MRs are merged, or continue where it stopped   (Claude Code)
+$flow-finish SCRUM-567        (Codex: approve the scripts outside the sandbox)
+```
+
+**What it does, step by step** (before every step: the team rules and your memory for `after-merge`; rule A17):
+
+| Step | What happens |
+|---|---|
+| 1 Start | The card must be in the after-merge phase (pushed); brings in its run folder; connects the VPN; folder access for every repo |
+| 2 Merged? | `gitlab-mr.sh <repo> status <branch>` for each repo: merged (with its merge commit), or it stops and says which MR is still open |
+| 3 Deployed on dev? | It asks you in the chat; nothing checks it by itself |
+| 4 Checks on dev | The quick check (B, as in `/flow-verify`) with `--env dev`: WS1 with the dev login (rule A24), a direct WS2 call with WS1's pair ([D37](design-decisions.md#d37)), web cards on the dev web app; each repo's dev address from its repo file (asked if missing). Test data and calls that write only after your clear yes (A23). A new run in `verify.md`, `· dev check (B)` |
+| 5 Special instructions | It asks you once what's special for the deployment doc |
+| 6 Deployment doc | `runs/<KEY>/deployment.md`: the deploy order; per repo the MR and merge commit, the migrations (with the rollback) and seeders to run (`db:seed --seed <file>`, never `db:seed:all`), new `.env` variable names, after-deploy steps; an API card: each API with its WS1 and WS2 dev URLs, headers (names), query parameters, a sample response; a web card: the breadcrumb to the screen; a consumer card: how to test it; your special instructions. The migrations and seeders it names are shown to you first, then a separate yes (A23) |
+| 7 Jira | The deployment doc on the card as one comment (edited in place on a later run); the card to **Ready for Test** (never Blocked, A3) |
+| 8 Save | Phase `done`; `/flow-status` lists the card under Finished; the run branch `runs/<KEY>` stays as the record |
+
+**`runs/<CARD-KEY>/deployment.md`:** the deployment doc (its Jira comment id at the top).
+
+**Files:** `.agents/skills/flow-finish/`, `scripts/gitlab-mr.sh` (`status`), `scripts/api-call.sh` / `api-check.sh` / `e2e.sh` (`--env dev`), `scripts/configure-repo.sh` (`set-dev-url`), `scripts/run.sh`, the `flow-connectivity` agent.
 
 ---
 
@@ -613,25 +687,27 @@ The commands run these scripts (in `scripts/`). You can run them yourself in a t
 
 | Script | What it does | Used by |
 |---|---|---|
-| `doctor.sh` | All the setup checks (reads only) | `flow-doctor` |
+| `doctor.sh` | All the setup checks (reads only; formatted text for the AI, colors in a terminal) | `flow-doctor` |
 | `vpn.sh connect \| status \| disconnect` | The VPN steps | `flow-vpn`, the `flow-connectivity` agent |
 | `vpn-admin-steps.sh` | The few VPN steps that need admin rights (one password dialog). Runs as admin: review changes carefully | `vpn.sh` |
 | `password-dialog.sh` | The macOS password dialog for those admin steps | `vpn.sh` |
 | `configure-user.sh check-folder \| show \| set \| secrets \| secret \| gitlab-username-from-token` | Personal settings and the 5 secrets | `flow-configure-user` |
-| `configure-repo.sh check-folder \| list \| detect \| validate \| set-path \| keys \| key \| show \| ruleset` | The repo registry, clone paths and dev keys; `ruleset <repo>` says which ruleset the repo follows (rule A19) | `flow-configure-repo`; `flow-start` (`ruleset`) |
+| `configure-repo.sh check-folder \| list \| detect \| validate \| set-path \| keys \| key \| show \| ruleset \| set-dev-url \| dev-url` | The repo registry, clone paths and dev keys; `ruleset <repo>` says which ruleset the repo follows (rule A19); `set-dev-url <repo> <url>` saves the repo's address on dev in its shared file (`dev_base_url`, D72; it says the old and the new one); `dev-url <repo\|all>` prints it, one line per repo | `flow-configure-repo`; `flow-start` (`ruleset`); `flow-setup-repo` (`dev-address`), `flow-finish` |
 | `setup-repo.sh check-folder \| list \| run <repo\|all> [install\|services]` | Gets repos ready to work on (Node, packages, local Redis/RabbitMQ, `.env` check, tests, folder access) | `flow-setup-repo` |
 | `memory.sh for <phase> [words] \| list \| add \| edit \| set-phases \| remove \| clear-preview \| clear \| count \| problems` | Your user memory: the entries for a command, and managing them | Every command (first step), `flow-memory`, `flow-doctor` |
 | `branch-name.sh make <CARD-KEY> "<title>" \| check <name>` | Builds and checks branch names (strict rule A12) | Later phases (Phase 1); you can use it any time |
 | `card-check.sh <card file>` | Checks a card's text against the card template: ❌ not ready (with the fix), ⚠️ worth a look; exit code 0 when there's no ❌ | `flow-check-card`; Phase 1 later |
 | `help.sh list \| show <command> \| check` | The command help, read from each command's `SKILL.md` (formatted text for the AI, colors in a terminal); `check` = rule R17 (Usage block, `commands.md` section, user-guide row, Claude artifact covering every command) | `flow-help`, `flow-doctor` |
-| `run.sh branch \| create \| state \| get \| set \| log \| save \| list \| quick-clean \| count \| problems` | The card's run folder `runs/<CARD-KEY>/`: create it, read and change its state, write its history, and save it to its branch `runs/<CARD-KEY>` of closio-agent and push (never `main`), without ever switching this folder to that branch; `branch` brings the folder onto this Mac (a teammate's too); `quick-clean` removes the quick check's scratch folder `local/quick-checks/<CARD-KEY>/` | `flow-start`, `flow-status`, `flow-doctor`; the later card phases |
-| `card-branch.sh check <repo> \| create <repo> <branch> \| update <repo> <branch>` | In a code repo: fetch, pull the base branch and create the card's branch (or reuse it); `update` brings the latest base branch into it (a fast-forward while it has no commits of its own; with its own commits it's left for the rebase in `flow-push`); stops with exit code 3 on uncommitted changes | `flow-start` |
+| `run.sh branch \| create \| state \| get \| set \| log \| save \| list \| quick-clean \| count \| problems` | The card's run folder `runs/<CARD-KEY>/`: create it, read and change its state, write its history, and save it to its branch `runs/<CARD-KEY>` of closio-agent and push (never `main`), without ever switching this folder to that branch; `branch` brings the folder onto this Mac (a teammate's too); `quick-clean` removes the quick check's scratch folder `local/quick-checks/<CARD-KEY>/`; `list` shows finished cards (phase `done`) apart | `flow-start`, `flow-status`, `flow-doctor`; the later card phases |
+| `card-branch.sh check <repo> \| create <repo> <branch> \| update <repo> <branch> \| rebase <repo> <branch> \| rebase-continue <repo> <branch>` | In a code repo: fetch, pull the base branch and create the card's branch (or reuse it); `update` brings the latest base branch into it (a fast-forward while it has no commits of its own; with its own commits it's left for the rebase in `flow-push`); stops with exit code 3 on uncommitted changes; `rebase` = flow-push's stash, rebase onto the latest base branch, stash pop (G2), exit code 4 on a conflict the user resolves, then `rebase-continue` | `flow-start`, `flow-push` |
 | `repo-run.sh <repo> check \| test \| migrate confirmed \| seed confirmed \| start \| stop \| status` (and `all stop`) | A repo's own commands, in its folder, on its Node version (A13): its check commands (lint only on the files the card changed, as ⚠️ warnings); its tests and coverage gate; `npm run migrate` / `seed` only with the word `confirmed`, after the user's yes ([D21](design-decisions.md#d21)). `start` runs the repo's server in the background and waits for its health URL; `stop` only stops what it started. Output in `local/logs/` | `flow-develop` |
-| `api-call.sh <repo> login \| logout \| <METHOD> <path> [--json \| --body] [--header] [--auth user\|none] [--client ok\|none\|id-only\|secret-only\|unknown\|wrong-secret] [--save]` | One API call to a repo running on this Mac. WS1 calls go logged in as you (your WS1 login from the Keychain; the session stays in `local/sessions/`); WS2 calls carry the keys saved with `/flow-configure-repo <repo> key …`, or missing or wrong keys on purpose. Keys, passwords and sessions are never shown | `flow-verify`, `flow-ac-check` (through `api-check.sh`) |
-| `api-check.sh <CARD-KEY> [<AC>]` | Runs the card's API test cases (`runs/<CARD-KEY>/api-checks/ac-<n>.json`: the call and what must come back) and says per case and per AC whether they pass | `flow-verify`, `flow-ac-check` |
+| `api-call.sh <repo> login \| logout \| <METHOD> <path> [--json \| --body] [--header] [--auth user\|none] [--client ok\|none\|id-only\|secret-only\|unknown\|wrong-secret] [--save] [--env dev]` | One API call to a repo running on this Mac. WS1 calls go logged in as you: the login always goes to the **dev** WS1 login URL with your WS1 login from the Keychain (rule A24, [D71](design-decisions.md#d71)), and its session cookie is sent to the WS1 on this Mac (under its own name, else as `closio_session_local`; kept in `local/sessions/`); WS2 calls carry the keys saved with `/flow-configure-repo <repo> key …`, or missing or wrong keys on purpose. Keys, passwords and sessions are never shown; `--env dev` calls the repo on dev (its `dev_base_url`) instead of the copy on this Mac | `flow-verify`, `flow-ac-check`, `flow-finish` (through `api-check.sh` or directly) |
+| `api-check.sh <CARD-KEY> [<AC>] [--env dev]` | Runs the card's API test cases (`runs/<CARD-KEY>/api-checks/ac-<n>.json`: the call and what must come back) and says per case and per AC whether they pass ; `--env dev` runs them on dev | `flow-verify`, `flow-ac-check`, `flow-finish` |
 | `db-run.sh <repo> show <sql> \| run <sql> confirmed \| query <sql>` | A card's test data on the database the repo's `.env` names: `show` prints the SQL to review; `run … confirmed` runs it in one transaction with the repo's own config, only after your yes (A23); `query` only reads (a read-only transaction: the database refuses any change; no COMMIT, SET and the like) and prints the rows, no yes needed | `flow-verify`, `flow-ac-check` |
-| `e2e.sh check \| setup \| run <CARD-KEY> [<AC>] [--mock <names>] \| quick <CARD-KEY> [<AC>] [--mock <names>] \| probe <CARD-KEY> [--quick] [--mock <names>]` | Playwright: is it set up; set it up (`e2e/` packages and Chromium); run a card's tests (`runs/<CARD-KEY>/e2e/`; `quick`: the quick check's one-off tests in `local/quick-checks/<CARD-KEY>/`) against the web app on this Mac, logged in with your FE login; `--mock` turns on those mocks of the card's `api-mocks.ts`. No test run at all is a ❌. Under failing tests it lists the API calls that got no answer or a 5xx from dev (the card's APIs first, other screens' calls apart). `probe`: the API check before the run (logs in once, calls each GET API of the card's `api-list.json` that isn't mocked; ⚠️ for one that looks unavailable) | `flow-configure-user`, `flow-verify`, `flow-ac-check`, `flow-doctor` |
+| `e2e.sh check \| setup \| run <CARD-KEY> [<AC>] [--mock <names>] \| quick <CARD-KEY> [<AC>] [--mock <names>] \| probe <CARD-KEY> [--quick] [--mock <names>]` (each with `[--env dev]`) | Playwright: is it set up; set it up (`e2e/` packages and Chromium); run a card's tests (`runs/<CARD-KEY>/e2e/`; `quick`: the quick check's one-off tests in `local/quick-checks/<CARD-KEY>/`) against the web app on this Mac, logged in with your FE login; `--mock` turns on those mocks of the card's `api-mocks.ts`. No test run at all is a ❌. Under failing tests it lists the API calls that got no answer or a 5xx from dev (the card's APIs first, other screens' calls apart). `probe`: the API check before the run (logs in once, calls each GET API of the card's `api-list.json` that isn't mocked; ⚠️ for one that looks unavailable) ; `--env dev`: against the dev web app (its `dev_base_url`) | `flow-configure-user`, `flow-verify`, `flow-ac-check`, `flow-finish`, `flow-doctor` |
 | `qmetry-import.sh <CARD-KEY> <export.xlsx> \| coverage <CARD-KEY>` | Saves a QMetry test-case export of a card as markdown in `runs/<CARD-KEY>/qmetry/`, the base for its test cases (QMetry can't be read through the Jira tools); `coverage` counts how many of its cases the card's test cases cover (a case's QMetry key in a test's name) | `flow-verify`, `flow-ac-check` |
+| `ship.sh <repo> status \| commit "<message>" <file>... \| push "<MR title>" [--label <label>]...` | A card's commits and its one push: `status` shows what would ship; `commit` stages exactly those files and commits with a `SCRUM-<n>: …` message, the git hooks running on the repo's Node version (a failing hook: nothing committed); `push` pushes the card's branch once, its push options creating the MR into `mr_target_branch`, assigned to you, and prints the MR link; never forced | `flow-push` |
+| `gitlab-mr.sh <repo> find <branch> \| status <branch> \| describe <branch> <file> [--reviewers <names>]` | The MR through the GitLab API: find the branch's open MR; set its full description and reviewers (looked up by username). Your token is read from the Keychain and handed to curl on stdin, never shown ; `status`: merged (with the merge commit), still open or closed | `flow-push`, `flow-finish` |
 | `link-claude-skills.sh` | Adds the Claude Code link for every command (run it after adding a command) | Setup; `flow-doctor` tells you when |
 | `wait-seconds.sh <1-30>` | Waits a few seconds (e.g. while Jira loads) | `flow-doctor`, `flow-configure-user` |
 | `lib/secret-dialogs.sh` | The heads-up and hidden box for secrets | `configure-user.sh`, `configure-repo.sh` |
