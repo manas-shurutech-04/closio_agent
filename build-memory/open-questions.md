@@ -21,11 +21,13 @@
 - **Internal SCRUM-523 test (C4): run 2026-10-18.** 26 tests written by `flow-ac-checker` (QMetry as the base), Playwright 21 of 24 passed, QMetry 20 of 22 (91%); details in `environment.md`. Its fixes were built with D68 (2026-10-18): the one-AC filter, no tests = ❌, no color codes, WS1 statuses in the agent, 60 steps. **Found in the web app (not closio-agent's):** SCRUM-523's dates show D/M/YYYY (`formatDateShort`, `src/utils/dateFormatter.ts:134`) where AC 1 says DD/MM/YYYY; the card is merged and QA-passed: for the team.
 - **Not yet tried by the user (C4):** the full check (A) on a real card, `/flow-ac-check`, and a web card's API questions and mocks (D69); the quick check (B) and `/flow-push` passed on SCRUM-540 (2026-10-18).
 - **Not yet tried by the user (C6):** `/flow-finish` on a real merged card (SCRUM-540 once its MRs !248 and !561 are merged and deployed on dev): the dev checks, the deployment doc, the Jira comment, Ready for Test.
-- **Not yet seen (D73):** `flow-autocomplete` in a new desktop chat (the terminal works: user, 2026-10-18); Codex has no suggestions (not fixable there).
+- **Not yet seen (D73):** `flow-autocomplete` in a new desktop chat (the terminal works: user, 2026-10-18).
+- **Not yet seen (D74):** Codex's `$` menu with the new option lines (0.162.1 may hide them in a narrow window); the time notes and memory answers in a real card run.
 - **QMetry:** only exports can be used today (`scripts/qmetry-import.sh`). QMetry's own REST API (needs a QMetry API key) is not explored; a later step if exports become a chore.
 
 ## Resolved
 
+- Option hints and suggestions in Codex (2026-10-19, D74): Codex 0.162.1 has no argument hints and no way to suggest values (its docs and source); the options now show in each command's `$` menu line instead.
 - `flow-finish` and the run branch (2026-10-18, D72): the run branch `runs/<KEY>` is **not** merged into `main` (run folders stay out of `main` since 2026-10-17); it stays as the finished card's record, and `flow-status` lists finished cards apart (user: "works").
 - Dev addresses for the Phase 9 checks (2026-10-18, D72): `dev_base_url` in the shared repo file, asked by `flow-setup-repo` (user: "saved repository file not on local"). Still to fill in: none of the 7 repo files has one yet; `flow-doctor` warns. Fastest way: `/flow-setup-repo all dev-address` (added 2026-10-18).
 - VPN credentials: nothing stored, because SSO is handled by the browser or Microsoft sign-in (D14).

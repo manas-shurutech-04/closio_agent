@@ -59,6 +59,7 @@ These are the rules for the **agent** (closio-agent when it runs). The team copy
 - A22: **WS1 schemas list every response field** (user, 2026-10-17: "ask the user about all the other fields that can be available or go in the response structure… in scrum 540 you skipped updated at updated by updated by name… add those in the validation schema file… marked as not required"). `AGENTS.md` rule 17, D66.
 - A23: **Migration review before it runs** (user, 2026-10-17: "whenever migration is about to run or you ask the user to run migration file, then before that you give the user a moment of reviewing… so that no wrong migrations are added on the server"). Seeders included. `AGENTS.md` rule 18, D66.
 - A24: **WS1 logins go to dev** (user, 2026-10-18: "I want you to always hit on the dev login URL, not on the local one to get the cookie… make this a rule as well for login. Always hit the dev URL with the credentials saved in the keychains"; "You need to use the cookie itself, which is returned on the dev URL… If not, then use closio_session_local the cookie key and try once again… Use just the dev URL for login, and then you can just use local ones for testing"). `scripts/api-call.sh` logs in on `WS1_LOGIN_URL` (dev) with the Keychain login; the session cookie is sent to the WS1 on this Mac under its own name, else once as `closio_session_local`. `AGENTS.md` rule 19, D71.
+- A25: **Plain words on screen** (user, 2026-10-19, on "Fewer codes in what people read": "make this change in the agent"; then "Yes, build all four changes as drafted, including the new rule 20"): no decision or rule codes in what the user sees; "the card's folder", "the card's saved copy", the card's state in words. `AGENTS.md` rule 20, D74.
 
 ## Rough Steps (user's original list, 2026-10-09)
 
@@ -132,7 +133,7 @@ These are the rules for the **agent** (closio-agent when it runs). The team copy
 | `docs/setup-guide.md` | Access, installation, configuration, first run | Setup changes (created 2026-10-09 with the VPN section) |
 | `docs/commands.md` | Every agent command | A command is added or changed (created 2026-10-10 with `flow-ping`, `flow-doctor`) |
 | `docs/architecture.md` | How the stages connect, inputs and outputs | Stages change (created 2026-10-09) |
-| `docs/agent-rules.md` | Every agent rule (G1–G4, A1–A24): decision, `AGENTS.md` number, where it's applied today | A rule is added or changed, or a command starts applying one (created 2026-10-15) |
+| `docs/agent-rules.md` | Every agent rule (G1–G4, A1–A25): decision, `AGENTS.md` number, where it's applied today | A rule is added or changed, or a command starts applying one (created 2026-10-15) |
 | `rulesets/story-implementation-workflow.md` | The ruleset every card follows (D64, rule A19); kept by the builders only | A rule or decision about how cards are planned, built or tested changes (created 2026-10-17) |
 | `docs/jira-card-template.md` | What a Jira card looks like: the single place for the card rules | A card rule changes (created 2026-10-17, F7) |
 | `docs/jira-card-examples.md` | Two real cards (SCRUM-559, SCRUM-567) in the template's shape | The template changes in a way the examples should show (created 2026-10-17, F7) |
