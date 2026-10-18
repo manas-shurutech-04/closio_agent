@@ -8,6 +8,8 @@
 #                                             running on this Mac, logged in with your FE login from the Keychain
 #   bash scripts/e2e.sh quick <CARD-KEY> [<AC>] The same for flow-verify's quick check (D68): its one-off tests in
 #                                             local/quick-checks/<CARD-KEY>/ (on this Mac only, never saved or pushed)
+#       … --env dev                           run/quick/probe: against the dev web app (dev_base_url of the web repo,
+#                                             D72) instead of the one running on this Mac (flow-finish)
 #       … --mock <name,name>                  run/quick: turn on those mocks of the card's api-mocks.ts (the APIs the
 #                                             user said aren't available on dev in this run; D69); every other API is real
 #   bash scripts/e2e.sh probe <CARD-KEY> [--quick] [--mock <names>]
@@ -34,7 +36,7 @@ PW_BROWSERS="${PLAYWRIGHT_BROWSERS_PATH:-$HOME/Library/Caches/ms-playwright}"
 ok() { echo "✅ $1"; }
 look() { echo "⚠️ $1"; [ -n "${2:-}" ] && echo "   Tip: $2"; }
 bad() { echo "❌ $1"; echo "   Fix: $2"; }
-usage() { echo "Usage: bash scripts/e2e.sh check | setup | run <CARD-KEY> [<AC number>] [--mock <names>] | quick <CARD-KEY> [<AC number>] [--mock <names>] | probe <CARD-KEY> [--quick] [--mock <names>]"; }
+usage() { echo "Usage: bash scripts/e2e.sh check | setup | run <CARD-KEY> [<AC number>] [--mock <names>] [--env dev] | quick <CARD-KEY> [<AC number>] [--mock <names>] [--env dev] | probe <CARD-KEY> [--quick] [--mock <names>] [--env dev]"; }
 # SECURITY_BIN can be a stand-in for the build tests only (like BREW_BIN in setup-repo.sh); normally the macOS "security" tool.
 keychain_get() { "${SECURITY_BIN:-security}" find-generic-password -a "$USER" -s "$1" -w 2>/dev/null; }
 
@@ -82,8 +84,8 @@ do_setup() {
   esac
 }
 
-do_run() { # <run|quick> <key> [<ac>] [<mock names>]
-  local mode="$1" key="$2" one="${3:-}" mock="${4:-}" dir name where base id pw json log rc grep_args="" list apis
+do_run() { # <run|quick> <key> [<ac>] [<mock names>] [<env>]
+  local mode="$1" key="$2" one="${3:-}" mock="${4:-}" env="${5:-local}" dir name where base id pw json log rc grep_args="" list apis
   printf '%s' "$key" | grep -q -E "^$JIRA_PROJECT_KEY-[0-9]+$" || { usage; return 2; }
   [ -z "$one" ] || printf '%s' "$one" | grep -q -E '^[0-9]+$' || { usage; return 2; }
   installed || { do_check; return 1; }
@@ -95,8 +97,7 @@ do_run() { # <run|quick> <key> [<ac>] [<mock names>]
     ls "$dir"/*.spec.ts >/dev/null 2>&1 || { bad "No Playwright tests in $where" "/flow-verify $key writes them (or /flow-ac-check $key <AC> for one AC)."; return 2; }
   fi
   repo_ready "$WEB_REPO" || { bad "$REPO_PROBLEM" "Fix that first, then run this again."; return 1; }
-  repo_answers "$WEB_REPO" || { bad "The web app ($WEB_REPO) isn't running on this Mac" "Start it: bash scripts/repo-run.sh $WEB_REPO start, then run this again."; return 1; }
-  base="$(repo_base_url "$WEB_REPO")"
+  web_base "$env" || return 1; base="$WEB_BASE"; [ "$env" = "dev" ] && { name="$name-dev"; where="$where on dev"; }
   id="$(keychain_get "$KEYCHAIN_PREFIX.fe-login-id")"; pw="$(keychain_get "$KEYCHAIN_PREFIX.fe-login-password")"
   if [ -z "$id" ] || [ -z "$pw" ]; then bad "Your FE login isn't saved in the Keychain" "Run /flow-configure-user fe-login-id (and fe-login-password), then run this again."; return 1; fi
   mkdir -p "$RESULTS_DIR" "$LOGS_DIR"
@@ -149,16 +150,26 @@ do_run() { # <run|quick> <key> [<ac>] [<mock names>]
   return "$rc"
 }
 
-do_probe() { # <key> <quick: 1 or empty> <mock names>
-  local key="$1" quick="$2" mock="$3" list name base id pw out log rc
+# The web app to test: the one on this Mac (it must be running) or the one on dev (dev_base_url, D72). Sets WEB_BASE.
+web_base() { # <local|dev>
+  if [ "$1" = "dev" ]; then
+    WEB_BASE="$(repo_dev_url "$WEB_REPO")"
+    [ -n "$WEB_BASE" ] || { bad "The web app ($WEB_REPO) has no dev address (dev_base_url)" "Run /flow-setup-repo $WEB_REPO dev-address (Codex: \$flow-setup-repo $WEB_REPO dev-address)."; return 1; }
+  else
+    repo_answers "$WEB_REPO" || { bad "The web app ($WEB_REPO) isn't running on this Mac" "Start it: bash scripts/repo-run.sh $WEB_REPO start, then run this again."; return 1; }
+    WEB_BASE="$(repo_base_url "$WEB_REPO")"
+  fi
+}
+
+do_probe() { # <key> <quick: 1 or empty> <mock names> [<env>]
+  local key="$1" quick="$2" mock="$3" env="${4:-local}" list name base id pw out log rc
   printf '%s' "$key" | grep -q -E "^$JIRA_PROJECT_KEY-[0-9]+$" || { usage; return 2; }
   installed || { do_check; return 1; }
   if [ -n "$quick" ]; then list="$QUICK_DIR/$key/api-list.json"; name="$key-quick"; else list="$RUNS_DIR/$key/e2e/api-list.json"; name="$key"; fi
   [ -f "$list" ] || { bad "No API list for $key (${list#"$AGENT_ROOT"/})" "flow-verify writes it first: the APIs the card's screens call (step 4)."; return 2; }
   jq -e '.apis | type == "array"' "$list" >/dev/null 2>&1 || { bad "${list#"$AGENT_ROOT"/} isn't a valid API list" "It needs { \"apis\": [ { \"name\", \"method\", \"base\", \"path\" } ] }; write it again."; return 2; }
   repo_ready "$WEB_REPO" || { bad "$REPO_PROBLEM" "Fix that first, then run this again."; return 1; }
-  repo_answers "$WEB_REPO" || { bad "The web app ($WEB_REPO) isn't running on this Mac" "Start it: bash scripts/repo-run.sh $WEB_REPO start, then run this again."; return 1; }
-  base="$(repo_base_url "$WEB_REPO")"
+  web_base "$env" || return 1; base="$WEB_BASE"; [ "$env" = "dev" ] && name="$name-dev"
   id="$(keychain_get "$KEYCHAIN_PREFIX.fe-login-id")"; pw="$(keychain_get "$KEYCHAIN_PREFIX.fe-login-password")"
   if [ -z "$id" ] || [ -z "$pw" ]; then bad "Your FE login isn't saved in the Keychain" "Run /flow-configure-user fe-login-id (and fe-login-password), then run this again."; return 1; fi
   mkdir -p "$RESULTS_DIR" "$LOGS_DIR"
@@ -181,15 +192,16 @@ case "${1:-}" in
   check) do_check ;;
   setup) do_setup ;;
   run|quick|probe)
-    act="$1"; shift; [ $# -ge 1 ] || { usage; exit 2; }; k="$1"; shift; ac=""; mock=""; q=""
+    act="$1"; shift; [ $# -ge 1 ] || { usage; exit 2; }; k="$1"; shift; ac=""; mock=""; q=""; env="local"
     while [ $# -gt 0 ]; do
       case "$1" in
         --mock) [ $# -ge 2 ] || { usage; exit 2; }; mock="$2"; shift 2 ;;
+        --env) case "${2:-}" in dev|local) env="$2" ;; *) usage; exit 2 ;; esac; shift 2 ;;
         --quick) [ "$act" = probe ] || { usage; exit 2; }; q=1; shift ;;
         *) [ "$act" != probe ] && [ -z "$ac" ] || { usage; exit 2; }; ac="$1"; shift ;;
       esac
     done
     [ -z "$mock" ] || printf '%s' "$mock" | grep -q -E '^[A-Za-z0-9_,-]+$' || { bad "Mock names may only have letters, digits, - and _ (comma between names)" "Use the names in the card's api-mocks.ts, e.g. --mock config-detail,config-list"; exit 2; }
-    if [ "$act" = probe ]; then do_probe "$k" "$q" "$mock"; else do_run "$act" "$k" "$ac" "$mock"; fi ;;
+    if [ "$act" = probe ]; then do_probe "$k" "$q" "$mock" "$env"; else do_run "$act" "$k" "$ac" "$mock" "$env"; fi ;;
   *) usage; exit 2 ;;
 esac

@@ -16,7 +16,8 @@
 #                                    Appends one history line (rule A1; the last column is rule A17)
 #   save <KEY> "<message>"           Commits runs/<KEY>/ to the card's branch and pushes it (D61), without switching
 #                                    this folder: a temporary git index, so the working tree and its changes are untouched
-#   list                             Every card in progress, from the run branches on this Mac and on origin
+#   list                             Every card in progress, from the run branches on this Mac and on origin; then the
+#                                    finished ones (phase done, after flow-finish; their run branch stays as the record, D72)
 #   quick-clean <KEY>                Removes local/quick-checks/<KEY>/: the scratch files of flow-verify's quick check
 #                                    (one-off tests, test data, queries; on this Mac only, never saved), at its end (D68)
 #   count | problems                 For flow-doctor
@@ -281,7 +282,7 @@ do_save() { # <key> <message>
 }
 
 do_list() {
-  local key n=0 text phase step next updated where
+  local key n=0 text phase step next updated where done_lines=""
   while IFS= read -r key; do
     [ -n "$key" ] || continue
     n=$((n + 1))
@@ -291,30 +292,43 @@ do_list() {
     next="$(printf '%s\n' "$text" | grep -m1 '^next:' | sed 's/^next:[[:space:]]*//')"
     updated="$(printf '%s\n' "$text" | grep -m1 '^updated:' | sed 's/^updated:[[:space:]]*//')"
     where="$(state_source "$key")"
+    if [ "$phase" = "done" ]; then
+      done_lines="$done_lines$key · done ($(printf '%s\n' "$text" | grep -m1 '^jira_status:' | sed 's/^jira_status:[[:space:]]*//')) · updated $updated · from $where
+"
+      n=$((n - 1)); continue
+    fi
     echo "$key · phase $phase, step $step · next: $next · updated $updated · from $where"
   done < <(all_keys)
   [ "$n" -eq 0 ] && echo "No card in progress (no run folder here, no run branch on $GIT_REMOTE)."
+  [ -z "$done_lines" ] || { echo; echo "Finished:"; printf '%s' "$done_lines"; }
   return 0
 }
 
-do_count() { all_keys | grep -c '' ; return 0; }
+do_count() { # cards in progress (finished ones, phase done, aren't counted)
+  local key n=0
+  while IFS= read -r key; do
+    [ -n "$key" ] || continue
+    [ "$(state_text "$key" 2>/dev/null | grep -m1 '^phase:' | sed 's/^phase:[[:space:]]*//')" = "done" ] || n=$((n + 1))
+  done < <(all_keys)
+  echo "$n"; return 0
+}
 
-do_problems() { # for flow-doctor: ❌ lines only
+do_problems() { # for flow-doctor: ❌ lines only (commands between backticks: flow-doctor shows them as commands)
   local key f field cur
   cur="$(current_branch)"
   case "$cur" in "$RUN_BRANCH_PREFIX"*)
-    bad "The closio-agent folder is on the run branch $cur" "Switch back: git checkout main (run folders are saved to their branch without switching this folder, D61; your runs/ folders stay where they are)." ;;
+    bad "The closio-agent folder is on the run branch $cur" "Switch back: \`git checkout main\` (run folders are saved to their branch without switching this folder, D61; your runs/ folders stay where they are)." ;;
   esac
   for d in "$RUNS_DIR"/*/; do
     [ -d "$d" ] || continue
     key="$(basename "$d")"
     valid_key "$key" || { bad "runs/$key isn't a card key" "Rename or remove the folder; run folders are named after the card (e.g. $JIRA_PROJECT_KEY-567)."; continue; }
     f="$d/state.md"
-    [ -f "$f" ] || { bad "runs/$key has no state.md" "Pick the card up again with $CMD $key, or remove the folder."; continue; }
+    [ -f "$f" ] || { bad "runs/$key has no state.md" "Pick the card up again with \`$CMD $key\`, or remove the folder."; continue; }
     for field in card phase step next updated; do
-      [ -n "$(field_value "$f" "$field")" ] || bad "runs/$key/state.md has no '$field' line" "Add it, or pick the card up again with $CMD $key."
+      [ -n "$(field_value "$f" "$field")" ] || bad "runs/$key/state.md has no \`$field\` line" "Add it, or pick the card up again with \`$CMD $key\`."
     done
-    [ -f "$d/history.md" ] || bad "runs/$key has no history.md" "Pick the card up again with $CMD $key."
+    [ -f "$d/history.md" ] || bad "runs/$key has no history.md" "Pick the card up again with \`$CMD $key\`."
   done
   return 0
 }

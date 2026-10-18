@@ -12,6 +12,9 @@
 #   keys <repo>               Asks every missing dev key of the repo in one run (hidden macOS box)
 #   key <repo> <name>         Asks one dev key
 #   show <repo>               Everything about one repo: shared facts, local path, keys
+#   set-dev-url <repo> <url>  Saves the repo's address on the dev environment (dev_base_url in config/repos/<repo>.yaml,
+#                             shared); asked by flow-setup-repo, used by the dev checks of flow-finish (C6, D72)
+#   dev-url <repo|all>        The repo's dev address, or every registered repo's, one line each (flow-setup-repo dev-address)
 #   ruleset <repo>            Which ruleset the repo follows (D64, rule A19: kept by closio-agent, not set per repo)
 #
 # Shared facts:   config/repos/<repo>.yaml   (committed, no secrets)
@@ -60,8 +63,10 @@ key_service() { echo "$KEYCHAIN_PREFIX.$1.$2.dev"; }
 
 key_description() { # <repo> <key>
   case "$2" in
-    ws2-client-id) echo "the DEV client ID of $1 (the x-client-id header)" ;;
-    ws2-client-secret) echo "the DEV client secret of $1 (the x-client-secret header)" ;;
+    ws1-client-id) echo "WS1's own DEV client ID, which it sends to the WS2s (x-client-id): the value of WS1_AUTH_CLIENT_ID in WS1's .env" ;;
+    ws1-client-secret) echo "WS1's own DEV client secret, which it sends to the WS2s (x-client-secret): the value of WS1_AUTH_SECRET_KEY in WS1's .env" ;;
+    ws2-client-id) echo "only for a WS2 to which WS1 sends another pair: the DEV client ID WS1 sends to $1 (e.g. PRICING_ENGINE_CLIENT_ID for the pricing engine)" ;;
+    ws2-client-secret) echo "only for a WS2 to which WS1 sends another pair: the DEV client secret WS1 sends to $1 (e.g. PRICING_ENGINE_SECRET_KEY)" ;;
     db-user) echo "your DEV database user for $1" ;;
     db-password) echo "your DEV database password for $1" ;;
     *) echo "the DEV value of '$2' for $1" ;;
@@ -208,6 +213,7 @@ detect() {
   else
     echo "health_url:   # not found in the code; ask the user (every repo needs one)"
   fi
+  echo "dev_base_url:   # the repo's address on the dev environment (e.g. https://dev-…); asked by /flow-setup-repo (D72)"
 
   if [ -f "$path/.sequelizerc" ]; then
     local mig seed
@@ -255,12 +261,10 @@ detect() {
   echo "# .env files found (names only): $(cd "$path" && ls -a | grep -E '^\.env' | tr '\n' ' ')"
 
   local keys="" optional=""
-  # WS2 services check x-client-id / x-client-secret (D37). WS1 is tested with the login cookie instead (D20).
+  # WS2 services check the CALLER's x-client-id / x-client-secret (D37): WS1's own pair, saved under the WS1 repo and sent
+  # on every direct WS2 call; a WS2 needs no keys of its own. WS1 is tested with the login cookie (D20, D71).
   case "$name" in
-    *ws1*) ;;
-    *) if printf '%s' " $envnames " | grep -q " SERVICE_CREDENTIALS " || grep -r -q -E "x-client-id" "$path/src/middlewares" 2>/dev/null; then
-         keys="ws2-client-id, ws2-client-secret"
-       fi ;;
+    *ws1*) keys="ws1-client-id, ws1-client-secret" ;;
   esac
   printf '%s' "$envnames" | grep -q -E '(^| )PG_HOST' && optional="db-user, db-password"
   echo "dev_keys: ${keys:-none}"
@@ -315,6 +319,12 @@ validate() {
     ''|/*) ;;
     *) bad "'health_url' must be a path starting with /" "e.g. health_url: /api/v1/health-checker"; problems=$((problems + 1)) ;;
   esac
+  case "$(yaml_get "$file" dev_base_url)" in
+    ''|none) ;;
+    http://*|https://*) printf '%s' "$(yaml_get "$file" dev_base_url)" | grep -q -E '^https?://[A-Za-z0-9.-]+(:[0-9]+)?(/[^[:space:]]*)?$' ||
+                          { bad "'dev_base_url' isn't a plain web address" "e.g. dev_base_url: https://dev-closio-ws1-apiprivate.japfacomfeed.co.id"; problems=$((problems + 1)); } ;;
+    *) bad "'dev_base_url' must start with http:// or https://" "e.g. dev_base_url: https://dev-closio-ws1-apiprivate.japfacomfeed.co.id"; problems=$((problems + 1)) ;;
+  esac
   grep -q -E 'glpat-|-----BEGIN|://[^/[:space:]]+:[^/@[:space:]]+@' "$file" &&
     { bad "config/repos/$repo.yaml looks like it contains a secret (a token, key or password in a URL)" "Remove it. Secrets only go in the Keychain."; problems=$((problems + 1)); }
 
@@ -332,6 +342,44 @@ validate() {
 }
 
 # ---------------------------------------------------------------- set-path
+
+set_dev_url() { # <repo> <url>: dev_base_url in the shared file (D72)
+  local repo="$1" url="${2%/}" file tmp old
+  require_registered "$repo"
+  printf '%s' "$url" | grep -q -E '^https?://[A-Za-z0-9.-]+(:[0-9]+)?(/[^[:space:]]*)?$' ||
+    { bad "'$2' isn't a plain web address" "Give the repo's address on dev, e.g. https://dev-closio-ws1-apiprivate.japfacomfeed.co.id (no user or password in it)."; return 1; }
+  file="$(shared_file "$repo")"; tmp="$file.tmp.$$"
+  old="$(yaml_get "$file" dev_base_url)"
+  [ "$old" = "$url" ] && { ok "$repo: dev address unchanged ($url)"; return 0; }
+  if grep -q -E '^dev_base_url:' "$file"; then
+    awk -v u="$url" '/^dev_base_url:/ { print "dev_base_url: " u "   # the repo on the dev environment (D72)"; next } { print }' "$file" > "$tmp"
+  else
+    awk -v u="$url" '{ print } /^health_url:/ { print "dev_base_url: " u "   # the repo on the dev environment (D72)" }' "$file" > "$tmp"
+    grep -q '^dev_base_url:' "$tmp" || printf 'dev_base_url: %s   # the repo on the dev environment (D72)\n' "$url" >> "$tmp"
+  fi
+  mv "$tmp" "$file"
+  if [ -n "$old" ]; then ok "$repo: dev address changed in config/repos/$repo.yaml, from $old to $url"
+  else ok "$repo: dev address saved in config/repos/$repo.yaml ($url)"; fi
+  echo "   It's a shared file: commit it to closio-agent so the whole team gets it."
+}
+
+dev_url() { # <repo|all>: one line per repo, its dev address or "not set" (D72)
+  local f repo u n=0
+  if [ "$1" != "all" ]; then
+    require_registered "$1"
+    u="$(yaml_get "$(shared_file "$1")" dev_base_url)"
+    echo "$1: ${u:-not set}"
+    return 0
+  fi
+  for f in "$REPOS_DIR"/*.yaml; do
+    [ -f "$f" ] || continue
+    repo="$(basename "$f" .yaml)"; n=$((n + 1))
+    u="$(yaml_get "$f" dev_base_url)"
+    echo "$repo: ${u:-not set}"
+  done
+  [ "$n" -eq 0 ] && look "No repos registered yet" "Run $CMD with the path of a local clone to register one."
+  return 0
+}
 
 set_path() {
   local repo="$1" path="$2" want have
@@ -397,6 +445,8 @@ show() {
   echo "   $(yaml_get "$file" type) · $(yaml_get "$file" role)"
   echo "   GitLab: $(yaml_get "$file" gitlab_path) · base branch: $(yaml_get "$file" base_branch) · MRs to: $(yaml_get "$file" mr_target_branch)"
   echo "   Tests: $(yaml_get "$file" test_command) · local services: $(yaml_get "$file" local_services) · calls: $(yaml_get "$file" calls)"
+  if [ -n "$(yaml_get "$file" dev_base_url)" ]; then echo "   Dev: $(yaml_get "$file" dev_base_url)"
+  else echo "   Dev: not set (set it with /flow-setup-repo $repo dev-address; needed for the dev checks of /flow-finish)"; fi
   path="$(yaml_get "$(local_file "$repo")" local_path)"
   if [ ! -f "$(local_file "$repo")" ]; then
     bad "Local path not set on this Mac" "Run $CMD $repo (give your clone's path, or say it's not cloned yet)."
@@ -468,6 +518,8 @@ case "${1:-}" in
   detect) [ $# -eq 2 ] || { echo "Usage: bash scripts/configure-repo.sh detect <local-path>"; exit 1; }; detect "$2" ;;
   validate) [ $# -eq 2 ] || { echo "Usage: bash scripts/configure-repo.sh validate <repo>"; exit 1; }; validate "$2" ;;
   set-path) [ $# -eq 3 ] || { echo "Usage: bash scripts/configure-repo.sh set-path <repo> <path|not-cloned>"; exit 1; }; set_path "$2" "$3" ;;
+  set-dev-url) [ $# -eq 3 ] || { echo "Usage: bash scripts/configure-repo.sh set-dev-url <repo> <url>"; exit 1; }; set_dev_url "$2" "$3" ;;
+  dev-url) [ $# -eq 2 ] || { echo "Usage: bash scripts/configure-repo.sh dev-url <repo|all>"; exit 1; }; dev_url "$2" ;;
   keys) [ $# -eq 2 ] || { echo "Usage: bash scripts/configure-repo.sh keys <repo>"; exit 1; }; ask_missing_keys "$2" ;;
   key) [ $# -eq 3 ] || { echo "Usage: bash scripts/configure-repo.sh key <repo> <name>"; exit 1; }
     require_registered "$2"
@@ -475,5 +527,5 @@ case "${1:-}" in
     ask_key "$2" "$3" ;;
   show) [ $# -eq 2 ] || { echo "Usage: bash scripts/configure-repo.sh show <repo>"; exit 1; }; show "$2" ;;
   ruleset) [ $# -eq 2 ] || { echo "Usage: bash scripts/configure-repo.sh ruleset <repo>"; exit 1; }; ruleset "$2" || exit 1 ;;
-  *) echo "Usage: bash scripts/configure-repo.sh check-folder | list | detect <path> | validate <repo> | set-path <repo> <path|not-cloned> | keys <repo> | key <repo> <name> | show <repo> | ruleset <repo>"; exit 1 ;;
+  *) echo "Usage: bash scripts/configure-repo.sh check-folder | list | detect <path> | validate <repo> | set-path <repo> <path|not-cloned> | keys <repo> | key <repo> <name> | show <repo> | set-dev-url <repo> <url> | dev-url <repo|all> | ruleset <repo>"; exit 1 ;;
 esac

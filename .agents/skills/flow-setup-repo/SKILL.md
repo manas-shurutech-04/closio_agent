@@ -1,6 +1,7 @@
 ---
 name: flow-setup-repo
-description: Gets a registered repo ready to work on, on your Mac (Node version, packages, local Redis/RabbitMQ, .env check, tests, folder access). Runs only when the user types /flow-setup-repo (Claude Code) or $flow-setup-repo (Codex).
+description: Gets a registered repo ready to work on, on your Mac (Node version, packages, local Redis/RabbitMQ, .env check, tests, folder access, its dev address), or only sets a repo's dev address. Runs only when the user types /flow-setup-repo (Claude Code) or $flow-setup-repo (Codex).
+argument-hint: '[<repo-name>|all] [install | services | dev-address [<url>]]'
 disable-model-invocation: true
 ---
 
@@ -15,6 +16,9 @@ Gets a registered repo ready to work on, on this Mac (F6, D54).
 - `/flow-setup-repo all`: set up every repo cloned on this Mac, one after another.
 - `/flow-setup-repo <repo-name|all> install`: the same, but always reinstall the packages.
 - `/flow-setup-repo <repo-name|all> services`: the same, but choose Homebrew or Docker again for Redis and RabbitMQ.
+- `/flow-setup-repo <repo-name> dev-address`: only the repo's address on the dev environment: shows it and asks for the new one (nothing else runs).
+- `/flow-setup-repo <repo-name> dev-address <url>`: saves that dev address straight away.
+- `/flow-setup-repo all dev-address`: every registered repo's dev address at once; you change the ones you want.
 - Codex: `$flow-setup-repo …` (approve running it outside the sandbox).
 
 It works only on clones the user made (cloning is manual, D53). It never switches branches, pulls, stashes or changes tracked files: the card phases do that. It needs no VPN.
@@ -30,6 +34,8 @@ It works only on clones the user made (cloning is manual, D53). It never switche
 3. Read what the user typed after the command (in Claude Code it may also appear as `ARGUMENTS: …`):
    - **Nothing:** run `bash scripts/setup-repo.sh list`, show it, and ask which repo to set up (or `all`). Stop until they answer.
    - **`<repo>`, `all`, optionally followed by `install` or `services`:** go on.
+   - **`<repo> dev-address`, `<repo> dev-address <url>` or `all dev-address`:** skip steps 4 to 9 and do only "The dev address on its own" below, then stop.
+   - Anything else (e.g. `all dev-address <url>`: one address can't be every repo's): show the usage above and stop.
 4. Tell the user in a few short lines what will happen:
    - it can take a while (installing packages, then the tests, up to 15 minutes each per repo);
    - macOS dialogs may appear: to choose Homebrew or Docker for Redis or RabbitMQ when both are there, or to start one when none is there;
@@ -43,10 +49,20 @@ It works only on clones the user made (cloning is manual, D53). It never switche
    - Claude Code: type `/add-dir <repo folder>`, or start a new session (the folder is saved in `.claude/settings.local.json` now);
    - Codex: start it again from the closio-agent folder with the `codex --add-dir …` command at the end of the output, or approve Codex's request for that folder.
    Wait until they say it's done, check again, then go on.
-8. Finish:
+8. **The dev address (D72):** for each repo that was set up, run `bash scripts/configure-repo.sh show <repo>`. If it says `Dev: not set`, ask the user: "What's <repo>'s address on the dev environment? (e.g. https://dev-closio-ws1-apiprivate.japfacomfeed.co.id; it's the same for the whole team)". Save the answer with `bash scripts/configure-repo.sh set-dev-url <repo> <url>` (a shared file: say it should be committed to closio-agent so the team gets it). "I don't know" is fine: say `/flow-doctor` will remind them, and `/flow-setup-repo <repo> dev-address` sets it any time. The dev checks of `/flow-finish` use these addresses.
+9. Finish:
    - If the output has `.env` help steps, remind the user to change the file as shown, then run the command again.
    - If they use Codex, point them to the Codex start command at the end of the output.
    - Tell them to run `/flow-doctor` (Codex: `$flow-doctor`) for the full check.
+
+## The dev address on its own (`dev-address`, D72)
+
+Only the dev address changes: no packages, tests, Redis or RabbitMQ, `.env` or folder access. The repo needn't be cloned on this Mac; being registered is enough (the address is in its shared file, `config/repos/<repo>.yaml`). It needs no VPN.
+
+- **`<repo> dev-address <url>`:** run `bash scripts/configure-repo.sh set-dev-url <repo> <url>` and show its output (it says the old and the new address). A ❌ (not a plain web address, or a repo that isn't registered): show its fix and ask for a corrected address.
+- **`<repo> dev-address`:** run `bash scripts/configure-repo.sh dev-url <repo>`, show it, and ask: "What's <repo>'s address on the dev environment? (e.g. https://dev-closio-ws1-apiprivate.japfacomfeed.co.id; it's the same for the whole team. Say "keep" to leave it as it is.)" Save the answer with `bash scripts/configure-repo.sh set-dev-url <repo> <url>`.
+- **`all dev-address`:** run `bash scripts/configure-repo.sh dev-url all` and show it (one line per registered repo, its address or "not set"). Ask once: "Send the new addresses, one line each as `<repo>: <url>`. A repo you leave out keeps its address." Save each line with `bash scripts/configure-repo.sh set-dev-url <repo> <url>`, one after another; a ❌ on one doesn't stop the others (show its fix at the end and ask for that one again).
+- **End:** list what changed (old → new). If anything was saved: "`config/repos/<repo>.yaml` is a shared file: commit it to closio-agent so the whole team gets the address." Then suggest `/flow-doctor` (Codex: `$flow-doctor`).
 
 ## Rules
 - **Never read, print or change a `.env` file** (rule A6). The script reads it itself and only says where it points.

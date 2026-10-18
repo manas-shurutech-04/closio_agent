@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Runs a card's backend API test cases and says, per AC, whether they pass (C4, flow-verify and flow-ac-check; D67).
-# Run it from the closio-agent folder:  bash scripts/api-check.sh <CARD-KEY> [<AC number>]
+# Run it from the closio-agent folder:  bash scripts/api-check.sh <CARD-KEY> [<AC number>] [--env dev]
+# --env dev: the same cases against the dev environment (each repo's dev_base_url, D72), e.g. after the merge.
 #
 # The cases are in the card's run folder, one file per AC: runs/<CARD-KEY>/api-checks/ac-<n>.json
 #   { "ac": 6, "title": "WS2 S2S auth — Missing client credentials",
@@ -23,8 +24,15 @@ AGENT_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 . "$AGENT_ROOT/config/project-settings.sh"
 RUNS_DIR="${RUNS_DIR:-$AGENT_ROOT/runs}"
 
-usage() { echo "Usage: bash scripts/api-check.sh <CARD-KEY> [<AC number>]"; }
-KEY="${1:-}"; ONE="${2:-}"
+usage() { echo "Usage: bash scripts/api-check.sh <CARD-KEY> [<AC number>] [--env dev]"; }
+KEY="${1:-}"; ONE=""; ENV_ARGS=""
+[ $# -ge 1 ] && shift
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --env) [ "${2:-}" = "dev" ] || [ "${2:-}" = "local" ] || { usage; exit 2; }; [ "$2" = "dev" ] && ENV_ARGS="dev"; shift 2 ;;
+    *) [ -z "$ONE" ] || { usage; exit 2; }; ONE="$1"; shift ;;
+  esac
+done
 printf '%s' "$KEY" | grep -q -E "^$JIRA_PROJECT_KEY-[0-9]+$" || { usage; exit 2; }
 [ -z "$ONE" ] || printf '%s' "$ONE" | grep -q -E '^[0-9]+$' || { usage; exit 2; }
 DIR="$RUNS_DIR/$KEY/api-checks"
@@ -58,6 +66,7 @@ $(jq -r '(.headers // {}) | to_entries[] | "\(.key): \(.value)"' "$TMP/case")
 EOF_H
     a="$(jq -r '.auth // empty' "$TMP/case")"; [ -n "$a" ] && set -- "$@" --auth "$a"
     c="$(jq -r '.client // empty' "$TMP/case")"; [ -n "$c" ] && set -- "$@" --client "$c"
+    [ -n "$ENV_ARGS" ] && set -- "$@" --env "$ENV_ARGS"
     rm -f "$TMP/saved"
     out="$(bash "$AGENT_ROOT/scripts/api-call.sh" "$@" 2>&1)"; rc=$?
     problems=""
