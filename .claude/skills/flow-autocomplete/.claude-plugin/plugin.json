@@ -1,0 +1,5 @@
+{
+  "name": "flow-autocomplete",
+  "version": "1.0.0",
+  "description": "closio-agent: suggests the options of the flow commands while you type them in Claude Code (repos, cards, sub-options), read live from the project"
+}

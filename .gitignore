@@ -25,3 +25,7 @@ node_modules/
 
 # Personal Claude Code settings (each person has their own)
 .claude/settings.local.json
+
+# Files Claude Code generates inside a mod folder (types for an editor), e.g. .claude/skills/flow-autocomplete/
+.claude/skills/*/.claude-plugin/types/
+.claude/skills/*/tsconfig.json
