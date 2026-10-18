@@ -1,6 +1,6 @@
 ---
 name: flow-finish
-description: "Finishes a Jira card after its merge requests are merged (Phase 9): checks the merge, checks every acceptance criterion on the dev environment once you say it's deployed, writes the deployment doc (in the run folder and on the Jira card), and moves the card to Ready for Test. Runs only when the user types /flow-finish (Claude Code) or $flow-finish (Codex)."
+description: "Finishes a Jira card after its merge requests are merged: checks the merge, checks every acceptance criterion on the dev environment once you say it's deployed, writes the deployment doc (in the run folder and on the Jira card), and moves the card to Ready for Test. Runs only when the user types /flow-finish (Claude Code) or $flow-finish (Codex)."
 argument-hint: '<CARD-KEY>'
 disable-model-invocation: true
 ---
@@ -42,7 +42,7 @@ The first memory step runs here automatically:
 
 **4. The checks on dev (D22, B: the quick check, D72).** Every repo needs its dev address: `bash scripts/configure-repo.sh show <repo>` shows `Dev:`; if it's not set, ask the user for it and save it with `bash scripts/configure-repo.sh set-dev-url <repo> <url>` (a shared file: it should be committed). Then check every AC exactly as `/flow-verify`'s quick check does (its steps 4 to 6, B), but **on dev**: add `--env dev` to every `bash scripts/api-call.sh …` call (WS1 with the dev login, rule A24; a direct WS2 call with WS1's pair, D37) and to `bash scripts/e2e.sh probe|quick …` (the dev web app); a web card's APIs are asked about as there (D69). Test data and calls that write are shown first and run only after a clear yes, with their cleanup (rule A23); remove the scratch files at the end with `bash scripts/run.sh quick-clean <KEY>`. Record the run at the top of `verify.md`: `## Run <n> — <date and time> · dev check (B)`, every scenario with ✅ / ❌ (each failure: what was expected, what came back). **A failure:** list each one with what you suggest (a fix after a merge needs a new branch and MR: ask the user whether it's a new card or a follow-up on this one; a setup problem: the exact fix); the card stays in `after-merge`; the user decides; stop. Log the step; `set <KEY> step 5`.
 
-**5. Special instructions.** Ask the user once: "Anything special for the deployment doc (an order, a flag, a manual step)?" Their answer goes in as they wrote it ("none" is fine). Log the step; `set <KEY> step 6`.
+**5. Special instructions.** If the user's memory holds standing instructions for the deployment doc (e.g. "Deployment doc: deploy WS2 repos one at a time"), put them in and say so in one line ("Using your memory M5"), then ask only: "Anything else special for this card?" (D74). Else ask the user once: "Anything special for the deployment doc (an order, a flag, a manual step)?" Their answer goes in as they wrote it ("none" is fine). Log the step; `set <KEY> step 6`.
 
 **6. The deployment doc (D12, D72): `runs/<KEY>/deployment.md`.** From `ship.md`, `develop.md`, `card.md`, the code and the dev check:
 ```
@@ -76,6 +76,12 @@ The queue, a sample message, and what to look for, from the code.
 **7. Jira (rules A3, D11, D72).** Post the deployment doc on the card as **one comment** (`addOrEditJiraIssueComment`); write the comment's id at the top of `deployment.md` (`Jira comment: <id>`). On a later run, **edit that comment** instead of posting a new one. Then, the dev checks having passed, move the card to **Ready for Test** (if a tool needs the transition id, read the card's transitions first, read only); never anywhere else (never Blocked, A3). `bash scripts/run.sh set <KEY> jira_status "Ready for Test"`. Log the step; `set <KEY> step 8`.
 
 **8. Save.** `bash scripts/run.sh set <KEY> phase done`, `set <KEY> step 1`, `set <KEY> next "finished"`, log "finished: deployment doc on the card, Ready for Test", `bash scripts/run.sh save <KEY> "finished: Ready for Test"`. The run branch `runs/<KEY>` stays as the card's record (`/flow-status` lists it under Finished); it's never merged into `main`. End with: `Done: <KEY> is in Ready for Test. Deployment doc: runs/<KEY>/deployment.md and on the card.`
+
+## Before a long step, say how long (D74)
+
+Before you start each step below, say its line in one sentence, so the user knows what's happening and roughly for how long. The times come from real runs; "several minutes" where none was timed yet. Plain words (rule A25).
+
+- Step 4: "⏳ Checking every AC on dev: about a minute for 22 scenarios; several minutes more for a web card's browser tests."
 
 ## Rules
 - Every step writes its history line with the rules and memory applied (A1, A17).

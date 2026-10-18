@@ -1,6 +1,6 @@
 ---
 name: flow-develop
-description: "Develops a planned Jira card together with the user (Phases 3 and 4): the code and its unit tests from the approved plan, the ruleset and the user's memory, the repo checks, then the user's review. Starts when the user types /flow-develop (Claude Code) or $flow-develop (Codex), or when they ask in plain words to develop a card whose plan is approved (they name the card, or exactly one card is in the develop phase). Never for any other request."
+description: "Develops a planned Jira card together with the user: the code and its unit tests from the approved plan, the ruleset and the user's memory, the repo checks, then the user's review. Starts when the user types /flow-develop (Claude Code) or $flow-develop (Codex), or when they ask in plain words to develop a card whose plan is approved (they name the card, or exactly one card is in development). Never for any other request."
 argument-hint: '<CARD-KEY>'
 disable-model-invocation: false
 ---
@@ -12,7 +12,7 @@ Develops one card whose plan is approved (C3; Phases 3 and 4 of [architecture.md
 ## Usage
 
 - `/flow-develop SCRUM-567`: develop the card SCRUM-567 from its approved plan, or continue where it stopped.
-- Plain words: "develop SCRUM-567" or "start developing the card" also start it, but only for a card whose plan is approved (you name it, or it's the only card in the develop phase).
+- Plain words: "develop SCRUM-567" or "start developing the card" also start it, but only for a card whose plan is approved (you name it, or it's the only card in development).
 - Codex: `$flow-develop SCRUM-567` (approve the scripts outside the sandbox: git, GitLab over the VPN, the repo's own commands).
 
 ## Started from plain words? Check first (D61, the one exception to D44 and `AGENTS.md` rule 1)
@@ -105,6 +105,12 @@ Then `bash scripts/run.sh set <KEY> next "/flow-develop <KEY>"`, `bash scripts/r
    - Approved **in so many words**: write "Approved by the user on <date>" under `## Review`. Log the step; `set <KEY> step 11`.
 
 **11. Finish.** `bash scripts/run.sh set <KEY> phase verify`, `set <KEY> step 1`, `set <KEY> next "/flow-verify <KEY>"`, log "review approved", and `bash scripts/run.sh save <KEY> "developed and reviewed"`. Show the save's output and end with one line: `Done: <KEY> is developed and reviewed. Next: /flow-verify <KEY> (Codex: $flow-verify <KEY>).`
+
+## Before a long step, say how long (D74)
+
+Before you start each step below, say its line in one sentence, so the user knows what's happening and roughly for how long. The times come from real runs; "several minutes" where none was timed yet. Plain words (rule A25).
+
+- Step 5, running the tests: "⏳ Running <repo>'s tests with its coverage check: about a minute for nodejs-ws2targetsalesincentive; several minutes for a repo not timed yet." (a repo with no tests: nothing to say)
 
 ## Rules
 - Every step writes its history line with the rules and memory applied (A1, A17). Pausing is just stopping; the next `/flow-develop <KEY>` carries on (on this Mac: the code isn't pushed yet).

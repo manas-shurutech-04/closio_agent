@@ -1,6 +1,6 @@
 ---
 name: flow-push
-description: "Ships a verified Jira card (Phases 7 and 8): rebases each repo onto the latest base branch, makes the atomic commits you approve, pushes once per repo and creates the merge requests (assigned to you, with their description and reviewers), checks the card shows them and moves it to Code Review. Runs only when the user types /flow-push (Claude Code) or $flow-push (Codex)."
+description: "Ships a verified Jira card: rebases each repo onto the latest base branch, makes the atomic commits you approve, pushes once per repo and creates the merge requests (assigned to you, with their description and reviewers), checks the card shows them and moves it to Code Review. Runs only when the user types /flow-push (Claude Code) or $flow-push (Codex)."
 argument-hint: '<CARD-KEY>'
 disable-model-invocation: true
 ---
@@ -52,7 +52,7 @@ The first memory step runs here automatically:
 **7. The merge requests.** For each repo:
    - **Title:** `<KEY>: <card title>` (one line, D70).
    - **Target:** its `mr_target_branch` (shown by `ship.sh status`). **Assignee:** the user (their GitLab username; `ship.sh push` reads it).
-   - **Labels and reviewers:** the repo file's `mr_labels` and `mr_reviewers` (D51); ask the user to confirm or change them (labels optional; reviewers as GitLab usernames, or none).
+   - **Labels and reviewers:** the repo file's `mr_labels` and `mr_reviewers` (D51). If the user's memory names their labels or reviewers (e.g. "My MR reviewers are ana.s and budi"), use those and say so in one line ("Using your memory M4: reviewers ana.s, budi"); they're still shown at the final yes (step 8) and can be changed there (D74). Else ask the user to confirm or change them (labels optional; reviewers as GitLab usernames, or none).
    - **Description**, written to `runs/<KEY>/mr-<repo>.md`:
 ```
 **Jira:** [<KEY>: <card title>](https://<JIRA_SITE>/browse/<KEY>)
@@ -72,6 +72,14 @@ The first memory step runs here automatically:
 **10. Jira (rule A3, D11).** Read the card's links (`getJiraIssue`, or `executeRead` for its remote links): GitLab's Jira link usually adds each MR by itself. For every MR the card doesn't show, add **one** comment listing the missing MR links (`addOrEditJiraIssueComment`, e.g. "Merge requests: nodejs-ws2targetsalesincentive: <link>"). Then move the card to **Code Review** (if a tool needs the transition id, read the card's transitions first, read only). Never move it anywhere else (never Blocked, A3). `bash scripts/run.sh set <KEY> jira_status "Code Review"`. Log the step; `set <KEY> step 11`.
 
 **11. Save.** `ship.md` complete (per repo: the commits, the push, the MR link, the reviewers). `bash scripts/run.sh set <KEY> phase after-merge`, `set <KEY> step 1`, `set <KEY> next "/flow-finish <KEY>"`, log "pushed, MRs created, Code Review", `bash scripts/run.sh save <KEY> "pushed: MRs created, Code Review"`. End with: `Done: <KEY> is pushed and in Code Review. MRs: <links>. Next, once the MRs are merged: /flow-finish <KEY> (Codex: $flow-finish <KEY>).`
+
+## Before a long step, say how long (D74)
+
+Before you start each step below, say its line in one sentence, so the user knows what's happening and roughly for how long. The times come from real runs; "several minutes" where none was timed yet. Plain words (rule A25).
+
+- Step 5: "⏳ Running the tests again after the rebase: about a minute for nodejs-ws2targetsalesincentive; several minutes for a repo not timed yet."
+- Step 6, in the repos with a coverage check on every commit (nodejs-ws2targetsalesincentive, nodejs-ws2notification, nodejs-ws2pricingengine): "⏳ Making the commits: each one runs the repo's coverage check first; 5 commits took about 2 minutes."
+- Step 9: "⏳ Pushing and creating the merge requests: about a minute (the coverage check runs once more in those repos)."
 
 ## Rules
 - Every step writes its history line with the rules and memory applied (A1, A17).

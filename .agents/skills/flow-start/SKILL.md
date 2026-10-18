@@ -1,6 +1,6 @@
 ---
 name: flow-start
-description: "Picks up a Jira card and plans it (Phases 1 and 2): the card checked, moved to In Development and assigned to you, a branch in every repo it needs, the plan made from the code and approved by you. Runs only when the user types /flow-start (Claude Code) or $flow-start (Codex)."
+description: "Picks up a Jira card and plans it: the card checked, moved to In Development and assigned to you, a branch in every repo it needs, the plan made from the code and approved by you. Runs only when the user types /flow-start (Claude Code) or $flow-start (Codex)."
 argument-hint: '<CARD-KEY>'
 disable-model-invocation: true
 ---
@@ -76,6 +76,12 @@ The first memory step runs here automatically:
 **10. ✋ Manual approval (rule A18), strictly necessary.** Ask the user to approve the plan. On changes, change it and show it again, until they say yes in so many words. Nothing is written to the run folder and nothing is pushed before that. Log the step.
 
 **11. Save and finish.** Write the approved plan to `runs/<KEY>/plan.md` with your file-writing tool (the shape above, `# <KEY> — plan` as its title, "Approved by the user on <date>" under it). Then `bash scripts/run.sh set <KEY> phase develop`, `set <KEY> step 1`, `set <KEY> next "/flow-develop <KEY>"`, log "plan approved and saved", and `bash scripts/run.sh save <KEY> "plan approved"`. Show the save's output and end with one line: `Done: <KEY> is planned. Next: /flow-develop <KEY> (Codex: $flow-develop <KEY>), or say "develop <KEY>".`
+
+## Before a long step, say how long (D74)
+
+Before you start each step below, say its line in one sentence, so the user knows what's happening and roughly for how long. The times come from real runs; "several minutes" where none was timed yet. Plain words (rule A25).
+
+- Step 7: "⏳ Bringing the latest code into the card's branches and reading it: about 5 minutes for 2 repos."
 
 ## Rules
 - Every step writes its history line with the rules and memory applied (A1, A17). Pausing is just stopping; the next `/flow-start <KEY>` carries on.

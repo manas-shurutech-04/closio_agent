@@ -1,6 +1,6 @@
 ---
 name: flow-verify
-description: "Checks a developed Jira card (Phases 5 and 6) in one of two ways you pick: A, a full check (test cases saved for every acceptance criterion, run with the repo tests and a story check), or B, a quick check (every acceptance criterion checked directly against the running code, nothing saved but the record of the run). Then it moves the card to the push or tells you what's wrong. Runs only when the user types /flow-verify (Claude Code) or $flow-verify (Codex)."
+description: "Checks a developed Jira card in one of two ways you pick: A, a full check (test cases saved for every acceptance criterion, run with the repo tests and a story check), or B, a quick check (every acceptance criterion checked directly against the running code, nothing saved but the record of the run). Then it moves the card to the push or tells you what's wrong. Runs only when the user types /flow-verify (Claude Code) or $flow-verify (Codex)."
 argument-hint: '<CARD-KEY> [full|quick] [<QMetry export.xlsx>]'
 disable-model-invocation: true
 ---
@@ -43,7 +43,7 @@ The first memory step runs here automatically:
    - `phase: ship` or later: say the card is already verified and what to type next (its `next:` line), and stop.
    - `phase: verify`: go on (a card checked before is checked again from step 2).
    Then `bash scripts/run.sh branch <KEY>` (brings the run folder onto this Mac; this folder stays on `main`) and connect the VPN with the `flow-connectivity` agent (rule A5): the dev services need it. If either fails, show its fix and stop.
-   **The choice.** `full` typed = A, `quick` typed = B. Neither: ask, and wait for the answer:
+   **The choice.** `full` typed = A, `quick` typed = B. Neither: if the user's memory answers it (an entry such as "Always use the quick check in flow-verify"), use that and say so in one line ("Using your memory M3: B quick check"); the user can still say otherwise (D74). Else ask, and wait for the answer:
    > How do you want to verify <KEY>?
    > **A — Full check:** writes and saves test cases for every AC (QMetry if you gave an export), runs them, the repo tests and the story check.
    > **B — Quick check:** checks every AC directly against the running code: the statuses, error codes, messages and response structure the code returns. Nothing is saved except the record of this run.
@@ -100,6 +100,16 @@ Repos: … · Ruleset: rulesets/story-implementation-workflow.md · Memory appli
 ```
    - **Everything passed** (every AC ✅, tests and checks ✅, A: no ❌ in the story check): `bash scripts/run.sh set <KEY> phase ship`, `set <KEY> step 1`, `set <KEY> next "/flow-push <KEY>"`, log "verified (A full check | B quick check)", `bash scripts/run.sh save <KEY> "verified"`. End with: `Done: <KEY> is verified. Next: /flow-push <KEY> (Codex: $flow-push <KEY>).`
    - **Something failed:** the card stays in the verify phase (`set <KEY> step 1`, `set <KEY> next "/flow-verify <KEY>"`). Under `### Result`, and in chat, list **each failure with what's wrong and what you suggest**: a code problem → `/flow-develop <KEY>` (it offers to go back and fix the list in `verify.md`); A, a test case that's wrong → `/flow-ac-check <KEY> <AC> "<what to change>"`; B, a scenario checked the wrong way → the user says what to check instead, then `/flow-verify <KEY> quick` again; missing data or a setup problem → the exact fix (rule A11). **Don't start any of them: the user decides how to go on.** Log "verify: N failure(s), waiting for the user", `bash scripts/run.sh save <KEY> "verify: N failure(s)"`.
+
+## Before a long step, say how long (D74)
+
+Before you start each step below, say its line in one sentence, so the user knows what's happening and roughly for how long. The times come from real runs; "several minutes" where none was timed yet. Plain words (rule A25).
+
+- Step 3: "⏳ Starting <repos> on this Mac: about a minute."
+- Step 4, A: "⏳ Writing the test cases: this can take a while, about 12 minutes for 26 cases on a web card."
+- Step 6, A: "⏳ Running the test cases: several minutes." B: "⏳ Checking every scenario: about a minute for 22 scenarios."
+- Step 7: "⏳ Running the repo tests again: about a minute for nodejs-ws2targetsalesincentive; several minutes for a repo not timed yet."
+- Step 8, A: "⏳ The story check (comparing the code with the card): several minutes."
 
 ## Rules
 - Every step writes its history line with the rules and memory applied (A1, A17).
