@@ -1,10 +1,8 @@
 # Open Questions
 
 - **A6 confirmation:** user said "hold onto this rule for now". Recorded as adopted provisionally; confirm the interpretation (adopt vs. defer).
-- **MR title/description content:** e.g. title `SCRUM-519: <summary>`. Labels or draft? The description's content is set (D64): the ruleset's MR description checklist (Jira ref, files by layer, ACs covered, error-code differences); the title format is still open.
 - **Security:** a GitLab personal access token was used in plain text in a past Claude Code session (2026-10-08), so it's stored in that transcript and was sent to the AI provider. Recommend the user revokes it and creates a new one for D32, stored only in the Keychain.
-- **REST API description step (D32), to test when built:** `PUT /api/v4/projects/:id/merge_requests/:iid` with a multi-line `description`, token read from the Keychain and kept off the command line (e.g. curl reading the header from stdin). Also confirm the push option `merge_request.assign` works on the Japfa GitLab.
-- **Coverage check on every commit:** husky runs the full `coverage:check` on pre-commit and pre-push in notification, pricingengine and targetsalesincentive. Each atomic commit must pass 80/70/80/80 on its own, and every commit runs the whole suite (slow). The commit-splitting design (Phase 7) must account for this.
+- **The WS1 on the user's Mac forwards to the dev target-sales WS2 (seen 2026-10-18):** a call to SCRUM-540's endpoint on the local WS1 came back 597 GENERAL_ERROR with `upstream_url` = `dev-target-sales-ws2-apiprivate…` (404 there: the card isn't on dev). To check a card's local WS2 code through WS1, the local WS1's `.env` must point `WS2TARGETSALES_BASE_URL` at the WS2 on this Mac (and `INCENTIVE_S2S_CLIENT_ID` / `…_SECRET` at a client the local WS2 knows). The user's side; values never read (A6).
 - **Vitest threshold:** check that `thresholds.global` in closio-web-v2 is actually enforced by Vitest 3.
 - **Subagents:** decided per phase (D16). So far: AC-check agent (Phase 5), story-verification agent (Phase 6).
 - **Agent's own memory (per-card run folder, A1):** location (D36), keep after done and shared pickup (D38) decided. Still to finalise: the file structure (draft: state.json, history.md, card.md, plan.md, context.md, phases/, deployment-doc.md), after the foundation is built.
@@ -13,7 +11,6 @@
 - **Jira in Codex:** works through the Atlassian app on the user's ChatGPT account (verified 2026-10-11). Still to write up: how a new user connects that app in ChatGPT (exact steps). The `codex mcp add` way is untested.
 - **Not yet seen:** doctor's ✅ for a stored Keychain item and a real GitLab token check (no items stored yet).
 - **Not tested yet:** `$flow-start` / `$flow-status` in Codex; `/flow-start` on a card that's already planned.
-- **`flow-finish` merges the run branch into `main`:** decided in D61; built with C6.
 - **F9 (new-user test):** postponed by the user on 2026-10-17 ("for now"); the plan for it is in the chat of that day (second admin account, the guide from the top, one repo, the Homebrew single-user risk).
 - **Dev database details in the repo files:** `dev_db_host`/`port`/`name`/`schema` are empty in `config/repos/`. The answer "okayy" (2026-10-14) was read as "add later".
 - **Watch:** Codex's updater process still runs with Node v18; if Codex falls back to v18 after an update, restart the service again (fallback: `nvm alias default 22`). How to restart the updater itself is not checked yet (documented as such in the setup guide).
@@ -22,11 +19,15 @@
 - **`repo-run.sh <repo> seed` runs every seeder (found in the SCRUM-540 test, 2026-10-17):** `npm run seed` is `db:seed:all`, which reruns all 7 seeders of ws2targetsalesincentive; `seed-incentive-schemas` would hit `uq_schema_partner`, so the agent didn't run it and the user ran the card's seeder by hand. Proposed fix (to draft): `seed <seeder file> confirmed` runs only that seeder (`npx sequelize-cli db:seed --seed <file>`), after the A23 review.
 - **ws2jauth lint (seen 2026-10-17):** `npm run lint` fails on its current code (`src/configs/appConfig.js`: `path` unused). Not closio-agent's; a card touching ws2jauth will see ❌ at the check step until it's fixed.
 - **Internal SCRUM-523 test (C4): run 2026-10-18.** 26 tests written by `flow-ac-checker` (QMetry as the base), Playwright 21 of 24 passed, QMetry 20 of 22 (91%); details in `environment.md`. Its fixes were built with D68 (2026-10-18): the one-AC filter, no tests = ❌, no color codes, WS1 statuses in the agent, 60 steps. **Found in the web app (not closio-agent's):** SCRUM-523's dates show D/M/YYYY (`formatDateShort`, `src/utils/dateFormatter.ts:134`) where AC 1 says DD/MM/YYYY; the card is merged and QA-passed: for the team.
-- **C4 user tests (2026-10-18):** a web card's API questions and mocks (D69) not tried by the user yet; `/flow-verify SCRUM-540` in both ways (A full check, B quick check; backend: WS2 target sales + WS1), `/flow-verify <KEY> full <export.xlsx>` (QMetry) and `/flow-ac-check` not tested by the user yet. The e2e.sh fixes were re-checked live after the VPN came back (2026-10-18): all confirmed. **No WS2 dev keys are saved yet** (`/flow-configure-repo nodejs-ws2targetsalesincentive key ws2-client-id` and `… ws2-client-secret`), so direct WS2 checks would stop with the fix line until then.
+- **Not yet tried by the user (C4):** the full check (A) on a real card, `/flow-ac-check`, and a web card's API questions and mocks (D69); the quick check (B) and `/flow-push` passed on SCRUM-540 (2026-10-18).
+- **Not yet tried by the user (C6):** `/flow-finish` on a real merged card (SCRUM-540 once its MRs !248 and !561 are merged and deployed on dev): the dev checks, the deployment doc, the Jira comment, Ready for Test.
+- **Not yet seen (D73):** `flow-autocomplete` in a new desktop chat (the terminal works: user, 2026-10-18); Codex has no suggestions (not fixable there).
 - **QMetry:** only exports can be used today (`scripts/qmetry-import.sh`). QMetry's own REST API (needs a QMetry API key) is not explored; a later step if exports become a chore.
 
 ## Resolved
 
+- `flow-finish` and the run branch (2026-10-18, D72): the run branch `runs/<KEY>` is **not** merged into `main` (run folders stay out of `main` since 2026-10-17); it stays as the finished card's record, and `flow-status` lists finished cards apart (user: "works").
+- Dev addresses for the Phase 9 checks (2026-10-18, D72): `dev_base_url` in the shared repo file, asked by `flow-setup-repo` (user: "saved repository file not on local"). Still to fill in: none of the 7 repo files has one yet; `flow-doctor` warns. Fastest way: `/flow-setup-repo all dev-address` (added 2026-10-18).
 - VPN credentials: nothing stored, because SSO is handled by the browser or Microsoft sign-in (D14).
 - VPN sudo: the user types their Mac password on each connect (D14).
 - VPN end to end: `--realm=sso` + `--trusted-cert` + `/etc/resolver` file; verified (D14, `docs/setup-guide.md`).
@@ -104,4 +105,7 @@
 - QMetry in `flow-verify`: optional, never asked for; an export is the base, one coverage line at the end (built 2026-10-18, D67).
 - `flow-verify` two ways (A full check, B quick check), write calls shown first, every run recorded, `db-run.sh … query`, e2e.sh fixes, 60 steps: answered and built 2026-10-18 (D68).
 - Web app on the dev servers (a card changing the backend and the web app: its new API isn't on dev yet): covered by D69, the user says the API isn't available and its web tests run against a mock with the 200 response they send (2026-10-18).
+- First real `/flow-push` (2026-10-18, SCRUM-540): the push options create and assign the MR, the API sets the description; GitLab's Jira link did not show the MRs, so the comment path is what's used.
 - API mocks for web cards: the APIs asked about before any test is written, every run; mocks with the user's exact 200 response; the GET check before the run; failed calls asked about after: answered and built 2026-10-18 (D69).
+- MR title and description (D70, 2026-10-18): title `SCRUM-<n>: <card title>`, ready for review; description only the Jira link and the migrations and seeders to run.
+- Coverage gate on every commit (D70, 2026-10-18): husky's gate runs on each atomic commit, never skipped; commits are split so each layer's code goes with its own tests.
