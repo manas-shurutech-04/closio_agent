@@ -185,7 +185,7 @@ EOF
   if [ "$shown" -eq 0 ]; then
     echo "User memory: nothing applies to this command (that's normal)."
   else
-    echo "User memory for this command ($shown $( [ "$shown" -eq 1 ] && echo entry || echo entries )). Apply them; team rules always win (rule A8), so say so if one conflicts:"
+    echo "User memory for this command ($shown $( [ "$shown" -eq 1 ] && echo entry || echo entries )). Apply them; team rules always win, so say so if one conflicts:"
     printf '%s' "$out"
   fi
   format_problems

@@ -76,8 +76,8 @@ secret_description() {
     gitlab-token) echo "your GitLab personal access token (scope: api; setup guide, section 4.2)" ;;
     fe-login-id) echo "your login ID for the Closio web app" ;;
     fe-login-password) echo "your password for the Closio web app" ;;
-    ws1-login-userid) echo "your userid for the dev WS1 login (every check logs in on dev, rule A24)" ;;
-    ws1-login-password) echo "your password for the dev WS1 login (rule A24)" ;;
+    ws1-login-userid) echo "your userid for the dev WS1 login (every check logs in on dev)" ;;
+    ws1-login-password) echo "your password for the dev WS1 login" ;;
     *) return 1 ;;
   esac
 }
@@ -261,7 +261,7 @@ show() {
   done
 
   echo
-  echo "Playwright (for checking web cards, D67)"
+  echo "Playwright (for checking web cards)"
   if [ -f "$AGENT_ROOT/e2e/node_modules/@playwright/test/package.json" ] && ls -d "${PLAYWRIGHT_BROWSERS_PATH:-$HOME/Library/Caches/ms-playwright}"/chromium-* >/dev/null 2>&1; then
     ok "Playwright is set up (e2e/ packages and the Chromium browser)"
   else
@@ -282,7 +282,7 @@ case "${1:-}" in
     else
       bad "Not started in the closio-agent folder (current folder: $(pwd))" \
         "Quit, open a terminal in $AGENT_ROOT, run 'nvm use v$NODE_MAJOR', then start Claude Code or Codex again." \
-        "Always start Claude Code or Codex in the closio-agent folder (D42)."
+        "Always start Claude Code or Codex in the closio-agent folder."
       exit 1
     fi ;;
   show) show ;;

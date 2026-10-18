@@ -55,7 +55,7 @@ locate() { # <repo>
   BASE="$(yaml_get "$shared" base_branch)"
   [ -n "$BASE" ] || { bad "config/repos/$REPO.yaml has no base_branch" "Add the line base_branch: <branch> (e.g. develop) and commit it."; return 1; }
   if [ -z "$PATH_" ] || [ "$PATH_" = "not-cloned" ] || [ ! -d "$PATH_/.git" ]; then
-    bad "$REPO isn't cloned on this Mac (cloning is manual, D53)" "On the VPN: git clone $(yaml_get "$shared" gitlab_url) <your workspace folder>/$REPO, then run /flow-configure-repo $REPO path <that folder>."
+    bad "$REPO isn't cloned on this Mac (cloning is manual)" "On the VPN: git clone $(yaml_get "$shared" gitlab_url) <your workspace folder>/$REPO, then run /flow-configure-repo $REPO path <that folder>."
     return 1
   fi
   want="$(yaml_get "$shared" gitlab_path)"
@@ -77,7 +77,7 @@ do_check() { # <repo>
 do_create() { # <repo> <branch-name>
   local name="$2"
   locate "$1" || return 1
-  bash "$AGENT_ROOT/scripts/branch-name.sh" check "$name" >/dev/null 2>&1 || { bad "'$name' doesn't follow the branch-naming rule (A12)" "Make one with: bash scripts/branch-name.sh make <CARD-KEY> \"<card title>\"."; return 1; }
+  bash "$AGENT_ROOT/scripts/branch-name.sh" check "$name" >/dev/null 2>&1 || { bad "'$name' doesn't follow the branch-naming rule" "Make one with: bash scripts/branch-name.sh make <CARD-KEY> \"<card title>\"."; return 1; }
   local changed cur
   changed="$(g status --porcelain --untracked-files=no | wc -l | tr -d ' ')"
   if [ "$changed" -gt 0 ]; then
@@ -113,7 +113,7 @@ do_create() { # <repo> <branch-name>
 do_update() { # <repo> <branch-name>
   local name="$2" changed behind own
   locate "$1" || return 1
-  bash "$AGENT_ROOT/scripts/branch-name.sh" check "$name" >/dev/null 2>&1 || { bad "'$name' doesn't follow the branch-naming rule (A12)" "Use the card's branch name from its run folder: bash scripts/run.sh get <CARD-KEY> branch."; return 1; }
+  bash "$AGENT_ROOT/scripts/branch-name.sh" check "$name" >/dev/null 2>&1 || { bad "'$name' doesn't follow the branch-naming rule" "Use the card's branch name from its folder: bash scripts/run.sh get <CARD-KEY> branch."; return 1; }
   g show-ref --verify --quiet "refs/heads/$name" || { bad "$REPO: there's no branch $name on this Mac" "Create it first: bash scripts/card-branch.sh create $REPO $name"; return 1; }
   changed="$(g status --porcelain --untracked-files=no | wc -l | tr -d ' ')"
   if [ "$changed" -gt 0 ]; then
@@ -137,7 +137,7 @@ do_update() { # <repo> <branch-name>
     g merge -q --ff-only "origin/$BASE" || { bad "$REPO: couldn't move $name forward to the latest $BASE" "Check git -C \"$PATH_\" status, then run this again."; return 1; }
     ok "$REPO: $name moved forward to the latest $BASE: $behind new commit(s) ($(g rev-parse --short HEAD))"
   else
-    look "$REPO: $name has $own commit(s) of its own and $BASE has $behind newer one(s); left as it is" "The latest $BASE comes in with the rebase in flow-push (stash, rebase, stash pop; rule G2). Read the newer $BASE code with: git -C \"$PATH_\" diff $name...origin/$BASE"
+    look "$REPO: $name has $own commit(s) of its own and $BASE has $behind newer one(s); left as it is" "The latest $BASE comes in with the rebase in flow-push (stash, rebase, stash pop). Read the newer $BASE code with: git -C \"$PATH_\" diff $name...origin/$BASE"
   fi
   return 0
 }
@@ -185,7 +185,7 @@ do_rebase() { # <repo> <branch-name>
   NAME="$2"
   local cur changes sha files
   locate "$1" || return 1
-  bash "$AGENT_ROOT/scripts/branch-name.sh" check "$NAME" >/dev/null 2>&1 || { bad "'$NAME' doesn't follow the branch-naming rule (A12)" "Use the card's branch name: bash scripts/run.sh get <CARD-KEY> branch."; return 1; }
+  bash "$AGENT_ROOT/scripts/branch-name.sh" check "$NAME" >/dev/null 2>&1 || { bad "'$NAME' doesn't follow the branch-naming rule" "Use the card's branch name: bash scripts/run.sh get <CARD-KEY> branch."; return 1; }
   if [ -f "$(state_file)" ]; then
     look "$REPO: a rebase is already half-way ($(state_get stage))" "Finish it first: bash scripts/card-branch.sh rebase-continue $REPO $(state_get branch)"; return 4
   fi

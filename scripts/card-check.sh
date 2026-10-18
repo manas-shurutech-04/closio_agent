@@ -249,7 +249,7 @@ while [ "$i" -lt "$n" ]; do
     tables=$((tables + 1))
   fi
   if looks_secret "$l"; then
-    fail "Line $((i + 1)) looks like it holds a secret (a token, key, password or cookie); the line isn't shown here" "Remove it from the card and change that secret. Secrets never go in cards (rule A6, D33)."
+    fail "Line $((i + 1)) looks like it holds a secret (a token, key, password or cookie); the line isn't shown here" "Remove it from the card and change that secret. Secrets never go in cards."
     secrets=$((secrets + 1))
   fi
   case "$l" in

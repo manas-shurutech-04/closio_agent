@@ -61,7 +61,7 @@ run_one_result() { # <exit code> <label> <command>
     124) bad "$REPO: $label took longer than $REPO_RUN_TIMEOUT seconds and was stopped ($command)" "Run it yourself to see why: cd \"$PATH_\" && nvm use $NV && $command. The limit is REPO_RUN_TIMEOUT in config/project-settings.sh." ;;
     96) bad "$REPO: couldn't go into $PATH_" "Check the clone is there: /flow-configure-repo $REPO path <folder>."; exit 1 ;;
     97) bad "$REPO: nvm couldn't be loaded" "Install nvm (setup guide, section 1), then run this again."; exit 1 ;;
-    98) bad "$REPO: Node $NV (what $REPO is built for, rule A13) isn't installed" "Run: nvm install $NV, then run this again."; exit 1 ;;
+    98) bad "$REPO: Node $NV (what $REPO is built for) isn't installed" "Run: nvm install $NV, then run this again."; exit 1 ;;
     *) bad "$REPO: $label failed ($command)" "Read the lines below (full output: local/logs/repo-run-$REPO.log), fix the cause, then run this again."
        result_lines "$LOG"
        last_output "$LOG" | tail -12 | sed 's/^/        /' ;;
@@ -99,9 +99,9 @@ EOF_FILES
   case "$rc" in
     0) ok "$REPO: lint passed on the $n file(s) the card changed" ;;
     96|97|98) run_one_result "$rc" "lint" "$command" ;;
-    124) look "$REPO: lint took longer than $REPO_RUN_TIMEOUT seconds and was stopped (a warning, D65)" "Run it yourself to see why: cd \"$PATH_\" && nvm use $NV && $command" ;;
+    124) look "$REPO: lint took longer than $REPO_RUN_TIMEOUT seconds and was stopped (a warning)" "Run it yourself to see why: cd \"$PATH_\" && nvm use $NV && $command" ;;
     *) problems="$(last_output "$LOG" | grep -E '✖ [0-9]+ problem' | tail -1 | sed 's/^[[:space:]]*//')"
-       look "$REPO: lint found problems in the $n file(s) the card changed: ${problems:-see below} (a warning, it doesn't stop anything; D65)" "Tidy them in the card's own files if you can; older lint errors elsewhere in the repo are left alone."
+       look "$REPO: lint found problems in the $n file(s) the card changed: ${problems:-see below} (a warning, it doesn't stop anything)" "Tidy them in the card's own files if you can; older lint errors elsewhere in the repo are left alone."
        if [ -n "$problems" ]; then
          last_output "$LOG" | grep -E '^/|^[[:space:]]+[0-9]+:[0-9]+[[:space:]]+(error|warning)' | head -12 | sed 's/^/        /'
        else
@@ -119,7 +119,7 @@ locate() { # <repo>
   [ -f "$FILE" ] || { bad "$REPO isn't registered" "Register it with /flow-configure-repo <path of your clone> (Codex: \$flow-configure-repo …)."; exit 1; }
   PATH_="$(yaml_get "$LOCAL_REPOS_DIR/$REPO.yaml" local_path)"
   if [ -z "$PATH_" ] || [ "$PATH_" = "not-cloned" ] || [ ! -d "$PATH_/.git" ]; then
-    bad "$REPO isn't cloned on this Mac (cloning is manual, D53)" "On the VPN: git clone $(yaml_get "$FILE" gitlab_url) <your workspace folder>/$REPO, then run /flow-configure-repo $REPO path <that folder>."
+    bad "$REPO isn't cloned on this Mac (cloning is manual)" "On the VPN: git clone $(yaml_get "$FILE" gitlab_url) <your workspace folder>/$REPO, then run /flow-configure-repo $REPO path <that folder>."
     exit 1
   fi
   NV=""
@@ -146,7 +146,7 @@ do_start() {
     bad "$REPO has no dev_command or start_command in config/repos/$REPO.yaml" "Add one (e.g. dev_command: npm run dev) with /flow-configure-repo $REPO, then run this again."; return 0
   fi
   if ! repo_port "$REPO" >/dev/null || [ -z "$(repo_port "$REPO")" ]; then
-    bad "$REPO: its port isn't set in its $(env_file_of "$REPO") ($(port_var "$REPO"))" "Set $(port_var "$REPO") in $PATH_/$(env_file_of "$REPO") (the value isn't shown here, rule A6), then run this again."; return 0
+    bad "$REPO: its port isn't set in its $(env_file_of "$REPO") ($(port_var "$REPO"))" "Set $(port_var "$REPO") in $PATH_/$(env_file_of "$REPO") (the value isn't shown here), then run this again."; return 0
   fi
   if repo_answers "$REPO"; then
     if started_here "$REPO"; then ok "$REPO is already running (started by closio-agent)"; else ok "$REPO is already running (started outside closio-agent; it's left as it is)"; fi
@@ -224,7 +224,7 @@ EOF_CMDS
     test_cmd="$(yaml_get "$FILE" test_command)"
     cov_cmd="$(yaml_get "$FILE" coverage_command)"
     if [ -z "$test_cmd" ] || [ "$test_cmd" = "none" ]; then
-      ok "$REPO has no test suite, so no tests to write or run (D25)"
+      ok "$REPO has no test suite, so no tests to write or run"
     elif [ -n "$cov_cmd" ] && [ "$cov_cmd" != "none" ]; then
       info "$REPO: every test and the coverage gate ($(yaml_get "$FILE" coverage_rules)) in one run, time limit $REPO_RUN_TIMEOUT s..."
       run_one "the tests and the coverage gate" "$cov_cmd"
@@ -234,7 +234,7 @@ EOF_CMDS
     fi ;;
   migrate|seed)
     if [ "${3:-}" != "confirmed" ] || [ $# -ne 3 ]; then
-      bad "$REPO: '$action' needs the user's yes first (D21)" "Ask the user in chat, naming $REPO and what will run (npm run $action, against the database its .env names). Only after their yes: bash scripts/repo-run.sh $REPO $action confirmed"
+      bad "$REPO: '$action' needs the user's yes first" "Ask the user in chat, naming $REPO and what will run (npm run $action, against the database its .env names). Only after their yes: bash scripts/repo-run.sh $REPO $action confirmed"
       exit 1
     fi
     if ! has_npm_script "$action"; then
@@ -242,7 +242,7 @@ EOF_CMDS
       exit 1
     fi
     run_one "npm run $action" "npm run $action"
-    [ "$failed" -eq 0 ] && info "Write this run in the card's develop.md (for the deployment doc, D12)." ;;
+    [ "$failed" -eq 0 ] && info "Write this run in the card's develop.md (for the deployment doc)." ;;
   start) [ $# -eq 2 ] || { usage; exit 2; }; do_start ;;
   status) [ $# -eq 2 ] || { usage; exit 2; }
     if repo_answers "$REPO"; then

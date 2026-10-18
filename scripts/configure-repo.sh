@@ -312,7 +312,7 @@ validate() {
   case "$nv" in
     ''|none) ;;
     *) ls -d "${NVM_DIR:-$HOME/.nvm}/versions/node/v$nv."* >/dev/null 2>&1 ||
-         look "Node $nv (what $repo is built for) isn't installed in nvm" "Run: nvm install $nv  (everything in $repo runs on Node $nv, rule A13)" ;;
+         look "Node $nv (what $repo is built for) isn't installed in nvm" "Run: nvm install $nv  (everything in $repo runs on Node $nv)" ;;
   esac
   case "$(yaml_get "$file" health_url)" in
     none) bad "'health_url' is 'none', but every repo needs one" "Find the repo's health check route (e.g. /api/v1/health-checker) and put it in config/repos/$repo.yaml."; problems=$((problems + 1)) ;;
@@ -387,7 +387,7 @@ set_path() {
   mkdir -p "$LOCAL_REPOS_DIR"
   if [ "$path" = "not-cloned" ]; then
     printf '# Where %s is on this Mac (F5). Private: local/ is never pushed.\nlocal_path: \n' "$repo" > "$(local_file "$repo")"
-    look "$repo marked as not cloned yet on this Mac" "Cloning is manual (D53): on the VPN, git clone $(yaml_get "$(shared_file "$repo")" gitlab_url) <your workspace folder>/$repo, then run $CMD $repo path <that folder>."
+    look "$repo marked as not cloned yet on this Mac" "Cloning is manual: on the VPN, git clone $(yaml_get "$(shared_file "$repo")" gitlab_url) <your workspace folder>/$repo, then run $CMD $repo path <that folder>."
     return 0
   fi
   case "$path" in "~"*) path="$HOME${path#\~}" ;; esac
@@ -451,7 +451,7 @@ show() {
   if [ ! -f "$(local_file "$repo")" ]; then
     bad "Local path not set on this Mac" "Run $CMD $repo (give your clone's path, or say it's not cloned yet)."
   elif [ -z "$path" ]; then
-    look "Not cloned on this Mac yet" "Cloning is manual (D53): on the VPN, git clone $(yaml_get "$file" gitlab_url) <your workspace folder>/$repo, then run $CMD $repo path <that folder>."
+    look "Not cloned on this Mac yet" "Cloning is manual: on the VPN, git clone $(yaml_get "$file" gitlab_url) <your workspace folder>/$repo, then run $CMD $repo path <that folder>."
   elif [ -d "$path/.git" ]; then
     ok "Local clone: $path"
   else
@@ -479,7 +479,7 @@ list() {
   done
   [ "$n" -eq 0 ] && look "No repos registered yet" "Run $CMD with the path of a local clone to register one."
   echo
-  echo "Branch names for every repo (D50, rule A12): $JIRA_PROJECT_KEY-<number>/<short-description>, at most $BRANCH_DESC_MAX_WORDS words."
+  echo "Branch names for every repo: $JIRA_PROJECT_KEY-<number>/<short-description>, at most $BRANCH_DESC_MAX_WORDS words."
 }
 
 # ---------------------------------------------------------------- ruleset (D64, rule A19)
@@ -511,7 +511,7 @@ case "${1:-}" in
     else
       bad "Not started in the closio-agent folder (current folder: $(pwd))" \
         "Quit, open a terminal in $AGENT_ROOT, run 'nvm use v$NODE_MAJOR', then start Claude Code or Codex again." \
-        "Always start Claude Code or Codex in the closio-agent folder (D42)."
+        "Always start Claude Code or Codex in the closio-agent folder."
       exit 1
     fi ;;
   list) list ;;

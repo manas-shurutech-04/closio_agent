@@ -210,7 +210,7 @@ if [ ! -f "$AGENT_ROOT/AGENTS.md" ]; then
     "Get it back from git: \`git checkout -- AGENTS.md\` in the closio-agent folder."
 elif [ -n "$bad_claude_files" ]; then
   fail "A CLAUDE.md file stops Claude Code from reading AGENTS.md:$bad_claude_files" \
-    "Remove that file, or add the line \`@AGENTS.md\` to it so it includes the rules (D45)."
+    "Remove that file, or add the line \`@AGENTS.md\` to it so it includes the rules."
 else
   pass "Rules file AGENTS.md is in place"
 fi
@@ -492,7 +492,7 @@ yaml_get() { # <file> <key>: value of a flat "key: value" line
   grep -m1 -E "^$2:" "$1" | sed -E "s/^$2:[[:space:]]*//; s/[[:space:]]+#.*$//; s/[[:space:]]+$//"
 }
 if [ -f "$AGENT_ROOT/$RULESET_FILE" ]; then
-  pass "Ruleset for every card: \`$RULESET_FILE\` (rule A19)"
+  pass "Ruleset for every card: \`$RULESET_FILE\`"
 else
   fail "The ruleset file \`$RULESET_FILE\` is missing" "It's part of closio-agent: \`git checkout -- $RULESET_FILE\` (or pull the latest closio-agent)."
 fi
@@ -507,7 +507,7 @@ for repo_file in "$AGENT_ROOT"/config/repos/*.yaml; do
     warn "$repo isn't set up on this Mac" "Run \`/flow-configure-repo $repo\` (only if you work on it)."
     continue
   elif [ -z "$repo_path" ]; then
-    warn "$repo isn't cloned on this Mac yet" "Cloning is manual (D53): on the VPN, \`git clone $(yaml_get "$repo_file" gitlab_url) <your workspace folder>/$repo\`, then run \`/flow-configure-repo $repo path <that folder>\`."
+    warn "$repo isn't cloned on this Mac yet" "Cloning is manual: on the VPN, \`git clone $(yaml_get "$repo_file" gitlab_url) <your workspace folder>/$repo\`, then run \`/flow-configure-repo $repo path <that folder>\`."
   elif [ ! -d "$repo_path/.git" ]; then
     fail "$repo: clone not found at $repo_path" "Run \`/flow-configure-repo $repo\` and give the new path."
   else

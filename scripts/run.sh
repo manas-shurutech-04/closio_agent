@@ -9,7 +9,8 @@
 #                                    brings runs/<KEY>/ onto disk from that branch when it isn't here (or a teammate's
 #                                    newer save, when there's nothing unsaved here).
 #   create <KEY> "<title>"           Creates runs/<KEY>/ with state.md and history.md (run `branch` first)
-#   state <KEY>                      Prints the card's state (from this Mac, else from the pushed branch)
+#   state <KEY>                      Prints the card's state (from this Mac, else from the pushed branch), for the commands
+#   status <KEY>                     Where the card stands, in plain words, for people (what /flow-status shows)
 #   get <KEY> <field>                One field of the state
 #   set <KEY> <field> <value...>     Changes one field (and 'updated')
 #   log <KEY> <step> "<what>" ["<rules and memory applied>"]
@@ -49,7 +50,7 @@ bad() {
   echo "   Fix: $2"
 }
 usage() {
-  echo "Usage: bash scripts/run.sh check-folder | branch <KEY> | create <KEY> \"<title>\" | state <KEY> | get <KEY> <field>"
+  echo "Usage: bash scripts/run.sh check-folder | branch <KEY> | create <KEY> \"<title>\" | state <KEY> | status <KEY> | get <KEY> <field>"
   echo "       | set <KEY> <field> <value> | log <KEY> <step> \"<what>\" [\"<rules and memory>\"] | save <KEY> \"<message>\" | list | quick-clean <KEY> | count | problems"
 }
 now() { date '+%Y-%m-%d %H:%M'; }
@@ -113,6 +114,13 @@ state_text() { # <key> -> prints the text; return 1 if none
   git_here show "refs/remotes/$GIT_REMOTE/$(run_branch "$1"):$rel" 2>/dev/null && return 0
   return 1
 }
+# A card's phase in plain words, as /flow-status shows it (the phase names stay in state.md).
+phase_words() { # <phase>
+  case "$1" in
+    pick-up) echo "being picked up" ;; plan) echo "planning" ;; develop) echo "in development" ;; verify) echo "being checked" ;;
+    ship) echo "ready to push" ;; after-merge) echo "waiting for the merge" ;; done) echo "finished" ;; *) echo "$1" ;;
+  esac
+}
 state_source() { # <key>: "this Mac" | "the branch on this Mac" | "origin"
   [ -f "$(state_file "$1")" ] && { echo "this Mac"; return; }
   git_here show-ref --verify --quiet "refs/heads/$(run_branch "$1")" && { echo "the branch $(run_branch "$1") on this Mac (not checked out)"; return; }
@@ -148,7 +156,7 @@ do_branch() { # <key>
       from="$GIT_REMOTE/main"
       git_here show-ref --verify --quiet "refs/remotes/$GIT_REMOTE/main" || from="main"
       git_here branch -q "$br" "$from" || { bad "Couldn't make the branch $br from $from" "Check 'git status' in the closio-agent folder."; return 1; }
-      ok "The card's branch $br is made (from $from); run folders are saved there, never on main (D61)"
+      ok "The card's saved copy is made: branch $br (from $from); the card's folder is saved there, never on main"
     fi
   elif [ "$has_remote" -eq 1 ] && [ "$(git_here rev-parse "$br")" != "$(git_here rev-parse "$rmt")" ]; then
     if git_here merge-base --is-ancestor "$br" "$rmt"; then
@@ -167,12 +175,12 @@ do_branch() { # <key>
     fi
   fi
   if [ -f "$d/state.md" ]; then
-    ok "The run folder runs/$key is on this Mac (saved on the branch $br; this folder stays on $(current_branch))"
+    ok "The card's folder runs/$key is on this Mac (its saved copy: branch $br; this folder stays on $(current_branch))"
   elif [ -n "$(branch_tree "$br" "$key")" ]; then
     unpack "$br" "$key"
     ok "Brought runs/$key onto this Mac from the branch $br (this folder stays on $(current_branch))"
   else
-    ok "The card's branch $br is ready; no run folder yet (create it next)"
+    ok "The card's saved copy (branch $br) is ready; no card folder yet (create it next)"
   fi
   return 0
 }
@@ -180,7 +188,7 @@ do_branch() { # <key>
 do_create() { # <key> <title>
   local key="$1" title="${2:-}" d
   d="$(run_dir "$key")"
-  if [ -f "$(state_file "$key")" ]; then look "The run folder runs/$key already exists (resuming)" "See where it stands: bash scripts/run.sh state $key"; return 0; fi
+  if [ -f "$(state_file "$key")" ]; then look "The card's folder runs/$key already exists (resuming)" "See where it stands: bash scripts/run.sh state $key"; return 0; fi
   git_here show-ref --verify --quiet "refs/heads/$(run_branch "$key")" || { bad "The card's branch $(run_branch "$key") isn't ready" "Run first: bash scripts/run.sh branch $key"; return 1; }
   mkdir -p "$d" || { bad "Couldn't create $d" "Check the folder's permissions."; return 1; }
   {
@@ -211,10 +219,26 @@ do_create() { # <key> <title>
 
 do_state() { # <key>
   local key="$1" text
-  text="$(state_text "$key")" || { look "No run folder for $key on this Mac or on $GIT_REMOTE" "Pick the card up with $CMD $key (Codex: \$flow-start $key)."; return 1; }
+  text="$(state_text "$key")" || { look "No card folder for $key on this Mac, and no saved copy on $GIT_REMOTE" "Pick the card up with $CMD $key (Codex: \$flow-start $key)."; return 1; }
   echo "$text"
   echo
   echo "From: $(state_source "$key")"
+  return 0
+}
+
+do_status() { # <key>: where the card stands, in plain words (what /flow-status shows; rule A25)
+  local key="$1" text where f
+  text="$(state_text "$key")" || { look "No card folder for $key on this Mac, and no saved copy on $GIT_REMOTE" "Pick the card up with $CMD $key (Codex: \$flow-start $key)."; return 1; }
+  f() { printf '%s\n' "$text" | grep -m1 -E "^$1:" | sed -E "s/^$1:[[:space:]]*//; s/[[:space:]]+$//"; }
+  where="$(state_source "$key")"
+  echo "$key · $(f title)"
+  echo "State: $(phase_words "$(f phase)")"
+  echo "Next: $(f next)"
+  echo "Jira: $(f jira_status)"
+  echo "Repos: $(f repos)"
+  echo "Branch: $(f branch)"
+  echo "Updated: $(f updated)"
+  [ "$where" = "this Mac" ] || echo "Saved only in $where"
   return 0
 }
 
@@ -227,7 +251,7 @@ do_set() { # <key> <field> <value...>
   local key="$1" field="$2"; shift 2
   local value="$*" f
   f="$(state_file "$key")"
-  [ -f "$f" ] || { bad "No run folder for $key on this Mac" "Run: bash scripts/run.sh branch $key (then create it if it's new)."; return 1; }
+  [ -f "$f" ] || { bad "No card folder for $key on this Mac" "Run: bash scripts/run.sh branch $key (then create it if it's new)."; return 1; }
   case " $FIELDS " in *" $field "*) ;; *) bad "'$field' isn't a state field" "Fields: $FIELDS"; return 2 ;; esac
   set_field "$f" "$field" "$value"
   [ "$field" = "updated" ] || set_field "$f" updated "$(now)"
@@ -237,7 +261,7 @@ do_set() { # <key> <field> <value...>
 do_log() { # <key> <step> <what> [<rules and memory>]
   local key="$1" step="$2" what="$3" applied="${4:-rules: — · memory: —}" f
   f="$(history_file "$key")"
-  [ -f "$f" ] || { bad "No run folder for $key on this Mac" "Run: bash scripts/run.sh branch $key (then create it if it's new)."; return 1; }
+  [ -f "$f" ] || { bad "No card folder for $key on this Mac" "Run: bash scripts/run.sh branch $key (then create it if it's new)."; return 1; }
   what="$(printf '%s' "$what" | tr '\n' ' ' | sed 's/|/\\|/g')"
   applied="$(printf '%s' "$applied" | tr '\n' ' ' | sed 's/|/\\|/g')"
   printf '| %s | %s | %s | %s |\n' "$(now)" "$step" "$what" "$applied" >> "$f"
@@ -248,7 +272,7 @@ do_log() { # <key> <step> <what> [<rules and memory>]
 do_save() { # <key> <message>
   local key="$1" msg="${2:-update}" br rel tmp tree parent commit root
   br="$(run_branch "$key")"; rel="$(rel_runs)/$key"; root="$(git_root)"
-  [ -d "$(run_dir "$key")" ] || { bad "No run folder runs/$key to save" "Run: bash scripts/run.sh branch $key, then create it."; return 1; }
+  [ -d "$(run_dir "$key")" ] || { bad "No card folder runs/$key to save" "Run: bash scripts/run.sh branch $key, then create it."; return 1; }
   git_here show-ref --verify --quiet "refs/heads/$br" || { bad "The card's branch $br isn't ready" "Run: bash scripts/run.sh branch $key, then save again."; return 1; }
   parent="$(git_here rev-parse "$br")"
   tmp="$(mktemp -d)" || { bad "Couldn't make a temporary folder" "Check the disk, then save again."; return 1; }
@@ -286,20 +310,20 @@ do_list() {
   while IFS= read -r key; do
     [ -n "$key" ] || continue
     n=$((n + 1))
-    text="$(state_text "$key")" || { look "$key: a run branch exists but its state can't be read" "Run: bash scripts/run.sh branch $key"; continue; }
+    text="$(state_text "$key")" || { look "$key: the card's saved copy exists, but where it stands can't be read" "Run: bash scripts/run.sh branch $key"; continue; }
     phase="$(printf '%s\n' "$text" | grep -m1 '^phase:' | sed 's/^phase:[[:space:]]*//')"
     step="$(printf '%s\n' "$text" | grep -m1 '^step:' | sed 's/^step:[[:space:]]*//')"
     next="$(printf '%s\n' "$text" | grep -m1 '^next:' | sed 's/^next:[[:space:]]*//')"
     updated="$(printf '%s\n' "$text" | grep -m1 '^updated:' | sed 's/^updated:[[:space:]]*//')"
     where="$(state_source "$key")"
     if [ "$phase" = "done" ]; then
-      done_lines="$done_lines$key · done ($(printf '%s\n' "$text" | grep -m1 '^jira_status:' | sed 's/^jira_status:[[:space:]]*//')) · updated $updated · from $where
+      done_lines="$done_lines$key · finished ($(printf '%s\n' "$text" | grep -m1 '^jira_status:' | sed 's/^jira_status:[[:space:]]*//')) · updated $updated$( [ "$where" = "this Mac" ] || echo " · only in $where")
 "
       n=$((n - 1)); continue
     fi
-    echo "$key · phase $phase, step $step · next: $next · updated $updated · from $where"
+    echo "$key · $(phase_words "$phase") · next: $next · updated $updated$( [ "$where" = "this Mac" ] || echo " · only in $where")"
   done < <(all_keys)
-  [ "$n" -eq 0 ] && echo "No card in progress (no run folder here, no run branch on $GIT_REMOTE)."
+  [ "$n" -eq 0 ] && echo "No card in progress (no card folder on this Mac, no saved copy on $GIT_REMOTE)."
   [ -z "$done_lines" ] || { echo; echo "Finished:"; printf '%s' "$done_lines"; }
   return 0
 }
@@ -317,12 +341,12 @@ do_problems() { # for flow-doctor: ❌ lines only (commands between backticks: f
   local key f field cur
   cur="$(current_branch)"
   case "$cur" in "$RUN_BRANCH_PREFIX"*)
-    bad "The closio-agent folder is on the run branch $cur" "Switch back: \`git checkout main\` (run folders are saved to their branch without switching this folder, D61; your runs/ folders stay where they are)." ;;
+    bad "The closio-agent folder is on a card's saved copy ($cur)" "Switch back: \`git checkout main\` (a card's folder is saved to its own branch without switching this folder; your runs/ folders stay where they are)." ;;
   esac
   for d in "$RUNS_DIR"/*/; do
     [ -d "$d" ] || continue
     key="$(basename "$d")"
-    valid_key "$key" || { bad "runs/$key isn't a card key" "Rename or remove the folder; run folders are named after the card (e.g. $JIRA_PROJECT_KEY-567)."; continue; }
+    valid_key "$key" || { bad "runs/$key isn't a card key" "Rename or remove the folder; card folders are named after the card (e.g. $JIRA_PROJECT_KEY-567)."; continue; }
     f="$d/state.md"
     [ -f "$f" ] || { bad "runs/$key has no state.md" "Pick the card up again with \`$CMD $key\`, or remove the folder."; continue; }
     for field in card phase step next updated; do
@@ -340,6 +364,7 @@ case "$action" in
   branch) need_key "${2:-}"; do_branch "$2" ;;
   create) need_key "${2:-}"; do_create "$2" "${3:-}" ;;
   state) need_key "${2:-}"; do_state "$2" ;;
+  status) need_key "${2:-}"; do_status "$2" ;;
   get) need_key "${2:-}"; [ -n "${3:-}" ] || { usage; exit 2; }; do_get "$2" "$3" ;;
   set) need_key "${2:-}"; [ -n "${3:-}" ] && [ $# -ge 4 ] || { usage; exit 2; }; k="$2"; f="$3"; shift 3; do_set "$k" "$f" "$@" ;;
   log) need_key "${2:-}"; [ -n "${3:-}" ] && [ -n "${4:-}" ] || { usage; exit 2; }; do_log "$2" "$3" "$4" "${5:-}" ;;

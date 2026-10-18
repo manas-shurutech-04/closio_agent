@@ -129,7 +129,7 @@ if [ "$ENV" = "dev" ]; then
   [ -n "$BASE" ] || { bad "$REPO has no dev address (dev_base_url in config/repos/$REPO.yaml)" "Run /flow-setup-repo $REPO dev-address (Codex: \$flow-setup-repo $REPO dev-address)."; exit 1; }
 else
   repo_ready "$REPO" || { bad "$REPO_PROBLEM" "Fix that first, then run this again."; exit 1; }
-  BASE="$(repo_base_url "$REPO")" || { bad "$REPO: its port isn't set in its $(env_file_of "$REPO") ($(port_var "$REPO"))" "Set it there (the value isn't shown here, rule A6), then run this again."; exit 1; }
+  BASE="$(repo_base_url "$REPO")" || { bad "$REPO: its port isn't set in its $(env_file_of "$REPO") ($(port_var "$REPO"))" "Set it there (the value isn't shown here), then run this again."; exit 1; }
 fi
 
 : > "$TMP/h"; chmod 600 "$TMP/h"
@@ -199,7 +199,7 @@ if [ "$CURL_EXTRA" = "session" ]; then
   fi
   if rejected; then
     echo "   ⚠️ The WS1 on this Mac refused the dev session (tried the cookie's own name and $WS1_LOCAL_SESSION_COOKIE, after a fresh dev login)."
-    echo "   Tip: it can only read sessions kept where the dev WS1 keeps them; check its session settings with the user (values aren't read here, rule A6)."
+    echo "   Tip: it can only read sessions kept where the dev WS1 keeps them; check its session settings with the user (values aren't read here)."
   fi
 else
   call

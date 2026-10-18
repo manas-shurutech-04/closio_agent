@@ -73,7 +73,7 @@ do_commit() { # <repo> <message> <file>...
   local msg="$2" log msgfile f staged rc; shift 2
   locate "$REPO" || return 1
   one_line "$msg" || { bad "The commit message must be one line" "Write it as \"$KEY: <what this commit does>\"."; return 2; }
-  printf '%s' "$msg" | grep -q -E "^$KEY: .{3,}" || { bad "The commit message must start with the card's key: \"$KEY: <what this commit does>\"" "Write it like that (D70), e.g. \"$KEY: add the ageing config model and migration\"."; return 2; }
+  printf '%s' "$msg" | grep -q -E "^$KEY: .{3,}" || { bad "The commit message must start with the card's key: \"$KEY: <what this commit does>\"" "Write it like that, e.g. \"$KEY: add the ageing config model and migration\"."; return 2; }
   [ $# -gt 0 ] || { usage; return 2; }
   staged="$(g diff --cached --name-only)"
   [ -z "$staged" ] || { bad "$REPO already has staged files: $(printf '%s' "$staged" | tr '\n' ' ')" "Ask the user: unstage them (git -C \"$PATH_\" reset) or commit them first, then run this again."; return 1; }
@@ -107,7 +107,7 @@ do_push() { # <repo> <title> [--label <label>]...
     esac
   done
   one_line "$title" || { bad "The MR title must be one line" "Write it as \"$KEY: <card title>\"."; return 2; }
-  printf '%s' "$title" | grep -q -E "^$KEY: .{3,}" || { bad "The MR title must read \"$KEY: <card title>\"" "Write it like that (D70)."; return 2; }
+  printf '%s' "$title" | grep -q -E "^$KEY: .{3,}" || { bad "The MR title must read \"$KEY: <card title>\"" "Write it like that."; return 2; }
   target="$(mr_target)"
   user="$(grep -m1 '^GITLAB_USERNAME=' "$USER_SETTINGS" 2>/dev/null | sed "s/^GITLAB_USERNAME=//; s/^[\"']//; s/[\"']$//")"
   [ -n "$user" ] || { bad "Your GitLab username isn't set" "Run /flow-configure-user gitlab-username (Codex: \$flow-configure-user gitlab-username), then run this again."; return 1; }

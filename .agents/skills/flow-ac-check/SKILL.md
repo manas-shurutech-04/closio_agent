@@ -1,6 +1,6 @@
 ---
 name: flow-ac-check
-description: Adds or changes the test cases of one acceptance criterion of a card (an API check or a Playwright test), runs that AC's cases once and saves them in the card's run folder. Runs only when the user types /flow-ac-check (Claude Code) or $flow-ac-check (Codex).
+description: Adds or changes the test cases of one acceptance criterion of a card (an API check or a Playwright test), runs that AC's cases once and saves them in the card's folder. Runs only when the user types /flow-ac-check (Claude Code) or $flow-ac-check (Codex).
 argument-hint: '<CARD-KEY> <AC number> ["what to change"]'
 disable-model-invocation: true
 ---

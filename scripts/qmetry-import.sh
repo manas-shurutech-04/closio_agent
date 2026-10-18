@@ -37,7 +37,7 @@ fi
 KEY="${1:-}"; FILE="${2:-}"
 printf '%s' "$KEY" | grep -q -E "^$JIRA_PROJECT_KEY-[0-9]+$" && [ -n "$FILE" ] || { echo "$USAGE"; exit 2; }
 [ -f "$FILE" ] || { echo "❌ No file '$FILE'"; echo "   Fix: give the full path of the QMetry export (.xlsx)."; exit 1; }
-[ -d "$RUNS_DIR/$KEY" ] || { echo "❌ No run folder runs/$KEY on this Mac"; echo "   Fix: bash scripts/run.sh branch $KEY (it brings the card's run folder here), then run this again."; exit 1; }
+[ -d "$RUNS_DIR/$KEY" ] || { echo "❌ No card folder runs/$KEY on this Mac"; echo "   Fix: bash scripts/run.sh branch $KEY (it brings the card's folder here), then run this again."; exit 1; }
 mkdir -p "$RUNS_DIR/$KEY/qmetry"
 out="$RUNS_DIR/$KEY/qmetry/$(basename "$FILE" .xlsx).md"
 { echo "# QMetry test cases of $KEY"; echo; echo "Imported from $(basename "$FILE") on $(date '+%Y-%m-%d'); the base for the card's test cases."; echo; python3 -I "$AGENT_ROOT/scripts/lib/xlsx-to-md.py" "$FILE"; } > "$out.tmp" || { rm -f "$out.tmp"; echo "❌ Couldn't read '$FILE' as an Excel export"; echo "   Fix: export the test cases from QMetry again as .xlsx, then run this again."; exit 1; }

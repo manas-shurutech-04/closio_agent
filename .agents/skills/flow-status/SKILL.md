@@ -1,6 +1,6 @@
 ---
 name: flow-status
-description: Shows where a Jira card stands in closio-agent (phase, step, branch, what to type next), or every card in progress. Runs only when the user types /flow-status (Claude Code) or $flow-status (Codex).
+description: Shows where a Jira card stands in closio-agent (its state in plain words, what to type next, its branch), or every card in progress. Runs only when the user types /flow-status (Claude Code) or $flow-status (Codex).
 argument-hint: '[<CARD-KEY>]'
 disable-model-invocation: true
 ---
@@ -25,7 +25,7 @@ Shows where a card stands, from its run folder `runs/<CARD-KEY>/` (C1, rule A1, 
 2. Run `bash scripts/run.sh check-folder`. If it fails, or the script isn't found, show the fix and stop.
 3. Read what the user typed after the command (in Claude Code it may also appear as `ARGUMENTS: …`):
    - **Nothing:** run `bash scripts/run.sh list` and show its output exactly as printed.
-   - **A card key** like `SCRUM-567`: run `bash scripts/run.sh state <KEY>` and show its output exactly as printed. Its last lines say where the state comes from and what to type next.
+   - **A card key** like `SCRUM-567`: run `bash scripts/run.sh status <KEY>` and show its output exactly as printed: where the card stands in plain words, what to type next, its Jira status, repos and branch.
    - Anything else: show the usage above and stop.
 
 ## Rules

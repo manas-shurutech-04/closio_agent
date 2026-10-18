@@ -27,7 +27,7 @@ usage() { echo "Usage: bash scripts/db-run.sh <repo> show <sql file> | <repo> ru
 [ $# -ge 3 ] || { usage; exit 2; }
 REPO="$1"; ACTION="$2"; SQL="$3"
 repo_ready "$REPO" || { bad "$REPO_PROBLEM" "Fix that first, then run this again."; exit 1; }
-[ -f "$SQL" ] || { bad "No SQL file '$SQL'" "Write the card's SQL to a file in its run folder (e.g. runs/<KEY>/test-data.sql) first."; exit 2; }
+[ -f "$SQL" ] || { bad "No SQL file '$SQL'" "Write the card's SQL to a file in the card's folder (e.g. runs/<KEY>/test-data.sql) first."; exit 2; }
 SQL="$(cd "$(dirname "$SQL")" && pwd -P)/$(basename "$SQL")"
 P="$(repo_path "$REPO")"; NV="$(repo_node "$REPO")"
 [ -f "$P/.sequelizerc" ] || { bad "$REPO has no .sequelizerc, so there's no database config to use" "Run this for a repo that owns the tables (a WS2 repo with migrations)."; exit 1; }

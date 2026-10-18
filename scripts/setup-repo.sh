@@ -493,7 +493,7 @@ setup_one() { # <repo> <option>
     bad "Where $repo is on this Mac isn't saved yet" "Run /flow-configure-repo $repo (give your clone's path)."
     return 1
   elif [ -z "$path" ]; then
-    bad "$repo isn't cloned on this Mac" "Cloning is manual (D53): on the VPN, git clone $(yaml_get "$file" gitlab_url) <your workspace folder>/$repo, then run /flow-configure-repo $repo path <that folder>."
+    bad "$repo isn't cloned on this Mac" "Cloning is manual: on the VPN, git clone $(yaml_get "$file" gitlab_url) <your workspace folder>/$repo, then run /flow-configure-repo $repo path <that folder>."
     return 1
   elif [ ! -d "$path/.git" ]; then
     bad "$repo: clone not found at $path" "Run /flow-configure-repo $repo path <new path>."
@@ -601,7 +601,7 @@ setup_one() { # <repo> <option>
   # 8. Tests, once (not the coverage check: that's Phase 6). Time limit in config/project-settings.sh.
   test_cmd="$(yaml_get "$file" test_command)"
   if [ -z "$test_cmd" ] || [ "$test_cmd" = "none" ]; then
-    ok "No test suite in $repo, so no tests to run (D25)"
+    ok "No test suite in $repo, so no tests to run"
     tests_result="no test suite"
   elif [ -z "$installed" ]; then
     look "Tests not run, because installing the packages failed" "Fix the install first (see above)."
@@ -654,7 +654,7 @@ list_repos() {
     lang="$(yaml_get "$f" language)"
     if [ -z "$path" ] || [ ! -d "$path/.git" ]; then
       echo "⚠️ $repo: not on this Mac (or its path isn't saved)"
-      echo "   Tip: Clone it yourself, then /flow-configure-repo $repo path <folder> (D53)."
+      echo "   Tip: Clone it yourself, then /flow-configure-repo $repo path <folder>."
       continue
     fi
     state="$(yaml_get "$(local_file "$repo")" setup_on)"
@@ -702,7 +702,7 @@ check_folder() {
   else
     bad "Not started in the closio-agent folder (current folder: $(pwd))" \
       "Quit, open a terminal in $AGENT_ROOT, run 'nvm use v$NODE_MAJOR', then start Claude Code or Codex again." \
-      "Always start Claude Code or Codex in the closio-agent folder (D42)."
+      "Always start Claude Code or Codex in the closio-agent folder."
     exit 1
   fi
 }

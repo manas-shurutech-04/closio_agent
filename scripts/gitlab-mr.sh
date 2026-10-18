@@ -89,7 +89,7 @@ do_describe() { # <branch> <file> [--reviewers a,b]
       *) usage; return 2 ;;
     esac
   done
-  [ -s "$file" ] || { bad "No description file '$file' (or it's empty)" "Write the MR description to a file first (flow-push keeps it in the card's run folder)."; return 2; }
+  [ -s "$file" ] || { bad "No description file '$file' (or it's empty)" "Write the MR description to a file first (flow-push keeps it in the card's folder)."; return 2; }
   [ -z "$reviewers" ] || printf '%s' "$reviewers" | grep -q -E '^[A-Za-z0-9._-]+(,[A-Za-z0-9._-]+)*$' || { bad "Reviewers must be GitLab usernames, comma between them" "e.g. --reviewers ana.s,budi"; return 2; }
   find_mr "$branch" || return 1
   if [ -n "$reviewers" ]; then

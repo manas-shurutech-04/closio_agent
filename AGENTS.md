@@ -69,3 +69,6 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     `config/project-settings.sh`) with the WS1 login saved in the Keychain; `scripts/api-call.sh` does it. The session cookie it
     returns is used for the calls to the WS1 on this Mac (under its own name, else as `closio_session_local`). Never log in on the
     WS1 running on this Mac.
+20. Plain words on screen (rule A25, D74): in what you show the user, use plain words. No decision or rule codes (D53, A19,
+    R17): they stay in the docs and in the card's `history.md`. Say "the card's folder" (`runs/<CARD-KEY>/`), "the card's saved
+    copy" (its branch `runs/<CARD-KEY>`) and the card's state in words ("waiting for the merge"), not the phase names.
