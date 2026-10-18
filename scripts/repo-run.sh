@@ -47,38 +47,7 @@ list_items() { printf '%s' "$1" | tr ',' '\n' | sed -E 's/^[[:space:]]+//; s/[[:
 
 # Runs a command string in the repo folder, on the repo's Node version, with a time limit (the same way as
 # scripts/setup-repo.sh). Output goes to the log. Returns the command's exit code; 124 = time limit; 96–98 = setup.
-run_in_repo() { # <path> <node version or ""> <seconds> <log> <command>
-  local path="$1" nv="$2" limit="$3" log="$4" command="$5" pid waited=0 rc
-  printf '\n$ %s   (in %s, %s)\n' "$command" "$path" "$(date '+%Y-%m-%d %H:%M:%S')" >> "$log"
-  /usr/bin/perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV' -- /bin/bash -c '
-    cd "$1" || exit 96
-    if [ -n "$2" ]; then
-      . "$3" >/dev/null 2>&1 || exit 97
-      nvm use "$2" >/dev/null 2>&1 || exit 98
-    fi
-    eval "$4"' _ "$path" "$nv" "$(nvm_sh)" "$command" >> "$log" 2>&1 < /dev/null &
-  pid=$!
-  while kill -0 "$pid" 2>/dev/null; do
-    if [ "$waited" -ge "$limit" ]; then
-      { kill -TERM -- "-$pid"; sleep 2; kill -KILL -- "-$pid"; wait "$pid"; } 2>/dev/null
-      echo "closio-agent: stopped after $limit seconds (time limit)" >> "$log"
-      return 124
-    fi
-    sleep 1
-    waited=$((waited + 1))
-  done
-  wait "$pid"
-  rc=$?
-  return "$rc"
-}
-
-# The result lines of mocha / vitest / nyc from the last command in the log
-last_output() { awk '/^\$ /{buf=""} {buf=buf $0 "\n"} END{printf "%s", buf}' "$1"; }
-result_lines() {
-  last_output "$1" | grep -E '^[[:space:]]*[0-9]+ (passing|failing|pending)|^[[:space:]]*(Test Files|Tests)[[:space:]]|Coverage for .* does not meet|ERROR: Coverage|^(Statements|Branches|Functions|Lines)[[:space:]]*:' | tail -8 | sed 's/^[[:space:]]*/   /'
-}
-
-# One command: runs it and prints ✅ / ❌ with the fix (rule A11)
+# run_in_repo, last_output and result_lines live in scripts/lib/repo-info.sh (shared with ship.sh).
 run_one() { # <label> <command>
   local label="$1" command="$2" rc
   run_in_repo "$PATH_" "$NV" "$REPO_RUN_TIMEOUT" "$LOG" "$command"

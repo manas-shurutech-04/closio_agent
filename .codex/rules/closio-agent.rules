@@ -20,3 +20,5 @@ prefix_rule(pattern = ["bash", "scripts/api-check.sh"], decision = "allow", just
 prefix_rule(pattern = ["bash", "scripts/db-run.sh"], decision = "allow", justification = "closio-agent: a card's test data, only after the user's yes (flow-verify)")
 prefix_rule(pattern = ["bash", "scripts/e2e.sh"], decision = "allow", justification = "closio-agent: Playwright setup and a card's web tests (flow-configure-user, flow-verify)")
 prefix_rule(pattern = ["bash", "scripts/qmetry-import.sh"], decision = "allow", justification = "closio-agent: a QMetry export into the card's run folder (flow-verify, flow-ac-check)")
+prefix_rule(pattern = ["bash", "scripts/ship.sh"], decision = "allow", justification = "closio-agent: a card's commits and its one push with the MR (flow-push)")
+prefix_rule(pattern = ["bash", "scripts/gitlab-mr.sh"], decision = "allow", justification = "closio-agent: a card's MR description and reviewers through the GitLab API, token from the Keychain (flow-push)")

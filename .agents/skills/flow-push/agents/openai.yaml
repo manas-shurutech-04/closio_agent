@@ -1,0 +1,3 @@
+# Codex: only run this command when the user types $flow-push (D44)
+policy:
+  allow_implicit_invocation: false

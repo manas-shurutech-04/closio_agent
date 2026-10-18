@@ -22,7 +22,7 @@
 | 6. Write tests | Unit tests (controller + service) + API integration tests | `flow-develop` |
 | 7. Run tests | Run the repo's test commands, fix failures | `flow-develop` (`flow-verify` runs them again) |
 | 8. Curl checks | API smoke tests against the running servers | `flow-verify` (coming) |
-| 9. Verify | Read edited files, sanity check, MR description | `flow-verify`, `flow-push` (coming) |
+| 9. Verify | Read edited files, sanity check, MR description | `flow-verify`, `flow-push` |
 
 ---
 
@@ -457,11 +457,11 @@ Read: WS2 routes/incentives/index.js   → route registered?
 Read: WS1 routes/incentives/index.js   → route registered?
 ```
 
-**MR description** (`flow-push` sets it through the GitLab API, [D32](../docs/design-decisions.md#d32)):
-- Reference the JIRA ticket (e.g., SCRUM-517)
-- List all new/edited files grouped by layer (migration, model, service, controller, route, tests)
-- Map which ACs each MR covers
-- Note any error code differences from the JIRA ticket (e.g., middleware uses different codes than originally specified)
+**MR description** (`flow-push` sets it through the GitLab API, [D32](../docs/design-decisions.md#d32); only these, [D70](../docs/design-decisions.md#d70)):
+- The Jira card: its key, title and link (e.g., `[SCRUM-517: <card title>](https://productclosio.atlassian.net/browse/SCRUM-517)`)
+- The migrations and seeders to run, in order (or none)
+
+**Commits and the MR** (`flow-push`, [D70](../docs/design-decisions.md#d70)): atomic commits, each layer's code with its own tests, messages `SCRUM-517: <what this commit does>`; the repo's git hooks always run; one push per repo creates the MR, titled `SCRUM-517: <card title>`, ready for review, assigned to you.
 
 ---
 
@@ -497,7 +497,7 @@ Read: WS1 routes/incentives/index.js   → route registered?
 - [ ] Curl verification — WS2 error cases (400, 401)
 - [ ] Curl verification — WS1 through BFF (200)
 - [ ] Curl verification — WS1 no session (401)
-- [ ] MR descriptions added (JIRA ref, file list, ACs covered)
+- [ ] MR descriptions added (Jira link, migrations and seeders to run)
 - [ ] JIRA error reference matches actual middleware codes
 - [ ] MR reviewed on GitLab
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Shared helpers: facts about a registered repo, read from its registry files (C4, D67).
-# Sourced by scripts/repo-run.sh, scripts/api-call.sh, scripts/db-run.sh and scripts/e2e.sh, after config/project-settings.sh.
+# Sourced by scripts/repo-run.sh, scripts/api-call.sh, scripts/db-run.sh, scripts/e2e.sh and scripts/ship.sh, after
+# config/project-settings.sh.
 # Needs AGENT_ROOT. Never prints a value from a repo's .env file (rule A6): the port is read only to build a local URL
 # that the scripts use themselves.
 
@@ -49,6 +50,8 @@ repo_port() { # <repo>
   printf '%s' "${line#*=}" | sed -E "s/[[:space:]]+#.*$//; s/^[\"']//; s/[\"'][[:space:]]*$//; s/[[:space:]]//g"
 }
 repo_base_url() { local p; p="$(repo_port "$1")" || return 1; [ -n "$p" ] || return 1; printf 'http://localhost:%s' "$p"; }
+# The repo's address on the dev environment (dev_base_url in its shared file, D72), without a trailing slash; "" if not set.
+repo_dev_url() { local u; u="$(yaml_get "$(repo_file "$1")" dev_base_url)"; [ "$u" = "none" ] && u=""; printf '%s' "${u%/}"; }
 repo_health_path() { local h; h="$(yaml_get "$(repo_file "$1")" health_url)"; printf '%s' "${h:-/}"; }
 # 0 when anything answers HTTP on the repo's health URL (any status code)
 repo_answers() { # <repo>
@@ -57,3 +60,38 @@ repo_answers() { # <repo>
   code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "$base$(repo_health_path "$1")" 2>/dev/null)"
   [ -n "$code" ] && [ "$code" != "000" ]
 }
+
+# Runs a command in a repo's folder on its Node version (rule A13), with a time limit; output goes to the log.
+# Exit code 124 = the time limit was hit (the command and its children are stopped). Moved here from repo-run.sh (C5).
+run_in_repo() { # <path> <node version or ""> <seconds> <log> <command>
+  local path="$1" nv="$2" limit="$3" log="$4" command="$5" pid waited=0 rc
+  printf '\n$ %s   (in %s, %s)\n' "$command" "$path" "$(date '+%Y-%m-%d %H:%M:%S')" >> "$log"
+  /usr/bin/perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV' -- /bin/bash -c '
+    cd "$1" || exit 96
+    if [ -n "$2" ]; then
+      . "$3" >/dev/null 2>&1 || exit 97
+      nvm use "$2" >/dev/null 2>&1 || exit 98
+    fi
+    eval "$4"' _ "$path" "$nv" "$(nvm_sh)" "$command" >> "$log" 2>&1 < /dev/null &
+  pid=$!
+  while kill -0 "$pid" 2>/dev/null; do
+    if [ "$waited" -ge "$limit" ]; then
+      { kill -TERM -- "-$pid"; sleep 2; kill -KILL -- "-$pid"; wait "$pid"; } 2>/dev/null
+      echo "closio-agent: stopped after $limit seconds (time limit)" >> "$log"
+      return 124
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  wait "$pid"
+  rc=$?
+  return "$rc"
+}
+
+# The result lines of mocha / vitest / nyc from the last command in the log
+last_output() { awk '/^\$ /{buf=""} {buf=buf $0 "\n"} END{printf "%s", buf}' "$1"; }
+result_lines() {
+  last_output "$1" | grep -E '^[[:space:]]*[0-9]+ (passing|failing|pending)|^[[:space:]]*(Test Files|Tests)[[:space:]]|Coverage for .* does not meet|ERROR: Coverage|^(Statements|Branches|Functions|Lines)[[:space:]]*:' | tail -8 | sed 's/^[[:space:]]*/   /'
+}
+
+# One command: runs it and prints ✅ / ❌ with the fix (rule A11)
