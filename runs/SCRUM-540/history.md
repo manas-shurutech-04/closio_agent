@@ -74,3 +74,10 @@ One line per step (rule A1). The last column says which team rules and user-memo
 | 2026-10-19 10:13 | finish 2 | both merged: WS2 MR !248 (merge commit 1e8fea4f), WS1 MR !561 (merge commit 65712e8b), 2026-10-19 11:42 UTC | rules: A17 · memory: — |
 | 2026-10-19 10:14 | finish 3 | user: deployed on dev (both repos) | rules: A17 · memory: — |
 | 2026-10-19 10:17 | finish 4 | dev check (B): WS2 all passed; dev WS1 answers 597 (route not found) for the card's route: WS1 not running the merged develop yet; WS2 dev address saved (https); waiting for the user | rules: A6, A11, A16, A17, A23, A24, A25 · memory: — |
+| 2026-10-19 10:21 | finish 4 | WS1 tried again at the user's request: still 597; without a session the card's route also gives 597 while an existing route gives 401 SESSION_EXPIRED: the route isn't on dev WS1 | rules: A17, A24, A25 · memory: — |
+| 2026-10-19 10:22 | finish 4 | dev check (B) passed: dev WS1 now has the route; every AC on dev ✅ (20 scenarios: 13 WS2 direct, 7 through WS1), no test data, no write calls | rules: A6, A16, A17, A23, A24, A25 · memory: — |
+| 2026-10-19 10:24 | finish 5 | special instructions: none (user) | rules: A17 · memory: — |
+| 2026-10-19 10:59 | finish 6 | deployment doc rewritten in plain words (user), curls added (user); the doc's calls run end to end on dev with the saved login and keys: login ✅, WS1 list/active/inactive 200 ✅, WS2 list 200 ✅; waiting for the yes | rules: A6, A17, A23, A24, A25 · memory: — |
+| 2026-10-19 11:05 | finish 6 | deployment doc approved by the user, migration and seeder reviewed: yes | rules: A17, A23 · memory: — |
+| 2026-10-19 11:05 | finish 7 | deployment doc posted on the card as one comment (id 15476); card moved to Ready for Test | rules: A3, A6, A17 · memory: — |
+| 2026-10-19 11:05 | finish 8 | finished: deployment doc on the card, Ready for Test | rules: A1, A17 · memory: — |
