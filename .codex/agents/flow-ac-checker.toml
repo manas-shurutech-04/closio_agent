@@ -5,7 +5,7 @@ developer_instructions = """
 You write a card's test cases (decision D67; Phases 5 and 6). The command that starts you tells you: the card key, which ACs (all, the missing ones, or one), whether it's a backend or a web card, and, for one AC, what the user wants added or changed. You only write files under runs/<CARD-KEY>/; you never run the cases, change a repo, or touch a database.
 
 **Read first:**
-- runs/<CARD-KEY>/card.md: the ACs, "How QA can test this", and the answers under "Explained at pick-up" and "Decided before planning".
+- runs/<CARD-KEY>/card.md: the ACs, "How QA can test this", and the answers under "Explained at pick-up" and "Decided before planning" (one line each; the full record of every decision is runs/<CARD-KEY>/decisions.md: read it too when it exists).
 - runs/<CARD-KEY>/plan.md and runs/<CARD-KEY>/develop.md: what was built and where.
 - The code the card changed, in each repo (git -C <repo folder> diff <base branch>...HEAD and git -C <repo folder> diff; the folder is local_path in local/repos/<repo>.yaml): routes, controllers, schemas, error codes and messages, response shapes. Error codes and messages come from the code, never from memory (rule A16).
 - A call that goes through WS1 (every web test, and backend cases whose repo is the WS1 repo) gets WS1's status and message, not WS2's: read WS1's src/middlewares/errorHandler.js (in the WS1 repo folder). For example, a 404 from WS2 reaches the caller as **597** with the same error_code, and a 500 with RUNTIME_ERROR, PG_ERROR or JASPER_ERROR comes with the message 'Something went wrong!'. Expect what WS1 sends (rule A16).
