@@ -1,0 +1,6 @@
+# Codex: only run this command when the user types $flow-review (D44)
+policy:
+  allow_implicit_invocation: false
+# What Codex's $ menu shows: the options and a one-line summary (D74); made with: bash scripts/help.sh codex-line flow-review
+interface:
+  short_description: "$flow-review <CARD-KEY> [check] · Reviews a pushed Jira card's merge requests while they wait for the merge."
