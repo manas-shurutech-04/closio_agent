@@ -6,7 +6,7 @@
 > - **Your own changes go in your user memory** (`flow-memory`): an entry may change a point of this ruleset for you, and the plan names which entry changed which point. The agent rules (`AGENTS.md`, [docs/agent-rules.md](../docs/agent-rules.md)) always win over both.
 > - **Backend repos** (`type: BE` in `config/repos/`) follow all of it.
 > - **The web app** (`type: FE`) follows its common practices until a frontend ruleset exists: read the card, explore and read the closest existing pattern, the plan format, tests mapped to the ACs, verify. It skips the parts about WS1/WS2, mocha, Sequelize and the S2S curl checks. Its tests are Vitest in the repo; Playwright stays outside the repo ([D24](../docs/design-decisions.md#d24)).
-> - **Where it came from:** the SCRUM-517 session (2026-10-02), copied from `japfa/backend/story-implementation-workflow.md` on 2026-10-17. Changed since: Steps instead of Phases, each mapped to its command; works in Claude Code and Codex; Express 5; `validateSchema` before `isAuthenticated` in WS1; migrations and seeders only after the user's yes; keys never pasted into chat; each repo's own test commands and Node version; one plan format with `flow-start`; the card's error codes checked against the code; GitLab MCP, `glab` and the session stats removed; the tests written and run in `flow-develop` (D65), with `scripts/repo-run.sh`; rules A20–A23 added (where request validation goes, no redundant code, every WS1 response field, a review before any migration; D66).
+> - **Where it came from:** the SCRUM-517 session (2026-10-02), copied from `japfa/backend/story-implementation-workflow.md` on 2026-10-17. Changed since: Steps instead of Phases, each mapped to its command; works in Claude Code and Codex; Express 5; `validateSchema` before `isAuthenticated` in WS1; migrations and seeders only after the user's yes; keys never pasted into chat; each repo's own test commands and Node version; one plan format with `flow-start`; the card's error codes checked against the code; GitLab MCP, `glab` and the session stats removed; the tests written and run in `flow-develop` (D65), with `scripts/repo-run.sh`; rules A20–A23 added (where request validation goes, no redundant code, every WS1 response field, a review before any migration; D66); Step 8 brought up to date on 2026-10-19 (the checks are built in `flow-verify` and `flow-finish`; WS1 sessions come from the dev login, rule A24; a direct WS2 call sends the caller's client pair, WS1's, D37); planning asked the grilling way and Step 9's MR review by `flow-review` (2026-10-19, D76, D78).
 
 ---
 
@@ -21,8 +21,8 @@
 | 5. Implement | Write new files, edit index files | `flow-develop` |
 | 6. Write tests | Unit tests (controller + service) + API integration tests | `flow-develop` |
 | 7. Run tests | Run the repo's test commands, fix failures | `flow-develop` (`flow-verify` runs them again) |
-| 8. Curl checks | API smoke tests against the running servers | `flow-verify` (coming) |
-| 9. Verify | Read edited files, sanity check, MR description | `flow-verify`, `flow-push` |
+| 8. Curl checks | API smoke tests against the running servers | `flow-verify` (on this Mac), `flow-finish` (on dev) |
+| 9. Verify | Read edited files, sanity check, MR description; the MR's self-review and the reviewers' comments | `flow-verify`, `flow-push`, `flow-review` |
 
 ---
 
@@ -110,7 +110,7 @@ The file names below are **examples from `nodejs-ws2targetsalesincentive` and `n
 
 ## Step 4 — Plan
 
-**Goal:** Get user alignment before writing code. Every difference between the card and the code is asked about first, and nothing is saved before the user's yes in chat (rule A18).
+**Goal:** Get user alignment before writing code. Every difference between the card and the code is asked about first, the grilling way ([grilling.md](grilling.md), rule A26: what the code answers shown as found, the real decisions in rounds with a recommended answer each, until nothing is open), and nothing is saved before the user's yes in chat (rule A18).
 
 ### Plan format (the one `flow-start` shows):
 
@@ -119,7 +119,7 @@ Ruleset: rulesets/story-implementation-workflow.md · Memory applied: M2 (change
 
 ## Summary
 ## Acceptance criteria
-## Decided before planning
+## Decided before planning      (one line each, pointing to the card's decisions.md: "decision 3")
 
 ## Changes
 ### WS2 — nodejs-ws2targetsalesincentive (N files)
@@ -354,16 +354,19 @@ In ws2notification, ws2pricingengine and ws2targetsalesincentive, husky also run
 ### Prerequisites
 - WS2 (nodejs-ws2targetsalesincentive) running on its configured port
 - WS1 (nodejs-ws1closio) running on its configured port
+  (`flow-verify` starts and stops them itself: `bash scripts/repo-run.sh <repo> start` / `stop`)
 - **Migrations and seeders:** started from this Mac with the repo's own `npm run migrate` and `npm run seed` (closio-agent: `bash scripts/repo-run.sh <repo> migrate confirmed`), against the database the repo's `.env` names (today the dev database). **First the user reviews the files (rule A23):** the full migration or seeder (its up and its down), what it changes (tables, columns, rows), the repo, and that it runs against the database the repo's `.env` names. **Then a separate yes in chat, for every run.** The same review comes before the user is asked to run a migration on a server (the deployment doc). No wrong migration reaches a database. They also go into the card's deployment doc ([D12](../docs/design-decisions.md#d12)).
-- **Keys and cookies are never pasted into chat** (rule A6). The WS2 client ID and secret come from the repo's `.env` ([D34](../docs/design-decisions.md#d34)); the WS1 session comes from the login API with your logins in the Keychain ([D20](../docs/design-decisions.md#d20)). closio-agent runs these checks with its own script in `flow-verify` (coming); until then, the developer runs them in a terminal.
+- **Keys and cookies are never pasted into chat** (rule A6). closio-agent runs these checks itself and adds the keys and the session: `flow-verify` on this Mac (`scripts/api-call.sh` for the quick check, `scripts/api-check.sh` for the full check's saved test cases) and `flow-finish` on dev ([D67](../docs/design-decisions.md#d67), [D68](../docs/design-decisions.md#d68), [D72](../docs/design-decisions.md#d72)). The curls below are for running a check by hand.
+- **A direct WS2 call sends the caller's client ID and secret** ([D37](../docs/design-decisions.md#d37)): a WS2 checks the pair of whoever calls it, usually WS1's own pair (the values of `WS1_AUTH_CLIENT_ID` and `WS1_AUTH_SECRET_KEY` in WS1's `.env`), saved once under WS1 with `/flow-configure-repo nodejs-ws1closio key ws1-client-id` and `… key ws1-client-secret`. The pricing engine gets another pair from WS1; save that one under the pricing engine repo (`ws2-client-id`, `ws2-client-secret`).
+- **WS1 calls use a session from the dev login** (rule A24, [D71](../docs/design-decisions.md#d71)): log in on the dev WS1 with your WS1 login (in the Keychain, [D20](../docs/design-decisions.md#d20)); the session cookie it returns goes to the WS1 on this Mac, first under its own name, then as `closio_session_local` if that WS1 doesn't take it. A web login returns no token.
 
 ### WS2 Direct Tests (S2S)
 
 ```bash
 # AC 1 — Happy path: Get all buckets
 curl -s -X GET http://localhost:<WS2_PORT>/api/incentives/v1/ageing-deduction-configs/options \
-  -H "x-client-id: <CLIENT_ID>" \
-  -H "x-client-secret: <CLIENT_SECRET>" \
+  -H "x-client-id: <WS1 client ID>" \
+  -H "x-client-secret: <WS1 client secret>" \
   -H "X-Partner-Id: e3d8f926-a1bf-4890-9524-cc2d610152f9" \
   | jq .
 
@@ -371,16 +374,16 @@ curl -s -X GET http://localhost:<WS2_PORT>/api/incentives/v1/ageing-deduction-co
 
 # AC 7 — Missing X-Partner-Id header
 curl -s -X GET http://localhost:<WS2_PORT>/api/incentives/v1/ageing-deduction-configs/options \
-  -H "x-client-id: <CLIENT_ID>" \
-  -H "x-client-secret: <CLIENT_SECRET>" \
+  -H "x-client-id: <WS1 client ID>" \
+  -H "x-client-secret: <WS1 client secret>" \
   | jq .
 
 # Expected: 400 { status: "error", error_code: "PARTNER_ID_MISSING" }
 
 # AC 8 — Malformed X-Partner-Id
 curl -s -X GET http://localhost:<WS2_PORT>/api/incentives/v1/ageing-deduction-configs/options \
-  -H "x-client-id: <CLIENT_ID>" \
-  -H "x-client-secret: <CLIENT_SECRET>" \
+  -H "x-client-id: <WS1 client ID>" \
+  -H "x-client-secret: <WS1 client secret>" \
   -H "X-Partner-Id: abc" \
   | jq .
 
@@ -404,8 +407,8 @@ curl -s -X GET http://localhost:<WS2_PORT>/api/incentives/v1/ageing-deduction-co
 
 # AC 3 — Different partner, same result
 curl -s -X GET http://localhost:<WS2_PORT>/api/incentives/v1/ageing-deduction-configs/options \
-  -H "x-client-id: <CLIENT_ID>" \
-  -H "x-client-secret: <CLIENT_SECRET>" \
+  -H "x-client-id: <WS1 client ID>" \
+  -H "x-client-secret: <WS1 client secret>" \
   -H "X-Partner-Id: f4444444-4444-4444-8444-444444444444" \
   | jq .
 
@@ -415,15 +418,23 @@ curl -s -X GET http://localhost:<WS2_PORT>/api/incentives/v1/ageing-deduction-co
 ### WS1 Tests (via session)
 
 ```bash
-# AC 1 — Happy path through WS1 (requires valid session)
-curl -s -X GET http://localhost:<WS1_PORT>/api/incentives/v1/ageing-deduction-configs/options \
-  -H "Authorization: Bearer <VALID_TOKEN>" \
-  -H "X-Secure-Transmission-Type: x" \
+# Log in on the dev WS1 (rule A24); keep the session cookie it sets
+curl -s -c ws1-cookies.txt -X POST https://dev-closio-ws1-apiprivate.japfacomfeed.co.id/api/v1/login \
   -H "Content-Type: application/json" \
-  --cookie "connect.sid=<SESSION_COOKIE>" \
+  -H "X-Secure-Transmission-Type: x" \
+  -H "X-Application-Version: 1.0.0+1" \
+  -d '{"userid":"<your userid>","password":"<your password>","napp_pk":4,"client_type":"web"}'
+
+# AC 1 — Happy path through the WS1 on this Mac, with that session
+curl -s -X GET http://localhost:<WS1_PORT>/api/incentives/v1/ageing-deduction-configs/options \
+  -H "Content-Type: application/json" \
+  -H "X-Secure-Transmission-Type: x" \
+  -H "X-Application-Version: 1.0.0+1" \
+  -H "Cookie: <cookie name>=<session cookie>" \
   | jq .
 
 # Expected: 200 { status: "success", data: { buckets: [...] } }
+# If it answers 401, send the same value as: -H "Cookie: closio_session_local=<session cookie>"
 
 # AC 5 — No valid session
 curl -s -X GET http://localhost:<WS1_PORT>/api/incentives/v1/ageing-deduction-configs/options \
@@ -463,6 +474,8 @@ Read: WS1 routes/incentives/index.js   → route registered?
 
 **Commits and the MR** (`flow-push`, [D70](../docs/design-decisions.md#d70)): atomic commits, each layer's code with its own tests, messages `SCRUM-517: <what this commit does>`; the repo's git hooks always run; one push per repo creates the MR, titled `SCRUM-517: <card title>`, ready for review, assigned to you.
 
+**The MR's review** (`flow-review`, [D78](../docs/design-decisions.md#d78)): while the MR waits for the merge, a self-review against [code-review.md](code-review.md) (the story; the basics: no redundant code, the right file for each piece), then the reviewers' comments; fixes as new commits on top, pushed into the same MR after the user's yes (no rebase, never forced).
+
 ---
 
 ## Checklist (copy for each story)
@@ -499,7 +512,7 @@ Read: WS1 routes/incentives/index.js   → route registered?
 - [ ] Curl verification — WS1 no session (401)
 - [ ] MR descriptions added (Jira link, migrations and seeders to run)
 - [ ] JIRA error reference matches actual middleware codes
-- [ ] MR reviewed on GitLab
+- [ ] MR self-reviewed with `flow-review` (`code-review.md`: no redundant code, the right files, the basics) and reviewed on GitLab
 
 ---
 
