@@ -40,7 +40,7 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     guide), then set the guide's "mirrored" line (the date and every command).
     Only Claude Code can reach the artifact: a change made in Codex is finished in Claude Code. `bash scripts/help.sh check`
     (also run by flow-doctor) fails until all of this is done.
-12. In the card phases (flow-status, flow-start, flow-develop, flow-verify, flow-ac-check, flow-push, flow-review, flow-finish; rule A17,
+12. In the card phases (flow-status, flow-start, flow-develop, flow-verify, flow-ac-check, flow-push, flow-review, flow-finish, flow-qa; rule A17,
     D62): before every step, re-read this file and `docs/agent-rules.md`, and read the user-created memory (the entries the
     user made with flow-memory, in `local/memory/`): `bash scripts/memory.sh for <phase> <repos>`. Apply both, and write in
     the card's `runs/<CARD-KEY>/history.md` which rules and entries you applied; flow-status only reads, so it writes
@@ -50,8 +50,8 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     difference between the card and the code (error codes, statuses, messages, fields, anything the card names that isn't in the
     code) and ask the user about them first; wait for the answers. Only then draft the plan. Nothing is saved or pushed before
     the user approves the plan in chat; that approval is strictly necessary.
-14. Rulesets (rule A19, D64): every card follows `rulesets/story-implementation-workflow.md` (backend repos: all of it; the web
-    app: its common practices until a frontend ruleset exists). The closio-agent builders keep it; no command adds or changes it.
+14. Rulesets (rule A19, D64, D80): every card follows its repo's ruleset: backend repos `rulesets/story-implementation-workflow.md`,
+    the web app `rulesets/frontend-story-workflow.md`. The closio-agent builders keep them; no command adds or changes them.
     A user changes its points for themselves only through their user memory (`flow-memory`), and the plan names which entry
     changed which point. The rules in this file always win over both.
 15. Request validation (rule A20, D66): WS1 is a proxy. Its schema file (`schemas/v1/...`) checks only presence (`required`),
@@ -83,7 +83,7 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     the build plan, the status line of `docs/agent-rules.md`). Say which files were changed and which were only checked.
     `bash scripts/help.sh check` fails while a rule file still calls a built command "coming" or "not built yet".
 22. Grilling during a card (rule A26, D76): while a card command runs (flow-start, flow-develop, flow-verify, flow-ac-check,
-    flow-push, flow-review, flow-finish), and for any prompt during it that changes the card's plan, code, tests, data, Jira or GitLab,
+    flow-push, flow-review, flow-finish, flow-qa), and for any prompt during it that changes the card's plan, code, tests, data, Jira or GitLab,
     ask and decide the way `rulesets/grilling.md` says: look up every fact first and show it as found (never ask what the
     code or the files answer); ask only real decisions, in numbered rounds, each with a recommended answer that "yes"
     accepts; follow-up rounds until nothing is open; sum up what was agreed and wait for the confirmation before changing
