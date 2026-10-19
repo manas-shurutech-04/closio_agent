@@ -9,8 +9,9 @@
 #   check                 Rule R17: every command folder has a "## Usage" block, an "argument-hint" when it takes
 #                         arguments (what Claude Code's / menu shows), its Codex menu line (codex-line) in
 #                         agents/openai.yaml, a section in docs/commands.md, an index row in docs/user-guide.md, and is
-#                         covered by the guide's "mirrored" line (the Claude artifact of the guide). ❌ with the fix for
-#                         anything missing (rule A11).
+#                         covered by the guide's "mirrored" line (the Claude artifact of the guide); and no rule file
+#                         (rulesets/*.md, AGENTS.md, docs/agent-rules.md) calls a built command "coming" or "not built
+#                         yet" (rule R15, step 7; D75). ❌ with the fix for anything missing (rule A11).
 #
 # The text comes from the commands' own files: every folder .agents/skills/flow-*/ is a command; its SKILL.md
 # gives the one-line "description:" and the "## Usage" block. So a new command can't be missing from the help.
@@ -27,14 +28,16 @@ AGENT_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 SKILLS_DIR="${SKILLS_DIR:-$AGENT_ROOT/.agents/skills}"
 COMMANDS_DOC="${COMMANDS_DOC:-$AGENT_ROOT/docs/commands.md}"
 GUIDE_DOC="${GUIDE_DOC:-$AGENT_ROOT/docs/user-guide.md}"
+# The rule files the commands and agents follow: none may call a built command "coming" or "not built yet" (D75).
+RULE_FILES_DIR="${RULE_FILES_DIR:-$AGENT_ROOT}"
 
 # Groups shown by "list", in this order. A command that isn't named here still shows, under "Other",
 # and "check" fails until it's in a group (rule R17).
 GROUP_NAMES="Setup, once, in this order|Every day|Cards|Any time"
 GROUP_1="flow-ping flow-doctor flow-configure-user flow-configure-repo flow-setup-repo"
 GROUP_2="flow-vpn flow-memory"
-GROUP_3="flow-check-card flow-start flow-develop flow-verify flow-ac-check flow-push flow-finish flow-status"
-GROUP_4="flow-help"
+GROUP_3="flow-check-card flow-start flow-develop flow-verify flow-ac-check flow-push flow-review flow-finish flow-status"
+GROUP_4="flow-help flow-grill"
 
 to_fix=0
 to_look=0
@@ -252,6 +255,20 @@ EOF_LINES
 }
 
 # ---------------------------------------------------------------- check (rule R17)
+# Lines of the rule files that name a built command (a folder in .agents/skills/) and call something "coming" or
+# "not built yet", as "<file>:<line>" (rule R15, step 7; D75). Prints nothing when there are none.
+stale_status_lines() {
+  local f names
+  names="$(all_commands | paste -s -d '|' -)"
+  [ -n "$names" ] || return 0
+  for f in "$RULE_FILES_DIR"/rulesets/*.md "$RULE_FILES_DIR/AGENTS.md" "$RULE_FILES_DIR/docs/agent-rules.md"; do
+    [ -f "$f" ] || continue
+    grep -n -i -E '(^|[^a-z])(coming|not built( yet)?)([^a-z]|$)' "$f" \
+      | grep -E "(^|[^a-z-])($names)([^a-z-]|$)" \
+      | cut -d: -f1 | sed "s|^|${f#"$RULE_FILES_DIR"/}:|"
+  done
+}
+
 grouped_commands() { # every command named in a GROUP_ line, one per line
   local i=1 members
   while :; do
@@ -263,7 +280,7 @@ grouped_commands() { # every command named in a GROUP_ line, one per line
 }
 
 do_check() {
-  local name count=0 missing_usage="" missing_hint="" missing_codex="" missing_doc="" missing_guide="" missing_mirror="" missing_group="" line grouped
+  local name count=0 missing_usage="" missing_hint="" missing_codex="" missing_doc="" missing_guide="" missing_mirror="" missing_group="" line grouped stale
   grouped=" $(grouped_commands | tr '\n' ' ') "
   while IFS= read -r name; do
     count=$((count + 1))
@@ -331,6 +348,12 @@ do_check() {
         pass "The Claude artifact covers every command ($(printf '%s' "$line" | sed -E 's/.*mirrored on ([0-9-]+).*/\1/'))"
       fi
     fi
+  fi
+  stale="$(stale_status_lines | tr '\n' ' ')"
+  if [ -n "$stale" ]; then
+    fail "A rule file still calls a built command \"coming\" or \"not built yet\": ${stale% }" "Change each line to say what's built now (every command in .agents/skills/ is built), as the build rule's step 7 asks (AGENTS.md rule 21)."
+  else
+    pass "No rule file calls a built command \"coming\" or \"not built yet\""
   fi
   [ "$to_fix" -eq 0 ]
 }
