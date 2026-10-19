@@ -54,7 +54,7 @@ The first memory step runs here automatically:
    - **Continuing** (`develop.md` exists): `bash scripts/card-branch.sh check <repo>` only, and make sure the clone is on the card's branch. The card's own work is uncommitted on purpose; the newer base branch comes in with the rebase in `flow-push` (rule G2).
    - Log the step; `bash scripts/run.sh set <KEY> step 3`.
 
-**3. Read.** `runs/<KEY>/plan.md` (the approved plan: what to build, in which order), `runs/<KEY>/card.md` (with `## Explained at pick-up` and `## Decided before planning`), `runs/<KEY>/decisions.md` (every decision so far, in full), the ruleset (`bash scripts/configure-repo.sh ruleset <repo>`, then read the file; backend repos follow all of it, the web app its common practices; rule A19), the memory entries from the check above, and in every repo the files the plan names and the files next to them (the closest existing module). Never read or print `.env` values (A6). Log the step; `set <KEY> step 4`.
+**3. Read.** `runs/<KEY>/plan.md` (the approved plan: what to build, in which order), `runs/<KEY>/card.md` (with `## Explained at pick-up` and `## Decided before planning`), `runs/<KEY>/decisions.md` (every decision so far, in full), the ruleset (`bash scripts/configure-repo.sh ruleset <repo>`, then read the file; backend repos follow `rulesets/story-implementation-workflow.md`, the web app `rulesets/frontend-story-workflow.md`; rule A19), the memory entries from the check above, and in every repo the files the plan names and the files next to them (the closest existing module). Never read or print `.env` values (A6). Log the step; `set <KEY> step 4`.
 
 Steps 4 to 8 are done **repo by repo, in the plan's order** (WS2 before WS1, D26). Write `runs/<KEY>/develop.md` as you go (its shape is in step 9), so a later session can continue.
 
@@ -94,7 +94,7 @@ After the last repo: log the step; `set <KEY> step 9`.
 **9. Save.** Make sure `runs/<KEY>/develop.md` is complete, in this shape (written with your file-writing tool):
 ```
 # <KEY> — development
-Plan: plan.md (approved on <date>) · Ruleset: rulesets/story-implementation-workflow.md · Memory applied: M2 (changes: …) or none
+Plan: plan.md (approved on <date>) · Ruleset: <the ruleset file of each repo> · Memory applied: M2 (changes: …) or none
 
 ## <repo>            (one section per repo, the summary of step 8)
 ## Migrations and seeders run     (each run: repo, command, date, result; or none)

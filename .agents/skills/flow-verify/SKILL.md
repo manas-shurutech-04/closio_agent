@@ -92,7 +92,7 @@ The first memory step runs here automatically:
 ```
 # <KEY> — verification
 ## Run <n> — <date and time> · A full check | B quick check
-Repos: … · Ruleset: rulesets/story-implementation-workflow.md · Memory applied: … or none
+Repos: … · Ruleset: <the ruleset file of each repo> · Memory applied: … or none
 ### APIs (web cards: each API real or mocked, with the user's answer and the check before the run)
 ### AC checks
 ### Repo tests and checks
