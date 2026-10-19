@@ -52,6 +52,14 @@ Each of the card's repos: its changes on the card's branch against the MR's targ
 - Migrations and seeders follow the repo's existing pattern and were reviewed by the user (A23).
 - Every changed file ends with a newline.
 
+**In the web app** (`type: FE`; [frontend-story-workflow.md](frontend-story-workflow.md), [D80](../docs/design-decisions.md#d80)), the right place and the basics are the frontend ruleset's Step 5; in short:
+- A new component, composable or helper that one in `src/components/`, `src/composables/`, `src/utils/` or the module already provides (e.g. a table instead of `BaseDataTable`, a loading or error block instead of `LoadingSpinner` / `MessageCard`, a date format instead of `formatDate`): **must fix**, reuse it.
+- Files in the module's layout (`src/views/<module>/` with `components/`, `types/`, `utils/`, `__tests__/`; API functions in `src/api/<module>.ts`); checks, payload and error mapping as plain functions in the module's `utils/`; create and edit sharing one form.
+- API functions return an `ErrorResponse` (a cancel thrown again), send `'X-Secure-Transmission-Type': 'x'` on writes, take an `AbortSignal` on loads.
+- Messages through `useAppToast` (never `BaseToast`); dates through `formatDate` (never `formatDateShort`); numbers through `BaseInputNumber`.
+- Loading, error, empty and not-found states on every page that loads data; routes with `meta.permissions` and guards; a new screen's test ids.
+- Tests: `__tests__/<File>.test.ts`, the page, API and utils patterns of the frontend ruleset's Step 6; every AC and its error paths.
+
 ## How a finding is shown (chat only, never on the MR)
 
 One line each, plain words, grouped by repo:
