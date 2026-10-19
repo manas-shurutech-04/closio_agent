@@ -24,8 +24,10 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
 8. Before working in a code repo, check that this session can use its folder. If it can't, stop and ask the user to give access,
    with the exact way (Claude Code: `/add-dir <folder>` or a new session; Codex: restart with `codex --add-dir <folder>` or approve
    its request). Go on only after the user has given access (rule A15, D55).
-9. User memory (rules A7, A8; D40, D56): every flow command starts with `bash scripts/memory.sh for setup all` (Claude Code runs it by
-   itself when the command loads; in Codex, run it yourself first) and applies the entries that fit. Team rules always win over memory.
+9. User memory (rules A7, A8; D40, D56): every flow command loads it first with `bash scripts/memory.sh for <phase> …`: the setup
+   commands `for setup all`, `flow-check-card` and `flow-status` `for pick-up all`, each card command its own phase (and again before
+   every step, rule 12). Claude Code runs the first one by itself when the command loads; in Codex, run it yourself first. Apply the
+   entries that fit. Team rules always win over memory.
    When the user corrects you during a flow command, offer once to save it to their memory; save it only after a clear yes,
    with `bash scripts/memory.sh add …` (the same steps as `/flow-memory add`).
 10. Error codes, HTTP statuses and messages always come from the code (rule A16, D59). Before developing a card, read the ones that
@@ -38,10 +40,11 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     guide), then set the guide's "mirrored" line (the date and every command).
     Only Claude Code can reach the artifact: a change made in Codex is finished in Claude Code. `bash scripts/help.sh check`
     (also run by flow-doctor) fails until all of this is done.
-12. In the card phases (flow-status, flow-start, flow-develop, flow-verify, flow-push, flow-finish; rule A17, D62): before every
-    step, re-read this file and `docs/agent-rules.md`, and read the user-created memory (the entries the user made with
-    flow-memory, in `local/memory/`): `bash scripts/memory.sh for <phase> <repos>`. Apply both, and write in the card's
-    `runs/<CARD-KEY>/history.md` which rules and entries you applied. Skip nothing.
+12. In the card phases (flow-status, flow-start, flow-develop, flow-verify, flow-ac-check, flow-push, flow-review, flow-finish; rule A17,
+    D62): before every step, re-read this file and `docs/agent-rules.md`, and read the user-created memory (the entries the
+    user made with flow-memory, in `local/memory/`): `bash scripts/memory.sh for <phase> <repos>`. Apply both, and write in
+    the card's `runs/<CARD-KEY>/history.md` which rules and entries you applied; flow-status only reads, so it writes
+    nothing. Skip nothing.
 13. Planning a card (rule A18, D63): first pull the base branches and read the current code of every repo involved (routes,
     controllers, services, utils, constants, middlewares, migrations, locale files); never plan from the card alone. List every
     difference between the card and the code (error codes, statuses, messages, fields, anything the card names that isn't in the
@@ -72,3 +75,24 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
 20. Plain words on screen (rule A25, D74): in what you show the user, use plain words. No decision or rule codes (D53, A19,
     R17): they stay in the docs and in the card's `history.md`. Say "the card's folder" (`runs/<CARD-KEY>/`), "the card's saved
     copy" (its branch `runs/<CARD-KEY>`) and the card's state in words ("waiting for the merge"), not the phase names.
+21. Rule files and status words stay in sync, in Claude Code and in Codex (build rule R15, steps 6 and 7; D75): any change
+    to closio-agent (a command, a script, a setting, a decision, a doc) also updates, in the same step, every line it touches
+    in the rule files: `rulesets/`, this file, `docs/agent-rules.md`, `build-memory/project-context.md`,
+    `build-memory/rules.md`, `.claude/settings.json` and `.codex/rules/closio-agent.rules`. When something is built or tested
+    by the user, update its status everywhere it's named (the command list in `docs/commands.md`, its decision's status line,
+    the build plan, the status line of `docs/agent-rules.md`). Say which files were changed and which were only checked.
+    `bash scripts/help.sh check` fails while a rule file still calls a built command "coming" or "not built yet".
+22. Grilling during a card (rule A26, D76): while a card command runs (flow-start, flow-develop, flow-verify, flow-ac-check,
+    flow-push, flow-review, flow-finish), and for any prompt during it that changes the card's plan, code, tests, data, Jira or GitLab,
+    ask and decide the way `rulesets/grilling.md` says: look up every fact first and show it as found (never ask what the
+    code or the files answer); ask only real decisions, in numbered rounds, each with a recommended answer that "yes"
+    accepts; follow-up rounds until nothing is open; sum up what was agreed and wait for the confirmation before changing
+    anything; record the decisions as rule 23 says. Short answers, approvals and the user's questions go straight
+    through. Safety stops (migrations, test data, commits and push, Jira and GitLab changes) stay their own plain yes/no.
+    The user's memory can't soften this rule.
+23. Every decision on a card is recorded in full, in one place (rule A27, D77): `runs/<CARD-KEY>/decisions.md`, one numbered
+    row per decision, written with `bash scripts/run.sh decide <KEY> "<step>" "<question>" "<decided>" "<who / why>"` the
+    moment it's confirmed: every answer to a question, every approval or refusal at a safety stop (the plan, a migration,
+    test data, the commits, the push, a Jira move), every memory entry that answered for the user ("memory M2"), every
+    change the user asked for during a command. The card's other files (card.md, plan.md, develop.md, verify.md, ship.md)
+    only point to it in one line, e.g. "- Error code for a bad status: VALIDATION_ERROR (decision 3)".
