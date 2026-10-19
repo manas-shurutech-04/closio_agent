@@ -36,7 +36,7 @@ RULE_FILES_DIR="${RULE_FILES_DIR:-$AGENT_ROOT}"
 GROUP_NAMES="Setup, once, in this order|Every day|Cards|Any time"
 GROUP_1="flow-ping flow-doctor flow-configure-user flow-configure-repo flow-setup-repo"
 GROUP_2="flow-vpn flow-memory"
-GROUP_3="flow-check-card flow-start flow-develop flow-verify flow-ac-check flow-push flow-review flow-finish flow-status"
+GROUP_3="flow-check-card flow-start flow-develop flow-verify flow-ac-check flow-push flow-review flow-finish flow-qa flow-status"
 GROUP_4="flow-help flow-grill"
 
 to_fix=0

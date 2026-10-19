@@ -1,0 +1,6 @@
+# Codex: only run this command when the user types $flow-qa (D44)
+policy:
+  allow_implicit_invocation: false
+# What Codex's $ menu shows: the options and a one-line summary (D74); made with: bash scripts/help.sh codex-line flow-qa
+interface:
+  short_description: "$flow-qa <CARD-KEY> [check] · Handles QA's questions on a finished Jira card."
