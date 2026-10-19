@@ -15,6 +15,10 @@
 #   set <KEY> <field> <value...>     Changes one field (and 'updated')
 #   log <KEY> <step> "<what>" ["<rules and memory applied>"]
 #                                    Appends one history line (rule A1; the last column is rule A17)
+#   decide <KEY> <step> "<question>" "<decided>" "<who / why>"
+#                                    Appends one decision to runs/<KEY>/decisions.md, numbered, with the time (rule A27,
+#                                    D77): an answer, an approval or a refusal at a stop, a memory entry that answered.
+#                                    Prints its number, which the other files of the folder point to ("decision 3")
 #   save <KEY> "<message>"           Commits runs/<KEY>/ to the card's branch and pushes it (D61), without switching
 #                                    this folder: a temporary git index, so the working tree and its changes are untouched
 #   list                             Every card in progress, from the run branches on this Mac and on origin; then the
@@ -25,10 +29,11 @@
 #
 # runs/<KEY>/ folders are git-ignored on main (/runs/*/ in .gitignore); they're committed only to their card's branch.
 # Files (plain markdown, never a secret):
-#   runs/<KEY>/state.md     key: value lines (card, title, type, phase, step, jira_status, repos, branch, run_branch, next, updated)
+#   runs/<KEY>/state.md     key: value lines (card, title, type, phase, step, jira_status, jira_comment, repos, branch, run_branch, next, updated)
 #   runs/<KEY>/history.md   a table: when · step · what happened · rules and memory applied
 #   runs/<KEY>/card.md      the card as read from Jira (+ what the user explained)   } written by the command
 #   runs/<KEY>/plan.md      the approved plan                                         }
+#   runs/<KEY>/decisions.md every decision on the card, in full, numbered (run.sh decide; the other files only point here)
 # Every ❌ comes with the steps to fix it (rule A11). Works in the Mac's own bash 3.2.
 
 set -u
@@ -38,7 +43,7 @@ AGENT_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 RUNS_DIR="${RUNS_DIR:-$AGENT_ROOT/runs}"
 QUICK_DIR="${QUICK_DIR:-$AGENT_ROOT/local/quick-checks}"
 CMD="/flow-start"
-FIELDS="card title type phase step jira_status repos branch run_branch next updated"
+FIELDS="card title type phase step jira_status jira_comment repos branch run_branch next updated"
 
 ok() { echo "✅ $1"; }
 look() {
@@ -51,13 +56,16 @@ bad() {
 }
 usage() {
   echo "Usage: bash scripts/run.sh check-folder | branch <KEY> | create <KEY> \"<title>\" | state <KEY> | status <KEY> | get <KEY> <field>"
-  echo "       | set <KEY> <field> <value> | log <KEY> <step> \"<what>\" [\"<rules and memory>\"] | save <KEY> \"<message>\" | list | quick-clean <KEY> | count | problems"
+  echo "       | set <KEY> <field> <value> | log <KEY> <step> \"<what>\" [\"<rules and memory>\"]"
+  echo "       | decide <KEY> <step> \"<question>\" \"<decided>\" \"<who / why>\" | save <KEY> \"<message>\" | list | quick-clean <KEY> | count | problems"
 }
 now() { date '+%Y-%m-%d %H:%M'; }
 valid_key() { printf '%s' "$1" | grep -q -E "^$JIRA_PROJECT_KEY-[0-9]+$"; }
 run_dir() { echo "$RUNS_DIR/$1"; }
 state_file() { echo "$RUNS_DIR/$1/state.md"; }
 history_file() { echo "$RUNS_DIR/$1/history.md"; }
+decisions_file() { echo "$RUNS_DIR/$1/decisions.md"; }
+one_cell() { printf '%s' "$1" | tr '\n' ' ' | sed 's/|/\\|/g'; }   # text for one table cell: one line, | escaped
 run_branch() { echo "${RUN_BRANCH_PREFIX}$1"; }
 rel_runs() { # the runs folder relative to the git root (for git commands and `git show`)
   local root; root="$(git -C "$AGENT_ROOT" rev-parse --show-toplevel 2>/dev/null)" || { echo runs; return; }
@@ -262,11 +270,26 @@ do_log() { # <key> <step> <what> [<rules and memory>]
   local key="$1" step="$2" what="$3" applied="${4:-rules: — · memory: —}" f
   f="$(history_file "$key")"
   [ -f "$f" ] || { bad "No card folder for $key on this Mac" "Run: bash scripts/run.sh branch $key (then create it if it's new)."; return 1; }
-  what="$(printf '%s' "$what" | tr '\n' ' ' | sed 's/|/\\|/g')"
-  applied="$(printf '%s' "$applied" | tr '\n' ' ' | sed 's/|/\\|/g')"
+  what="$(one_cell "$what")"
+  applied="$(one_cell "$applied")"
   printf '| %s | %s | %s | %s |\n' "$(now)" "$step" "$what" "$applied" >> "$f"
   set_field "$(state_file "$key")" updated "$(now)"
   ok "$key: history: $step: $what"
+}
+
+do_decide() { # <key> <step> <question> <decided> <who / why>: one numbered row in decisions.md (rule A27, D77)
+  local key="$1" step="$2" question="$3" decided="$4" who="$5" f n
+  [ -f "$(history_file "$key")" ] || { bad "No card folder for $key on this Mac" "Run: bash scripts/run.sh branch $key (then create it if it's new)."; return 1; }
+  f="$(decisions_file "$key")"
+  if [ ! -f "$f" ]; then
+    { printf '# %s — decisions\n\n' "$key"
+      printf 'Every decision made on this card, in order and in full: the answers, the approvals and refusals at a stop, the memory entries that answered. The other files of this folder only point here ("decision 3").\n\n'
+      printf '| No. | When | Step | Question | Decided | Who / why |\n|---|---|---|---|---|---|\n'; } > "$f"
+  fi
+  n=$(( $(grep -c -E '^\| [0-9]+ \|' "$f") + 1 ))
+  printf '| %s | %s | %s | %s | %s | %s |\n' "$n" "$(now)" "$(one_cell "$step")" "$(one_cell "$question")" "$(one_cell "$decided")" "$(one_cell "$who")" >> "$f"
+  set_field "$(state_file "$key")" updated "$(now)"
+  ok "$key: decision $n: $(printf '%s' "$question" | tr '\n' ' ') → $(printf '%s' "$decided" | tr '\n' ' ')"
 }
 
 do_save() { # <key> <message>
@@ -368,6 +391,7 @@ case "$action" in
   get) need_key "${2:-}"; [ -n "${3:-}" ] || { usage; exit 2; }; do_get "$2" "$3" ;;
   set) need_key "${2:-}"; [ -n "${3:-}" ] && [ $# -ge 4 ] || { usage; exit 2; }; k="$2"; f="$3"; shift 3; do_set "$k" "$f" "$@" ;;
   log) need_key "${2:-}"; [ -n "${3:-}" ] && [ -n "${4:-}" ] || { usage; exit 2; }; do_log "$2" "$3" "$4" "${5:-}" ;;
+  decide) need_key "${2:-}"; [ -n "${3:-}" ] && [ -n "${4:-}" ] && [ -n "${5:-}" ] && [ -n "${6:-}" ] || { usage; exit 2; }; do_decide "$2" "$3" "$4" "$5" "$6" ;;
   save) need_key "${2:-}"; do_save "$2" "${3:-}" ;;
   list) do_list ;;
   quick-clean) need_key "${2:-}"
