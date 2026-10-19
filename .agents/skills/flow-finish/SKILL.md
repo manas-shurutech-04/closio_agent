@@ -21,6 +21,8 @@ Do this before **each** numbered step below, not only at the start:
 1. Re-read `AGENTS.md` and `docs/agent-rules.md`. Note the rules the step touches (e.g. `A3`, `A23`, `A24`).
 2. Run `bash scripts/memory.sh for after-merge <repos>` with the card's repos (`all` before you know them). Read the **user-created memory** entries it prints and apply them. Team rules always win (A8): on a conflict, say so and follow the team rule.
 3. After the step, write it in the card's history: `bash scripts/run.sh log <KEY> "finish <n>" "<what happened>" "rules: A3, A23 · memory: M2"` (use `—` when nothing applied). Skip nothing.
+4. **Ask and decide the grilling way (rule A26, D76; `rulesets/grilling.md`):** every question this command asks you, and every prompt you give during it that changes the card's plan, code, tests, data, Jira or GitLab: look up the facts first and show them as "Found" lines (never ask what the code or the files answer); ask only the real decisions, in numbered rounds, each with a recommended answer that "yes" accepts; follow-up rounds until nothing is open; sum up what was agreed and wait for the confirmation before changing anything; record them as item 5 says, with a one-line pointer in the card's `history.md` (the special instructions still go in `deployment.md`). Short answers, approvals and the user's questions go straight through. The safety stops below stay their own plain yes/no.
+5. **Every decision is recorded (rule A27, D77):** the moment a decision is confirmed (an answer to a question, an approval or a refusal at a stop, a memory entry that answered for the user, a change the user asked for), run `bash scripts/run.sh decide <KEY> "<step and its number>" "<question>" "<decided>" "<who / why>"` (who: `you`, `you: recommended`, `memory M2`); it prints the decision's number. Where this step keeps notes, write only a one-line pointer, e.g. `- Error code for a bad status: VALIDATION_ERROR (decision 3)`.
 
 The first memory step runs here automatically:
 
@@ -44,36 +46,50 @@ The first memory step runs here automatically:
 
 **5. Special instructions.** If the user's memory holds standing instructions for the deployment doc (e.g. "Deployment doc: deploy WS2 repos one at a time"), put them in and say so in one line ("Using your memory M5"), then ask only: "Anything else special for this card?" (D74). Else ask the user once: "Anything special for the deployment doc (an order, a flag, a manual step)?" Their answer goes in as they wrote it ("none" is fine). Log the step; `set <KEY> step 6`.
 
-**6. The deployment doc (D12, D72): `runs/<KEY>/deployment.md`.** From `ship.md`, `develop.md`, `card.md`, the code and the dev check:
+**6. The deployment doc (D12, D72): `runs/<KEY>/deployment.md`.** Written for two kinds of readers, in plain words: **QA** and **the person deploying**. From `ship.md`, `develop.md`, `card.md`, the code and the dev check:
 ```
-# <KEY> — deployment
-Card: [<KEY>: <card title>](https://<JIRA_SITE>/browse/<KEY>) · Jira comment: <id, once posted>
+# <KEY> — <card title> (deployment)
+Card: [<KEY>: <card title>](https://<JIRA_SITE>/browse/<KEY>)
 
-## Deploy order
-1. <repo> — MR !<n> (merge commit <sha>)        (WS2 repos first, then WS1, then the web app)
+## For QA
+**What it adds:** <two or three plain sentences: what the card adds or changes, and for whom>
 
-## <repo>
-- MR: <link> · merge commit `<sha>`
-- Migrations to run, in order: `<file>` — `npm run migrate`; rollback: `npx sequelize-cli db:migrate:undo --name <file>`   (or: none)
-- Seeders to run: `<file>` — `npx sequelize-cli db:seed --seed <file>` (never `db:seed:all`); rollback: `npx sequelize-cli db:seed:undo --seed <file>`   (or: none)
-- New .env variables: `<NAME>` (names only, from the card's diff of `.env.example`)   (or: none)
-- After deploying: <from develop.md>   (or: none)
+**How to try it**
+<an API card (a backend repo changed a route): for each API, its name in words, then ready-to-run curls:>
+1. The dev login, which gives the session cookie:
+   curl -i -X POST '<WS1 dev login URL>' -H 'Content-Type: application/json' -d '{"userid":"<your userid>","password":"<your password>", …}'
+   Copy the session cookie it sets.
+2. Through WS1: curl '<WS1 dev address><path>?<filters>' -H 'Cookie: <cookie name>=<your session cookie>' …
+3. Straight to WS2: curl '<WS2 dev address><path>?<filters>' -H 'x-client-id: <client id>' -H 'x-client-secret: <client secret>' …
+<then, in words: the filters and what they accept; the errors (when, and what comes back); and a table of what comes back:>
+| Field | What it means | Example from dev |
 
-## APIs                                   (an API card: a backend repo changed a route)
-For each API: the method and path, its **WS1 dev URL** and **WS2 dev URL** (each repo's dev address + path), the headers it needs (names only), the query parameters, and a sample success response from the dev check.
+<a web card> **Where to find it:** the menu path to the screen, e.g. Manajemen Insentif › Tipe Insentif › Lihat Detail
+<a consumer card (a repo with queues changed a consumer or worker)> **How to test it:** in words: which event sends the message and from where, what changes once it's handled, and what to look for
 
-## Where to find it                       (a web card)
-The breadcrumb to the screen in the app (e.g. Manajemen Insentif › Tipe Insentif › Lihat Detail), from the web app's menu labels in its code (its router and menu files); the user may correct it.
+**Already checked on dev (<date>):** <the result of step 4, e.g. every acceptance criterion passed>
 
-## How to test it                         (a consumer card: a repo with queues changed a consumer or worker)
-The queue, a sample message, and what to look for, from the code.
+## For the person deploying
+**Order** (WS2 repos first, then WS1, then the web app):
+1. <the repo in words> (<repo>): MR [!<n>](<link>)
+
+### <repo>
+- **Database changes:** for each migration, in order: its file name; what it changes, in plain words; whether it's safe to run twice; how it's undone, in words.   (or: none)
+- **Default data:** for each seeder: its file name; "run it on its own, not with all the others"; what it adds, in plain words; whether it's safe to run twice; how it's undone, in words.   (or: none)
+- **New settings:** each new `.env` setting's name (from the card's diff of `.env.example`) and one line on what it's for; never a value.   (or: none)
+- **After deploying:** <from develop.md>   (or: nothing)
 
 ## Special instructions
 <the user's words from step 5>   (or: none)
 ```
-   `JIRA_SITE` is in `config/project-settings.sh`; the commands come from the repo file (`migration_commands`, `seed_commands`). Leave out a section that doesn't apply. **Before the doc is handed over, show every migration and seeder it names for review (rule A23):** the full file (up and down), what it changes (tables, columns, rows), the repo; then a **separate yes** that it may go out (the doc asks someone to run them on a server). Log the step; `set <KEY> step 7`.
+   **Rules for the doc (D72, changed 2026-10-19):**
+   - **Plain words, no code:** no migration or seeder code, no commands, no raw JSON (requests, responses, messages). The one exception: the API curls.
+   - **The curls come from the calls that passed in the dev check (step 4):** the same paths, headers, filters and login fields that `scripts/api-call.sh` sent (header names and login fields from the code, rule A16). Every userid, password, cookie, key and secret is a placeholder like `<your session cookie>`; never a real value (A6).
+   - **MR number and link only**, no merge commit ID. Leave out a part that doesn't apply (e.g. "How to try it" for a card with no API, screen or consumer). The menu path comes from the web app's menu labels in its code (its router and menu files); the user may correct it. `JIRA_SITE` is in `config/project-settings.sh`.
 
-**7. Jira (rules A3, D11, D72).** Post the deployment doc on the card as **one comment** (`addOrEditJiraIssueComment`); write the comment's id at the top of `deployment.md` (`Jira comment: <id>`). On a later run, **edit that comment** instead of posting a new one. Then, the dev checks having passed, move the card to **Ready for Test** (if a tool needs the transition id, read the card's transitions first, read only); never anywhere else (never Blocked, A3). `bash scripts/run.sh set <KEY> jira_status "Ready for Test"`. Log the step; `set <KEY> step 8`.
+   **Before the doc is handed over, show every migration and seeder it names for review (rule A23):** the full file (up and down), what it changes (tables, columns, rows), the repo; then a **separate yes** that it may go out (the doc asks someone to run them on a server). Log the step; `set <KEY> step 7`.
+
+**7. Jira (rules A3, D11, D72).** Post the deployment doc on the card as **one comment** (`addOrEditJiraIssueComment`) and keep the comment's id in the card's own notes, not in the doc: `bash scripts/run.sh set <KEY> jira_comment <id>`. On a later run, **edit that comment** instead of posting a new one: its id is `bash scripts/run.sh get <KEY> jira_comment` (an older doc may still carry it on a `Jira comment: <id>` line at its top: use that id, save it as above and remove the line from the doc). Then, the dev checks having passed, move the card to **Ready for Test** (if a tool needs the transition id, read the card's transitions first, read only); never anywhere else (never Blocked, A3). `bash scripts/run.sh set <KEY> jira_status "Ready for Test"`. Log the step; `set <KEY> step 8`.
 
 **8. Save.** `bash scripts/run.sh set <KEY> phase done`, `set <KEY> step 1`, `set <KEY> next "finished"`, log "finished: deployment doc on the card, Ready for Test", `bash scripts/run.sh save <KEY> "finished: Ready for Test"`. The run branch `runs/<KEY>` stays as the card's record (`/flow-status` lists it under Finished); it's never merged into `main`. End with: `Done: <KEY> is in Ready for Test. Deployment doc: runs/<KEY>/deployment.md and on the card.`
 
@@ -87,6 +103,6 @@ Before you start each step below, say its line in one sentence, so the user know
 - Every step writes its history line with the rules and memory applied (A1, A17).
 - Nothing is assumed deployed: the user says so (D72). The dev checks are the quick check (B) with `--env dev`; test data, calls that write and the cleanup only after a clear yes (A23).
 - Migrations and seeders named in the deployment doc are shown for review first, then a separate yes (A23).
-- The deployment doc lives in the run folder and on the Jira card as one comment, edited on a re-run (D12, D72). The card moves only to Ready for Test here (D11, A3).
+- The deployment doc lives in the card's folder and on the Jira card as one comment, edited on a re-run (D12, D72). It's written in plain words for QA and the person deploying: no code, commands or raw JSON, except the API curls, whose logins, cookies and keys are placeholders. The card moves only to Ready for Test here (D11, A3).
 - Keys, passwords, sessions and `.env` values are never shown (A6). Never read `.env` values.
 - Run the scripts exactly as written here (`bash scripts/…` from the closio-agent folder, no `cd`, nothing joined with `&&`). They're pre-approved in Claude Code and Codex (D57).
