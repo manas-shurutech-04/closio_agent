@@ -13,6 +13,7 @@ dev_command: npm run dev
 start_command: npm start
 port: from the repo's .env (PORT)
 health_url: /api/v1/health-checker
+dev_base_url: https://dev-target-sales-ws2-apiprivate.japfacomfeed.co.id   # the repo on the dev environment (D72)
 check_commands: npm run lint, npm run check:circular
 test_command: npm test
 test_framework: mocha, chai, sinon, supertest, nyc
