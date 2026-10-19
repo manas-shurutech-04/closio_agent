@@ -1332,3 +1332,17 @@ Every decision taken while building the agent, including the options we rejected
   - Rebasing review fixes: it rewrites the commits the reviewers commented on and needs a forced push.
 - **Built (2026-10-19):** `.agents/skills/flow-review/` (`SKILL.md`, `agents/openai.yaml`) + the Claude Code link, the "Cards" group in `scripts/help.sh`; `rulesets/code-review.md`; `scripts/gitlab-mr.sh` (`comments`, `reply`, `pipeline`), `scripts/ship.sh` (`push-update`, a shared push-failure report), `scripts/repo-run.sh` (`review`), `scripts/lib/repo-info.sh` (`gitlab_username`); rules G2, G4 (the exception), A3, A5, A15, A17, A21, A26, A27 (where applied), `AGENTS.md` rules 12 and 22; `flow-push`'s last line; docs: `docs/commands.md`, `docs/user-guide.md` + the artifact, `docs/architecture.md`, both READMEs, `docs/setup-guide.md`, `docs/changelog.md`; build memory.
 
+<a id="d79"></a>
+### D79 — The chat transcript stays on the builder's Mac; erased from the git history
+- **Date:** 2026-10-19
+- **Status:** Accepted and done 2026-10-19.
+- **Context:** `build-memory/full-chat-transcript.md` (the whole build chat and the test sessions, secrets redacted, ~8.5 MB) had been committed and pushed since the first commit (2026-10-11). The user: "can you remove the transcript file entirely from the Git", meaning they don't want the chat history on the remote repository; asked how far, they chose "Erase it from history".
+- **Decision:**
+  - The file stays where it is, on the builder's Mac, and is git-ignored (`.gitignore`: `/build-memory/full-chat-transcript.md`). It's still the build memory's record of the chat (read when exact past wording is needed, extended the same way); it's never committed again.
+  - It was erased from every commit of `main` and the card branch `runs/SCRUM-540` (`git filter-branch --index-filter … --prune-empty`; the 5 commits that only changed it were dropped, nothing else changed: checked tree by tree), and both branches were force-pushed (with lease) to GitHub.
+  - Every commit id changed. The ids written before this decision (in `build-memory/history.md`, the changelog and older records) are the old ones; the map from old to new is kept on the builder's Mac (`local/backups/commit-id-map-2026-10-19.txt`), with a bundle of the old history (`local/backups/closio-agent-before-transcript-erase-2026-10-19.bundle`).
+- **Consequences:** anyone who cloned closio-agent before must clone again (or reset to the new `main`), and must do the same for a card branch they have. GitHub may keep cached views of the old commits until its support removes them.
+- **Rejected options:**
+  - Only stop tracking it (a normal commit): the old commits on GitHub would still hold the chat.
+  - Installing `git filter-repo`: the built-in `git filter-branch` does the same for this small history without installing anything.
+

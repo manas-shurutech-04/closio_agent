@@ -29,3 +29,6 @@ node_modules/
 # Files Claude Code generates inside a mod folder (types for an editor), e.g. .claude/skills/flow-autocomplete/
 .claude/skills/*/.claude-plugin/types/
 .claude/skills/*/tsconfig.json
+
+# The chat transcript of building closio-agent: on the builder's Mac only, never pushed (D79)
+/build-memory/full-chat-transcript.md
