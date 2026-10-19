@@ -52,7 +52,7 @@ const cards = async ($: Engine) => {
     .filter(entry => entry.kind === 'dir' && CARD_KEY.test(entry.name))
     .map(entry => entry.name)
   const branches = await $.process
-    .run(['git', 'for-each-ref', '--format=%(refname:lstrip=3)', 'refs/remotes/origin/runs/'], { cwd: project($), timeoutMs: 3000 })
+    .run(['git', 'for-each-ref', '--format=%(refname:lstrip=4)', 'refs/remotes/origin/runs/'], { cwd: project($), timeoutMs: 3000 })
     .then(result => (result.exitCode === 0 ? result.stdout.split('\n').filter(key => CARD_KEY.test(key)) : []))
     .catch(() => [] as string[])
   return [...folders, ...branches]

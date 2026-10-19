@@ -76,7 +76,15 @@ const project = (on: On) => {
     const known = Object.keys(FOLDERS).find(end => e.path.endsWith(end))
     return known !== undefined ? { value: FOLDERS[known] } : { deny: `no such folder in the test: ${e.path}` }
   })
-  on('process.run', () => ({ value: { exitCode: 0, stdout: 'SCRUM-540\nnot-a-card\n', stderr: '' } }))
+  // git for-each-ref, answered the way git does: every ref under the asked prefix, with as many leading parts
+  // stripped as the format's lstrip asks (refs/remotes/origin/runs/SCRUM-540 with lstrip=4 is SCRUM-540).
+  on('process.run', ($, e) => {
+    const strip = Number(/lstrip=(\d+)/.exec(e.argv.join(' '))?.[1] ?? 0)
+    const prefix = e.argv[e.argv.length - 1]
+    const refs = ['refs/remotes/origin/runs/SCRUM-540', 'refs/remotes/origin/runs/not-a-card']
+    const stdout = refs.filter(ref => ref.startsWith(prefix)).map(ref => ref.split('/').slice(strip).join('/')).join('\n')
+    return { value: { exitCode: 0, stdout: `${stdout}\n`, stderr: '' } }
+  })
 }
 
 // The prompt box with the caret at the end: the token is the last run of non-spaces.
