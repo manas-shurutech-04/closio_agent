@@ -65,6 +65,7 @@ GITLAB_API_TIMEOUT="${GITLAB_API_TIMEOUT:-30}"     # seconds for one GitLab API 
 RUN_BRANCH_PREFIX="${RUN_BRANCH_PREFIX:-runs/}"   # the card's branch is runs/<CARD-KEY>
 GIT_REMOTE="${GIT_REMOTE:-origin}"
 
-# The ruleset for every card (D64, rule A19): kept by the closio-agent builders, never by a command.
-# Backend repos follow all of it; the web app follows its common practices until a frontend ruleset exists.
+# The rulesets for every card (D64, D80, rule A19): kept by the closio-agent builders, never by a command.
+# Backend repos (type BE) follow RULESET_FILE; the web app (type FE) follows FRONTEND_RULESET_FILE.
 RULESET_FILE="${RULESET_FILE:-rulesets/story-implementation-workflow.md}"   # relative to the closio-agent folder
+FRONTEND_RULESET_FILE="${FRONTEND_RULESET_FILE:-rulesets/frontend-story-workflow.md}"   # relative to the closio-agent folder

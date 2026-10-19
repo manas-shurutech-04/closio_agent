@@ -491,11 +491,14 @@ yaml_get() { # <file> <key>: value of a flat "key: value" line
   [ -f "$1" ] || return 0
   grep -m1 -E "^$2:" "$1" | sed -E "s/^$2:[[:space:]]*//; s/[[:space:]]+#.*$//; s/[[:space:]]+$//"
 }
-if [ -f "$AGENT_ROOT/$RULESET_FILE" ]; then
-  pass "Ruleset for every card: \`$RULESET_FILE\`"
-else
-  fail "The ruleset file \`$RULESET_FILE\` is missing" "It's part of closio-agent: \`git checkout -- $RULESET_FILE\` (or pull the latest closio-agent)."
-fi
+for ruleset_file in "$RULESET_FILE" "$FRONTEND_RULESET_FILE"; do
+  if [ -f "$AGENT_ROOT/$ruleset_file" ]; then
+    case "$ruleset_file" in "$RULESET_FILE") what="backend cards" ;; *) what="web-app cards" ;; esac
+    pass "Ruleset for $what: \`$ruleset_file\`"
+  else
+    fail "The ruleset file \`$ruleset_file\` is missing" "It's part of closio-agent: \`git checkout -- $ruleset_file\` (or pull the latest closio-agent)."
+  fi
+done
 repo_count=0
 for repo_file in "$AGENT_ROOT"/config/repos/*.yaml; do
   [ -f "$repo_file" ] || continue

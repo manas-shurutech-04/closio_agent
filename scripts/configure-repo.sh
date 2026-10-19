@@ -15,7 +15,8 @@
 #   set-dev-url <repo> <url>  Saves the repo's address on the dev environment (dev_base_url in config/repos/<repo>.yaml,
 #                             shared); asked by flow-setup-repo, used by the dev checks of flow-finish (C6, D72)
 #   dev-url <repo|all>        The repo's dev address, or every registered repo's, one line each (flow-setup-repo dev-address)
-#   ruleset <repo>            Which ruleset the repo follows (D64, rule A19: kept by closio-agent, not set per repo)
+#   ruleset <repo>            Which ruleset the repo follows: BE the story ruleset, FE the frontend one (D64, D80, rule A19;
+#                             kept by closio-agent, not set per repo)
 #
 # Shared facts:   config/repos/<repo>.yaml   (committed, no secrets)
 # Personal facts: local/repos/<repo>.yaml    (git-ignored, never pushed)
@@ -482,22 +483,27 @@ list() {
   echo "Branch names for every repo: $JIRA_PROJECT_KEY-<number>/<short-description>, at most $BRANCH_DESC_MAX_WORDS words."
 }
 
-# ---------------------------------------------------------------- ruleset (D64, rule A19)
+# ---------------------------------------------------------------- ruleset (D64, D80, rule A19)
 
-# The ruleset comes from closio-agent itself (RULESET_FILE), never from the repo's registry file.
+# The ruleset comes from closio-agent itself, never from the repo's registry file: BE repos follow RULESET_FILE,
+# FE repos (the web app) FRONTEND_RULESET_FILE.
 ruleset() {
-  local repo="$1" file type rel="$RULESET_FILE"
+  local repo="$1" file type rel
   require_registered "$repo"
   file="$(shared_file "$repo")"
   type="$(yaml_get "$file" type)"
+  case "$type" in
+    BE) rel="$RULESET_FILE" ;;
+    FE) rel="$FRONTEND_RULESET_FILE" ;;
+    *) bad "'type' in config/repos/$repo.yaml must be FE or BE" "Edit config/repos/$repo.yaml, then run this again."; return 1 ;;
+  esac
   if [ ! -f "$AGENT_ROOT/$rel" ]; then
     bad "The ruleset file $rel is missing from closio-agent" "It's part of closio-agent: get it back with: git checkout -- $rel (or pull the latest closio-agent), then run this again."
     return 1
   fi
   case "$type" in
-    BE) ok "$repo (BE) follows the ruleset $rel (all of it)" ;;
-    FE) ok "$repo (FE) follows the common practices of the ruleset $rel (no frontend ruleset yet; the note at its top says which parts)" ;;
-    *) bad "'type' in config/repos/$repo.yaml must be FE or BE" "Edit config/repos/$repo.yaml, then run this again."; return 1 ;;
+    BE) ok "$repo (BE) follows the backend ruleset $rel" ;;
+    FE) ok "$repo (FE) follows the frontend ruleset $rel" ;;
   esac
   echo "   File: $rel · your memory entries may change its points for you (flow-memory); the agent rules always win"
 }

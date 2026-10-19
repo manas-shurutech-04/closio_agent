@@ -15,7 +15,7 @@ health_url: /   # no health endpoint in the web app; the dev server start page
 check_commands: none
 test_command: npm test -- --run   # --run: always one run, never watch mode (D54)
 test_framework: vitest, @vue/test-utils
-test_layout:
+test_layout: __tests__/ next to the code (src/views/<module>/__tests__/, src/api/__tests__/ …), files *.test.ts
 coverage_command: npm run test:coverage
 coverage_rules: branches:70 functions:70 lines:70 statements:70
 coverage_enforced_by: not enforced by git hooks
