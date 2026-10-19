@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# A card's merge request through the GitLab REST API (C5, flow-push; D32, D48, D51, D70). Run it from the closio-agent folder:
+# A card's merge request through the GitLab REST API (C5 flow-push, C6 flow-finish, flow-review; D32, D48, D51, D70, D78).
+# Run it from the closio-agent folder:
 #
 #   bash scripts/gitlab-mr.sh <repo> find <branch>
 #       The open MR of that branch: its number, title and link.
@@ -9,10 +10,19 @@
 #   bash scripts/gitlab-mr.sh <repo> describe <branch> <description file> [--reviewers <username,username>]
 #       Sets the MR's full description (multi-line; push options can't carry one, D31) and its reviewers (push options
 #       can't set reviewers; each username is looked up on GitLab).
+#   bash scripts/gitlab-mr.sh <repo> comments <branch> [--since <note id>]
+#       The open MR's review state (who approved, merge conflicts, unresolved threads) and its threads: every unresolved
+#       one, and any with a note newer than <note id> (marked "new"); each with its file and line, who wrote what, and
+#       when (UTC). Ends with the newest note id, to pass as --since next time (flow-review). Only reads.
+#   bash scripts/gitlab-mr.sh <repo> reply <branch> <thread id> <reply file>
+#       Posts the reply in that file (multi-line) as a note in that thread of the open MR, as you (your token). Never
+#       resolves a thread: the reviewer does (flow-review, D78).
+#   bash scripts/gitlab-mr.sh <repo> pipeline <branch>
+#       The open MR's latest pipeline: passed, still running, or failed with its failed jobs. Only reads.
 #
 # Your GitLab token (closio-agent.gitlab-token, scope api) is read from the macOS Keychain here and handed to curl on
 # stdin: it's never printed, written to a file or put on a command line (rule A6, D32). Needs the VPN.
-# Exit codes: 0 fine · 1 ❌ · 2 wrong usage · 3 the MR isn't merged (status). Works in the Mac's own bash 3.2; needs curl and jq.
+# Exit codes: 0 fine · 1 ❌ · 2 wrong usage · 3 the MR isn't merged (status) or its pipeline failed (pipeline). Works in the Mac's own bash 3.2; needs curl and jq.
 
 set -u
 
@@ -23,7 +33,10 @@ API="${GITLAB_API_URL:-https://$GITLAB_HOST/api/v4}"
 
 ok() { echo "✅ $1"; }
 bad() { echo "❌ $1"; echo "   Fix: $2"; }
-usage() { echo "Usage: bash scripts/gitlab-mr.sh <repo> find <branch> | <repo> status <branch> | <repo> describe <branch> <description file> [--reviewers <username,username>]"; }
+usage() {
+  echo "Usage: bash scripts/gitlab-mr.sh <repo> find <branch> | <repo> status <branch> | <repo> describe <branch> <description file> [--reviewers <username,username>]"
+  echo "       | <repo> comments <branch> [--since <note id>] | <repo> reply <branch> <thread id> <reply file> | <repo> pipeline <branch>"
+}
 # SECURITY_BIN can be a stand-in for the build tests only (like e2e.sh); normally the macOS "security" tool.
 token() { "${SECURITY_BIN:-security}" find-generic-password -a "$USER" -s "$KEYCHAIN_PREFIX.gitlab-token" -w 2>/dev/null; }
 
@@ -109,6 +122,85 @@ do_describe() { # <branch> <file> [--reviewers a,b]
   ok "$REPO: MR !$IID description set ($(grep -c '' "$file") line(s))${names:+; reviewers: $names} · $WEB_URL"
 }
 
+do_comments() { # <branch> [--since <note id>]
+  local branch="$1" since=0 page=1 n me tmp approved conflicts
+  shift
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --since) [ $# -ge 2 ] && printf '%s' "$2" | grep -q -E '^[0-9]+$' || { usage; return 2; }; since="$2"; shift 2 ;;
+      *) usage; return 2 ;;
+    esac
+  done
+  find_mr "$branch" || return 1
+  me="$(gitlab_username)"
+  tmp="$(mktemp -d)" || { bad "Couldn't make a temporary folder" "Check the disk, then run this again."; return 1; }
+  api GET "/projects/$(project)/merge_requests/$IID" || { api_problem "MR !$IID"; rm -rf "$tmp"; return 1; }
+  conflicts="$(printf '%s' "$BODY" | jq -r 'if .has_conflicts then "yes" else "none" end')"
+  if api GET "/projects/$(project)/merge_requests/$IID/approvals"; then
+    approved="$(printf '%s' "$BODY" | jq -r '[.approved_by[]?.user.username] | if length == 0 then "nobody yet" else join(", ") end')"
+  else approved="couldn't read ($CODE)"; fi
+  while :; do   # the threads, 100 a page (at most 20 pages)
+    api GET "/projects/$(project)/merge_requests/$IID/discussions?per_page=100&page=$page" || { api_problem "the threads of MR !$IID"; rm -rf "$tmp"; return 1; }
+    printf '%s' "$BODY" > "$tmp/page-$page.json"; n="$(printf '%s' "$BODY" | jq 'length')"
+    [ "$n" -lt 100 ] || [ "$page" -ge 20 ] && break
+    page=$((page + 1))
+  done
+  jq -s -r --argjson since "$since" --arg me "$me" --arg head "MR !$IID · $TITLE · approved by: $approved · conflicts: $conflicts" --arg url "$WEB_URL" '
+    add // []
+    | map({id, notes: [.notes[] | select(.system | not)]} | select(.notes | length > 0))
+    | map(. + {unresolved: ([.notes[] | select(.resolvable and (.resolved | not))] | length > 0),
+               resolvable: ([.notes[] | select(.resolvable)] | length > 0),
+               new: ([.notes[] | select(.id > $since)] | length > 0)}) as $all
+    | ($all | map(select(.unresolved)) | length) as $open
+    | ([$all[].notes[].id] | max // $since) as $last
+    | ($all | map(select(.unresolved or .new))) as $shown
+    | "\($head) · unresolved threads: \($open) · \($url)",
+      ($shown[] | . as $t | .notes[0] as $f
+        | "--- Thread \($t.id) · \(if $f.position then "\($f.position.new_path // $f.position.old_path):\($f.position.new_line // $f.position.old_line)" else "general" end) · \(if $t.unresolved then "unresolved" elif $t.resolvable then "resolved" else "comment" end)",
+          ($t.notes[] | "  [\(.id) · \(.author.username)\(if .author.username == $me then " (you)" else "" end) · \(.created_at[0:16] | sub("T"; " ")) UTC]\(if .id > $since then " (new)" else "" end)",
+                        (.body | split("\n") | map("      " + .) | join("\n")))),
+      "\($shown | length) thread(s) shown (unresolved, or new since note \($since)). Newest note id: \($last)"
+  ' "$tmp"/page-*.json; n=$?
+  rm -rf "$tmp"
+  [ "$n" -eq 0 ] || { bad "Couldn't read the threads GitLab sent" "Run it again; if it keeps failing, look at the MR on GitLab: $WEB_URL"; return 1; }
+  return 0
+}
+
+do_reply() { # <branch> <thread id> <reply file>
+  local branch="$1" did="$2" file="$3" body rc nid
+  printf '%s' "$did" | grep -q -E '^[0-9a-f]{8,64}$' || { bad "'$did' isn't a thread id" "Use the id after \"Thread\" in: bash scripts/gitlab-mr.sh $REPO comments $branch"; return 2; }
+  [ -s "$file" ] || { bad "No reply file '$file' (or it's empty)" "Write the reply the user approved to a file first (flow-review keeps it in the card's folder)."; return 2; }
+  find_mr "$branch" || return 1
+  body="$(mktemp)"; chmod 600 "$body"
+  jq -n --rawfile b "$file" '{body: $b}' > "$body"
+  api POST "/projects/$(project)/merge_requests/$IID/discussions/$did/notes" "$body"; rc=$?
+  rm -f "$body"
+  [ "$rc" -eq 0 ] || { api_problem "the reply in thread $did of MR !$IID"; return 1; }
+  nid="$(printf '%s' "$BODY" | jq -r '.id // empty')"
+  ok "$REPO: reply posted in MR !$IID, thread $did (note $nid); the thread stays open for the reviewer · $WEB_URL"
+}
+
+do_pipeline() { # <branch>
+  local pid st url
+  find_mr "$1" || return 1
+  api GET "/projects/$(project)/merge_requests/$IID" || { api_problem "MR !$IID"; return 1; }
+  pid="$(printf '%s' "$BODY" | jq -r '.head_pipeline.id // empty')"; st="$(printf '%s' "$BODY" | jq -r '.head_pipeline.status // empty')"; url="$(printf '%s' "$BODY" | jq -r '.head_pipeline.web_url // empty')"
+  [ -n "$pid" ] || { echo "⚠️ $REPO: MR !$IID has no pipeline"; echo "   Tip: this repo may not run CI on its MRs; nothing to wait for."; return 0; }
+  case "$st" in
+    success) ok "$REPO: MR !$IID's pipeline passed · $url" ;;
+    failed)
+      echo "❌ $REPO: MR !$IID's pipeline failed · $url"
+      if api GET "/projects/$(project)/pipelines/$pid/jobs?scope%5B%5D=failed&per_page=100"; then
+        printf '%s' "$BODY" | jq -r '.[] | "   failed job: \(.name) (stage \(.stage)) · \(.web_url)"'
+      fi
+      echo "   Fix: open the failed job's log; /flow-review treats it like a finding (a fix, its tests, your yes, then a push)."
+      return 3 ;;
+    running|pending|created|preparing|waiting_for_resource|scheduled) echo "⚠️ $REPO: MR !$IID's pipeline is still $st · $url"; echo "   Tip: look again later: /flow-review <CARD-KEY> check" ;;
+    *) echo "⚠️ $REPO: MR !$IID's pipeline is $st · $url"; echo "   Tip: look at it on GitLab." ;;
+  esac
+  return 0
+}
+
 [ $# -ge 3 ] || { usage; exit 2; }
 REPO="$1"
 repo_ready "$REPO" || { bad "$REPO_PROBLEM" "Fix that first, then run this again."; exit 1; }
@@ -117,5 +209,8 @@ case "$2" in
   find) [ $# -eq 3 ] || { usage; exit 2; }; do_find "$3" ;;
   status) [ $# -eq 3 ] || { usage; exit 2; }; do_status "$3" ;;
   describe) [ $# -ge 4 ] || { usage; exit 2; }; shift 2; do_describe "$@" ;;
+  comments) shift 2; do_comments "$@" ;;
+  reply) [ $# -eq 5 ] || { usage; exit 2; }; do_reply "$3" "$4" "$5" ;;
+  pipeline) [ $# -eq 3 ] || { usage; exit 2; }; do_pipeline "$3" ;;
   *) usage; exit 2 ;;
 esac

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Shared helpers: facts about a registered repo, read from its registry files (C4, D67).
-# Sourced by scripts/repo-run.sh, scripts/api-call.sh, scripts/db-run.sh, scripts/e2e.sh and scripts/ship.sh, after
+# Sourced by scripts/repo-run.sh, scripts/api-call.sh, scripts/db-run.sh, scripts/e2e.sh, scripts/ship.sh and
+# scripts/gitlab-mr.sh, after
 # config/project-settings.sh.
 # Needs AGENT_ROOT. Never prints a value from a repo's .env file (rule A6): the port is read only to build a local URL
 # that the scripts use themselves.
@@ -8,12 +9,14 @@
 REPOS_DIR="${REPOS_DIR:-$AGENT_ROOT/config/repos}"
 LOCAL_REPOS_DIR="${LOCAL_REPOS_DIR:-$AGENT_ROOT/local/repos}"
 NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+USER_SETTINGS="${USER_SETTINGS:-$AGENT_ROOT/local/user-settings.sh}"
 
 yaml_get() { # <file> <key>: value of a flat "key: value" line ("" if missing); a " # comment" is dropped
   [ -f "$1" ] || return 0
   grep -m1 -E "^$2:" "$1" | sed -E "s/^$2:[[:space:]]*//; s/[[:space:]]+#.*$//; s/[[:space:]]+$//"
 }
 repo_file() { echo "$REPOS_DIR/$1.yaml"; }
+gitlab_username() { grep -m1 '^GITLAB_USERNAME=' "$USER_SETTINGS" 2>/dev/null | sed "s/^GITLAB_USERNAME=//; s/^[\"']//; s/[\"']$//"; }   # yours, from local/user-settings.sh ("" if not set)
 repo_path() { yaml_get "$LOCAL_REPOS_DIR/$1.yaml" local_path; }
 repo_node() { # the repo's Node version ("" for a repo that isn't Node)
   local f nv; f="$(repo_file "$1")"

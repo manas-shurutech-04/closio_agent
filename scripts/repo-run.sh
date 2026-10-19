@@ -15,6 +15,9 @@
 #                              left as it is. Log: local/logs/server-<repo>.log (C4, flow-verify; D67).
 #   <repo> stop | all stop     Stops the server(s) this script started (never one it didn't start).
 #   <repo> status              Whether the repo's server answers, and whether this script started it.
+#   <repo> review              Codex only (flow-review, D78): Codex's own reviewer on the card's changes, run in the repo's
+#                              folder against the MR's target branch (codex review --base origin/<target>); prints its review.
+#                              In Claude Code, flow-review uses Claude Code's own code-review instead.
 #
 # Prints one ✅ / ❌ line per command, with the test counts; the full output goes to local/logs/repo-run-<repo>.log.
 # Never reads or prints .env values (rule A6): the repo's own scripts load .env themselves. Never clones (D53), never commits.
@@ -40,7 +43,7 @@ bad() {
   failed=1
 }
 info() { echo "   $1"; }
-usage() { echo "Usage: bash scripts/repo-run.sh <repo> check | test | migrate confirmed | seed confirmed | start | stop | status  (or: all stop)"; }
+usage() { echo "Usage: bash scripts/repo-run.sh <repo> check | test | migrate confirmed | seed confirmed | start | stop | status | review  (or: all stop)"; }
 
 list_items() { printf '%s' "$1" | tr ',' '\n' | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' | grep -v -x 'none' | grep -v '^$'; }
 
@@ -199,7 +202,7 @@ fi
 
 [ $# -ge 2 ] || { usage; exit 2; }
 action="$2"
-case "$action" in check|test|migrate|seed|start|stop|status) ;; *) usage; exit 2 ;; esac
+case "$action" in check|test|migrate|seed|start|stop|status|review) ;; *) usage; exit 2 ;; esac
 if [ "$action" = "stop" ]; then
   printf '%s' "$1" | grep -q -E '^[a-z0-9][a-z0-9._-]*$' || { bad "'$1' isn't a repo name" "Use the name of a registered repo, or: bash scripts/repo-run.sh all stop"; exit 1; }
   do_stop "$1"; exit 0
@@ -250,6 +253,14 @@ EOF_CMDS
     else
       look "$REPO isn't running" "Start it with: bash scripts/repo-run.sh $REPO start"
     fi ;;
+  review) [ $# -eq 2 ] || { usage; exit 2; }
+    command -v codex >/dev/null 2>&1 || { bad "Codex isn't installed here (this runs Codex's own reviewer)" "In Claude Code, /flow-review uses Claude Code's own code-review instead; for Codex, install it as the setup guide says."; exit 1; }
+    target="$(yaml_get "$FILE" mr_target_branch)"; { [ -n "$target" ] && [ "$target" != "none" ]; } || target="$(yaml_get "$FILE" base_branch)"
+    git -C "$PATH_" fetch -q origin 2>/dev/null || look "$REPO: couldn't fetch from GitLab; reviewing against the origin/$target this Mac already has" "Connect the VPN for the latest: /flow-vpn connect"
+    info "$REPO: Codex's own review of the card's changes against origin/$target (time limit $REPO_RUN_TIMEOUT s)..."
+    run_in_repo "$PATH_" "" "$REPO_RUN_TIMEOUT" "$LOG" "codex review --base $(printf '%q' "origin/$target")"; rc=$?
+    if [ "$rc" -eq 0 ]; then ok "$REPO: Codex's review (below; check each point against the code before showing it):"; last_output "$LOG" | sed '1d; s/^/   /'
+    else run_one_result "$rc" "Codex's review" "codex review --base origin/$target"; fi ;;
   *) usage; exit 2 ;;
 esac
 
