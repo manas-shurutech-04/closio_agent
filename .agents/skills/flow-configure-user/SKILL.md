@@ -9,7 +9,7 @@ disable-model-invocation: true
 
 Sets up everything personal, step by step. Asks **only for what's missing**. Run it again any time; add an item name to change just that one (e.g. `/flow-configure-user gitlab-token`).
 
-Item names: `jira-account-id`, `gitlab-username`, `workspace-dir`, `ai-tools`, `vpn-username`, `git-name`, `git-email`, and the secrets `gitlab-token`, `fe-login-id`, `fe-login-password`, `ws1-login-userid`, `ws1-login-password`.
+Item names: `jira-account-id`, `gitlab-username`, `workspace-dir`, `ai-tools`, `vpn-username`, `git-name`, `git-email`, the secrets `gitlab-token`, `fe-login-id`, `fe-login-password`, `ws1-login-userid`, `ws1-login-password`, and `playwright` (sets up Playwright for checking web cards).
 
 In Codex: the secret steps open macOS dialogs and write to the Keychain, and the GitLab check needs the network. Ask the user to approve running those commands outside the sandbox.
 

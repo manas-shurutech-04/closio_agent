@@ -9,6 +9,7 @@
 #   secret <item>                    Heads-up dialog, then a hidden dialog; the value goes straight into the Keychain
 #   gitlab-username-from-token       Reads your GitLab username with the stored token (VPN needed)
 #   store-secret-from-stdin <item>   Stores the value read from stdin (used by 'secret' and by tests)
+#   playwright                       Sets up Playwright for checking web cards (runs: bash scripts/e2e.sh setup; D67)
 #
 # Personal settings go to local/user-settings.sh (private, git-ignored, never pushed).
 # Secrets only go to the macOS Keychain. Secret values are never printed (D33).
