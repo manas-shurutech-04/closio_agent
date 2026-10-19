@@ -1,6 +1,6 @@
 # Setup Guide — closio-agent for Japfa (Closio)
 
-> **Status (2026-10-16):** `closio-agent` is **in design.** The setup commands are built: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card` and `flow-help` ([commands.md](commands.md)), and the card commands `flow-status`, `flow-start`, `flow-develop`, `flow-verify`, `flow-ac-check`, `flow-push` and `flow-finish`: every card phase. `flow-configure-user` also sets up Playwright, for checking web cards (it asks before that download).
+> **Status (2026-10-19):** every command of `closio-agent` is built, and they're being tried on real cards: the setup and everyday commands `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card` and `flow-help`, `flow-grill` (any time) ([commands.md](commands.md)), and the card commands `flow-status`, `flow-start`, `flow-develop`, `flow-verify`, `flow-ac-check`, `flow-push`, `flow-review` and `flow-finish`: every card phase. `flow-configure-user` also sets up Playwright, for checking web cards (it asks before that download).
 >
 > **Use the commands first** (see "First-time setup, in order" below, or the plain-words walkthrough in [user-guide.md](user-guide.md)). The manual steps in this guide stay as a backup and explain what the commands do. Steps marked **✅ verified** were tested on a real Mac (macOS 26.6.2). Steps marked **🛠 planned** aren't built yet.
 >
@@ -91,7 +91,7 @@ claude        # or: codex
 
 - **Always start in the closio-agent folder** ([D42](design-decisions.md#d42), rule A10). The agent's commands only load from there. Don't start the tool inside a code repo: the agent adds the repos it needs as extra folders itself. (Today the folder is still called `AI Pipeline`.)
 - **Always run `nvm use v22` first** ([D41](design-decisions.md#d41), rule A9). closio-agent, Claude Code and Codex run on Node v22; each code repo runs on its own Node version, which the agent switches to itself (rule A13, [D52](design-decisions.md#d52)). All agent rules: [agent-rules.md](agent-rules.md).
-- The setup commands (`flow-configure-user`, `flow-configure-repo`) remind you of this and stop if the session wasn't started in the closio-agent folder; `flow-doctor` checks it too.
+- The setup commands (`flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`) remind you of this and stop if the session wasn't started in the closio-agent folder; `flow-doctor` checks it too.
 - The Claude desktop app doesn't start from a terminal, so you can't run `nvm use v22` there first. `flow-doctor` shows it if Node isn't 22. When the agent runs anything in a code repo (`flow-setup-repo`), its script switches to that repo's Node version itself first (rule A13), so that works in the desktop app too ([D54](design-decisions.md#d54)).
 
 ### Approval prompts in Claude Code

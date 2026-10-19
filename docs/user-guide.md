@@ -1,6 +1,6 @@
 # closio-agent, step by step
 
-**Claude artifact:** https://claude.ai/code/artifact/a83b1e2a-0e5a-4378-b791-26b9f34e8b7a · mirrored on 2026-10-19 · commands: flow-ac-check, flow-check-card, flow-configure-repo, flow-configure-user, flow-develop, flow-doctor, flow-finish, flow-help, flow-memory, flow-ping, flow-push, flow-setup-repo, flow-start, flow-status, flow-verify, flow-vpn
+**Claude artifact:** https://claude.ai/code/artifact/a83b1e2a-0e5a-4378-b791-26b9f34e8b7a · mirrored on 2026-10-19 · commands: flow-ac-check, flow-check-card, flow-configure-repo, flow-configure-user, flow-develop, flow-doctor, flow-finish, flow-grill, flow-help, flow-memory, flow-ping, flow-push, flow-review, flow-setup-repo, flow-start, flow-status, flow-verify, flow-vpn
 
 This guide walks you through closio-agent from the first minute: which command to type, in what order, what each one asks you, and what you get back. It's written for anyone on the team, even if you've never used an AI tool before.
 
@@ -19,17 +19,17 @@ flowchart TB
     end
     subgraph K["For every card"]
         direction TB
-        k1["/flow-start SCRUM-123<br/>needs a To Do card; you approve the plan"] --> k2["/flow-develop SCRUM-123<br/>you review the code"] --> k3["/flow-verify SCRUM-123<br/>you choose: full or quick check"] --> k4["/flow-push SCRUM-123<br/>you approve the commits and the push"] --> k5["/flow-finish SCRUM-123<br/>needs the merge requests merged and deployed on dev"] --> r["Ready for Test"]
+        k1["/flow-start SCRUM-123<br/>needs a To Do card; you approve the plan"] --> k2["/flow-develop SCRUM-123<br/>you review the code"] --> k3["/flow-verify SCRUM-123<br/>you choose: full or quick check"] --> k4["/flow-push SCRUM-123<br/>you approve; then /flow-review for the comments"] --> k5["/flow-finish SCRUM-123<br/>needs the merge requests merged and deployed on dev"] --> r["Ready for Test"]
     end
     b --> S --> K
-    a["Any time: /flow-status · /flow-help · /flow-doctor"]
+    a["Any time: /flow-status · /flow-help · /flow-doctor · /flow-grill"]
 ```
 
 ## 1. What closio-agent is
 
 closio-agent is a helper that lives in your AI tool (Claude Code or Codex). It takes a Jira card from the SCRUM board through the whole delivery flow: pick up the card, plan, develop with you, test, push with tidy commits, create the merge requests, and write the deployment doc.
 
-Today the **setup part** is built: the commands that get your Mac ready and keep it healthy. Of the **card part**, every phase is built: the pick-up, the plan, the development, the checks, the push and the after-merge step (`flow-start`, `flow-develop`, `flow-verify`, `flow-ac-check`, `flow-push`, `flow-finish`, `flow-status`; [section 6](#6-working-on-a-card)).
+Today the **setup part** is built: the commands that get your Mac ready and keep it healthy. Of the **card part**, every phase is built: the pick-up, the plan, the development, the checks, the push and the after-merge step (`flow-start`, `flow-develop`, `flow-verify`, `flow-ac-check`, `flow-push`, `flow-review`, `flow-finish`, `flow-status`; [section 6](#6-working-on-a-card)).
 
 You never run scripts by hand. You type a command, the AI runs the right script and shows you the result. Every problem comes with the steps to fix it.
 
@@ -73,16 +73,16 @@ flowchart LR
     end
     subgraph D["2. Every day"]
         direction TB
-        d1["Start the tool in the folder"] --> d2["/flow-vpn connect for GitLab"] --> d3["/flow-memory: how you work"] --> d4["/flow-check-card: a card"] --> d5["/flow-help: every command"]
+        d1["Start the tool in the folder"] --> d2["/flow-vpn connect for GitLab"] --> d3["/flow-memory: how you work"] --> d4["/flow-check-card: a card"] --> d5["/flow-help: every command"] --> d6["/flow-grill: question a plan"]
     end
     subgraph K["3. Cards (every step built)"]
         direction TB
-        k1["Pick up the card"] --> k2["Plan: you approve it"] --> k3["Develop together"] --> k4["Review, AC check, tests"] --> k5["Push + merge requests"] --> k6["After the merge: deploy doc"] --> k7["Ready for Test"]
+        k1["Pick up the card"] --> k2["Plan: you approve it"] --> k3["Develop together"] --> k4["Review, AC check, tests"] --> k5["Push + merge requests,<br/>then /flow-review"] --> k6["After the merge: deploy doc"] --> k7["Ready for Test"]
     end
     S --> D --> K
 ```
 
-You set up once, left to right; then every day you only need the middle box; the card stage comes when it's built.
+You set up once, left to right; then every day you only need the middle box; and each card goes through the third box, step by step.
 
 **One-time setup** (section 4):
 
@@ -98,6 +98,7 @@ You set up once, left to right; then every day you only need the middle box; the
 3. `/flow-memory` to tell the agent how you like to work.
 4. `/flow-check-card` before a card is picked up.
 5. `/flow-help` whenever you forget a command.
+6. `/flow-grill` when you want a plan or an idea questioned before you go on.
 
 **Working on a card** (section 6; every step is built):
 
@@ -105,7 +106,7 @@ You set up once, left to right; then every day you only need the middle box; the
 2. Plan: the code first, your answers, your approval (part of `/flow-start`).
 3. `/flow-develop SCRUM-567`: develop together (the code and its unit tests), then your review.
 4. `/flow-verify SCRUM-567`: every AC checked, the full way (saved test cases, the story check) or the quick way (straight against the code); the tests again.
-5. `/flow-push SCRUM-567`: your approved commits, one push per repo with the merge requests, the card to Code Review.
+5. `/flow-push SCRUM-567`: your approved commits, one push per repo with the merge requests, the card to Code Review. While they wait for the merge, `/flow-review SCRUM-567`: a self-review and the reviewers' comments.
 6. `/flow-finish SCRUM-567`: after the merge, the checks on dev, the deployment doc (run folder and Jira card), Ready for Test.
 
 ## 4. One-time setup, in this order
@@ -207,7 +208,7 @@ Two rules that never change: **start in the closio-agent folder** (never inside 
 
 - **What it is:** your private memory: short notes on how you like to work (e.g. "write plans as short numbered steps"). Every command reads them first and follows them. They stay on your Mac and are never pushed. Team rules always win over them.
 - **Options:** `/flow-memory` (list); `/flow-memory add <text>` (everywhere); `/flow-memory add <repo> <text>` (one repo only); `/flow-memory edit <id> <new text>`; `/flow-memory edit <id> phases <phases>`; `/flow-memory remove <id>`; `/flow-memory clear` (all, after showing them and asking); `/flow-memory clear <repo>`.
-- **Also:** when you correct the AI during a command, it offers once to save the correction here. It saves only after you say yes. Your memory can also answer three repeat questions for you (section 6, "Make it ask you less").
+- **Also:** when you correct the AI during a command, it offers once to save the correction here. It saves only after you say yes. Your memory can also answer three repeat questions for you (section 6, "Make it ask you less"). It can't switch off the way decisions are asked during a card (section 6, "How it asks you things"): that's a team rule.
 
 ### `/flow-check-card`
 
@@ -221,6 +222,13 @@ Two rules that never change: **start in the closio-agent folder** (never inside 
 - **You see:** a heading per group, each command's name in bold with one line on what it does, and every way to type it on its own line.
 - **Good to know:** the help is read from the commands' own files, so it's always complete. `bash scripts/help.sh` in a terminal shows the same, in color.
 
+### `/flow-grill`
+
+- **When:** you want a plan, an idea or a card questioned before you go on. (While a card command runs, it already asks you this way by itself: section 6.)
+- **Options:** `/flow-grill "<your plan or idea>"` (the answers stay in the chat, with a summary at the end), `/flow-grill SCRUM-567` (a card you've picked up: its folder and the code are read, and the answers are saved in its `decisions.md`; a card not picked up yet: it's read from Jira and the answers stay in the chat).
+- **You see:** first what it found by itself ("Found" lines, each saying where), then numbered questions in rounds, each with a recommended answer: "yes" accepts it, "yes to all" the whole round, or answer by number. Follow-up rounds until nothing is open, then what you agreed, for your confirmation.
+- **Good to know:** it only reads; it never changes code, Jira or GitLab. Adapted from Matt Pocock's "grill me" (MIT licence); the method is in `rulesets/grilling.md`.
+
 ## 6. Working on a card
 
 Every step is built: picking a card up, planning it, developing it with you, checking it, pushing it with its merge requests, and finishing it after the merge.
@@ -232,6 +240,12 @@ Every step is built: picking a card up, planning it, developing it with you, che
 - **Where a card stands:** being picked up · planning · in development · being checked · ready to push · waiting for the merge · finished.
 - **Full or quick check:** the two ways `/flow-verify` checks a card: full saves test cases and runs them; quick checks each AC directly against the running code.
 - **MR:** a merge request on GitLab.
+- **Found:** a line with something the agent found by itself (in the card, its folder or the code), with where it found it; it never asks you those.
+- **Decision 3:** a pointer to row 3 of the card's `decisions.md`, where every decision is written in full.
+
+**How it asks you things.** While a card command runs, every question is asked the same way (the "grilling" way, `rulesets/grilling.md`): what the agent can find in the card, its folder or the code, it shows you as "Found" lines and never asks; only real decisions are asked, numbered, in rounds, each with a recommended answer ("yes" accepts it, "yes to all" the round); follow-up rounds until nothing is open; then a summary of what you agreed, and nothing changes before you confirm. The same happens when you ask for a change in the middle of a command (e.g. "also return the partner name"); short answers, approvals and your questions go straight. The safety stops (a migration, test data, the commits, the push, a Jira move) still ask their own plain yes or no.
+
+**Every decision is written down.** Each card's folder has `decisions.md`: one numbered row per decision, from pick-up to Ready for Test (when, at which step, the question, what was decided, and who: you, your memory, or the recommendation you accepted). Your approvals at the safety stops are in it too. The card's other files only point to it ("decision 3"), so there's one place to see why the card was built the way it was.
 
 **Make it ask you less.** The commands stop before anything that matters: the plan, test data, the commits, the push, a migration. Three questions can be answered by your memory instead, once and for all:
 
@@ -246,31 +260,32 @@ The command then says in one line which entry it used, and you can still say oth
 ```mermaid
 flowchart TB
     p1["1. Pick up the card<br/>flow-start: In Development"] --> p2["2. Understand and plan<br/>✋ you approve the plan"] --> p3["3. Develop<br/>flow-develop: you and the AI"]
-    p3 --> p4["4. Human review<br/>✋ you review the code"] --> p5["5. Check the ACs<br/>flow-verify: every AC, its test cases"] --> p6["6. Developer testing<br/>flow-verify: tests again, story check"]
+    p3 --> p4["4. Human review<br/>✋ you review the code"] --> p5["5. Check the ACs<br/>flow-verify: every AC, full or quick"] --> p6["6. Developer testing<br/>flow-verify: tests again (full: story check)"]
     p5 -- "a failure: you decide" --> p3
     p6 -- "e.g. back to 3" --> p3
-    p6 --> p7["7. Ship<br/>flow-push: commits + one push"] --> p8["8. Merge request<br/>flow-push: MRs, Code Review"] --> p9["9. After the merge<br/>flow-finish: doc, test on dev"] --> r["Ready for Test"]
+    p6 --> p7["7. Ship<br/>flow-push: commits + one push"] --> p8["8. Merge request<br/>flow-push: MRs, Code Review"] --> rv["While it waits<br/>flow-review: self-review, comments<br/>✋ your yes before anything is sent"] --> p9["9. After the merge<br/>flow-finish: doc, test on dev"] --> r["Ready for Test"]
+    rv -- "new comments: run it again" --> rv
 ```
 
-The ✋ boxes are where the agent stops and waits for you. A failed AC check or test is shown to you with a suggestion, and you decide what's next (for example, back to Develop).
+The ✋ boxes are where the agent stops and waits for you. A failed AC check or test is shown to you with a suggestion, and you decide what's next (for example, back to Develop). While the merge requests wait, `/flow-review` can run as often as reviewers comment.
 
 ### `/flow-start`
 
 - **When:** to pick up a card that's To Do and plan it. Run it again any time to continue where it stopped (if it stopped while planning, it reads the latest code again first).
-- **What it does, in order:** the VPN; the card read from Jira and checked against the template (a Spike stops; a card that isn't To Do or belongs to someone else: it asks); into the sprint, **In Development**, assigned to you; the repos it needs, confirmed by you; a branch `SCRUM-<n>/<short-description>` in each repo, the name confirmed by you; everything saved. Then the plan: **the latest code is brought into the new branches and read first**, together with **the team's ruleset** (`rulesets/story-implementation-workflow.md`; your memory can change its points for you), **every difference between the card and the code is asked about** (with a recommended answer each), the draft plan is shown, **you approve it**, and only then it's saved.
+- **What it does, in order:** the VPN; the card read from Jira and checked against the template (a Spike stops; a card that isn't To Do or belongs to someone else: it asks); into the sprint, **In Development**, assigned to you; the repos it needs, confirmed by you; a branch `SCRUM-<n>/<short-description>` in each repo, the name confirmed by you; everything saved. Then the plan: **the latest code is brought into the new branches and read first**, together with **the team's ruleset** (`rulesets/story-implementation-workflow.md`; your memory can change its points for you), **every difference between the card and the code is asked about** the grilling way (what the code answers shown as found; the rest in rounds, a recommended answer each, until nothing is open), the draft plan is shown, **you approve it**, and only then it's saved.
 - **Options:** `/flow-start SCRUM-567` only.
 - **You see:** one line per step, each written into the card's `history.md` with the rules and memory it applied; the questions and the plan in chat; at the end `Done: SCRUM-567 is planned. Next: /flow-develop SCRUM-567`, or say "develop SCRUM-567".
-- **Where it's remembered:** `runs/SCRUM-567/` (`state.md`, `history.md`, `card.md`, `plan.md`) saved to the branch `runs/SCRUM-567` of closio-agent and pushed after every phase, never on `main`; your closio-agent folder itself always stays on `main`. A teammate can pull that branch and continue.
+- **Where it's remembered:** `runs/SCRUM-567/` (`state.md`, `history.md`, `card.md`, `plan.md`, and `decisions.md`: every decision on the card) saved to the branch `runs/SCRUM-567` of closio-agent and pushed after every phase, never on `main`; your closio-agent folder itself always stays on `main`. A teammate can pull that branch and continue.
 - **If ❌:** the line says what to do (connect the VPN, fix the card, commit or stash a repo's changes, give folder access). Then run it again.
 
 ### `/flow-develop`
 
-- **When:** once the plan of a card is approved (`/flow-start` ends with "Next: /flow-develop"). Run it again any time to continue where it stopped, on the same Mac.
+- **When:** once the plan of a card is approved (`/flow-start` ends with "Next: /flow-develop"). Run it again any time to continue where it stopped, on the same Mac. Also after a failed check: if `/flow-verify` found failures, it shows them and asks whether to go back to development and fix them.
 - **Plain words work too:** "develop SCRUM-567" starts it, but only for a card whose plan is approved (you name it, or it's the only card waiting to be developed).
 - **What it does, in order:** the VPN; your repos on the card's branch, with the latest base branch; then, repo by repo in the plan's order: **the code** (copying how the closest existing files do it, reusing what the repo already has instead of writing it again, creating new files where needed, and **asking you first** about anything new or different from the plan), **the unit tests** (run with the coverage gate until they pass), **the repo's checks** (lint only looks at the files the card changed and only warns; other checks must pass), and migrations or seeders **only after you've reviewed them and said yes**; a short summary after each repo, then it goes straight on. At the end it shows everything for **your review**: you look at the changes in your editor and say "review approved", or what to change.
 - **Options:** `/flow-develop SCRUM-567` only (or the plain words).
 - **You see:** a line per step, the questions when something isn't in the plan, a summary per repo, the review, and at the end `Done: SCRUM-567 is developed and reviewed. Next: /flow-verify SCRUM-567`.
-- **Where it's remembered:** `runs/SCRUM-567/develop.md` (what was built per repo, the tests, everything not in the plan with your answers, the review). The code stays uncommitted in your repos until the push, so continue on the same Mac.
+- **Where it's remembered:** `runs/SCRUM-567/develop.md` (what was built per repo, the tests, everything not in the plan with your answers, the review; every decision in full in `decisions.md`). The code stays uncommitted in your repos until the push, so continue on the same Mac.
 - **If ❌:** the line says what to do (a test or a check to fix, Node to install, folder access, uncommitted changes). Then run it again.
 
 ### `/flow-verify`
@@ -280,17 +295,17 @@ The ✋ boxes are where the agent stops and waits for you. A failed AC check or 
   - **A — Full check:** writes and saves the **test cases** of every AC (API checks for the backend, Playwright tests for the web app; from your QMetry export when you give one, otherwise from the card and the code), runs them, runs the repo tests again and checks the build against the story.
   - **B — Quick check:** checks every AC straight against the running code: the statuses, error codes, messages and response structure it returns. After a call that writes, it reads the database to check what was written. No test cases are saved, no QMetry, no story check; the repo tests run again. Faster, and fewer tokens.
 - **Web cards, both ways:** before any test is written it lists the APIs the card's screens call and asks you which are available on dev right now (every run). One that isn't is mocked: you send its exact 200 response once. Right before the run it checks the GET APIs on dev, and asks again about one that doesn't answer. `verify.md` says which APIs were real and which were mocked.
-- **Both ways:** it starts the card's repos on your Mac; if the checks need **test data** or send calls that **write** (POST, PUT, DELETE), it shows you those and their cleanup first and runs them only after your yes; at the end it cleans up after your yes and stops the servers.
+- **Both ways:** it starts the card's repos on your Mac; if the checks need **test data** or send calls that **write** (POST, PUT, PATCH, DELETE), it shows you those and their cleanup first and runs them only after your yes; at the end it cleans up after your yes and stops the servers.
 - **Options:** `/flow-verify SCRUM-567` (it asks A or B), `/flow-verify SCRUM-567 full`, `/flow-verify SCRUM-567 quick`, or `/flow-verify SCRUM-567 full ~/Downloads/<QMetry export>.xlsx` when you have the card's QMetry test cases. QMetry is optional, only for A, and never asked for: with an export its cases are the base; without one the test cases are written from the card and the code.
 - **You see:** ✅ / ❌ per AC and per case or scenario, the repo tests, and (A) the story check. With a QMetry export (A), also one line: how many of its test cases were covered (e.g. `QMetry: 18 of 22 test cases covered (82%)`). All ✅: `Done: SCRUM-567 is verified. Next: /flow-push SCRUM-567`. Something ❌: each failure with a suggestion (fix the code with `/flow-develop`, change a test case with `/flow-ac-check` for A, or a setup fix), and **you decide** what to do.
-- **Where it's remembered:** `runs/SCRUM-567/verify.md` records **every run** (what was tested and the results, newest first, never overwritten); A's test cases in `runs/SCRUM-567/api-checks/` or `runs/SCRUM-567/e2e/`. B's one-off files stay on your Mac only and are removed at the end.
+- **Where it's remembered:** every decision in `runs/SCRUM-567/decisions.md`; `runs/SCRUM-567/verify.md` records **every run** (what was tested and the results, newest first, never overwritten); A's test cases in `runs/SCRUM-567/api-checks/` or `runs/SCRUM-567/e2e/`. B's one-off files stay on your Mac only and are removed at the end.
 - **Good to know:** web cards need Playwright (`/flow-configure-user playwright`). Your logins and keys are added by the scripts and never shown.
 
 ### `/flow-ac-check`
 
 - **When:** you want a new test case for an AC, a case changed, or an AC's cases written again.
 - **Options:** `/flow-ac-check SCRUM-567 3` (AC 3's cases written again from the card and the code), `/flow-ac-check SCRUM-567 3 "add a case for ?status=foo"` (added or changed as you say).
-- **You see:** for a web card, first the question which of the AC's APIs are available on dev; then what changed in the AC's cases, then that AC's result. Test data or calls that write, if needed, only after your yes. The run is recorded in `verify.md`. The next `/flow-verify` (full check) runs it with the rest.
+- **You see:** first the VPN, if it's off (the checks log in on dev); for a web card, then the question which of the AC's APIs are available on dev; then what changed in the AC's cases, then that AC's result. Test data or calls that write, if needed, only after your yes. The run is recorded in `verify.md`. The next `/flow-verify` (full check) runs it with the rest.
 
 
 ### `/flow-push`
@@ -298,18 +313,26 @@ The ✋ boxes are where the agent stops and waits for you. A failed AC check or 
 - **When:** after `/flow-verify` says the card is verified.
 - **What it does, in order:** brings each repo up to the latest base branch (your uncommitted work is put aside, the branch rebased, your work put back; a conflict waits for you to fix it in your editor); runs the repo's tests again; proposes the **atomic commits**, each layer's code with its own tests, messages like `SCRUM-567: Add the ageing config model`, and **you approve the list**; makes them (in the repos with husky, the coverage gate runs on every commit, so it takes a while); prepares each **merge request**: title `SCRUM-567: <card title>`, into the repo's MR branch, assigned to you, the labels and reviewers you confirm, and a short description (the Jira link, the migrations and seeders to run); shows you everything and pushes **only after your yes**, once per repo; then sets each MR's description and reviewers, checks the card shows the MRs (adds a comment if one is missing) and moves the card to **Code Review**.
 - **Options:** `/flow-push SCRUM-567` only. Run it again to continue where it stopped (e.g. after a conflict).
-- **You see:** the files per repo, the commit list to approve, the MRs to approve, then the MR links and `Done: SCRUM-567 is pushed and in Code Review.`
-- **Where it's remembered:** `runs/SCRUM-567/ship.md` (the commits, the pushes, the MR links) and each MR's description in `runs/SCRUM-567/mr-<repo>.md`.
+- **You see:** the files per repo, the commit list to approve, the MRs to approve, then the MR links and `Done: SCRUM-567 is pushed and in Code Review.`, with what comes next: `/flow-review SCRUM-567` while the MRs wait, `/flow-finish SCRUM-567` once they're merged.
+- **Where it's remembered:** `runs/SCRUM-567/ship.md` (the commits, the pushes, the MR links), each MR's description in `runs/SCRUM-567/mr-<repo>.md`, every decision in `decisions.md`.
 - **Good to know:** a push is never forced, and the repos' git hooks always run. Your GitLab token is read from the Keychain by the script and never shown.
+
+### `/flow-review`
+
+- **When:** after `/flow-push`, while the merge requests wait for the merge: once to review your own code before the reviewers look, and again whenever reviewers comment.
+- **What it does, in order:** the VPN; each MR's state (who approved, merge conflicts, the pipeline and any failed job); a **self-review** of the card's code (the story: every AC covered by code and tests; the basics: no function written again that already exists, each piece in the right file, no unused or debug code, no hard-coded values, tests for the new branches) plus the tool's own reviewer; the findings shown to you in chat (never on the MR) and the ones you choose fixed and tested; then the reviewers' **new comments**: a drafted reply for a question, a tested fix and a reply for a change request, your call for the rest. Then **your yes**, the fixes pushed into the same MR (new commits on top, never forced, no rebase), the replies posted as you.
+- **Options:** `/flow-review SCRUM-567` (a full run), `/flow-review SCRUM-567 check` (only lists what's new: comments, approvals, the pipeline, conflicts; changes nothing, so you can repeat it, e.g. `/loop 30m /flow-review SCRUM-567 check` in Claude Code).
+- **You see:** the MRs' state per repo, the findings (must fix / should fix / small), each comment with its drafted reply or fix, the commits and replies to approve, then what was pushed and posted.
+- **Good to know:** at most 3 self-review rounds per run and 2 tries per failing fix, so it never loops; then it's your call. It never resolves a thread (the reviewer does) and never moves the Jira card (it stays in Code Review). Every round is in `runs/SCRUM-567/review.md`, every decision in `decisions.md`.
 
 
 ### `/flow-finish`
 
 - **When:** after the card's merge requests are merged and the card is deployed on dev.
-- **What it does, in order:** checks every MR is merged (it stops if one is still open); asks you whether the card is deployed on dev (nothing checks it by itself); checks every AC **on dev**, the quick way (test data or calls that write only after your yes); asks if there's anything special for the deployment doc; writes the **deployment doc**: the deploy order, the migrations and seeders to run (you review them first), new `.env` variable names, after-deploy steps, and, depending on the card, its APIs with their WS1 and WS2 dev URLs, the breadcrumb to the screen, or how to test a consumer; puts the doc on the Jira card as one comment; moves the card to **Ready for Test**.
+- **What it does, in order:** checks every MR is merged (it stops if one is still open); asks you whether the card is deployed on dev (nothing checks it by itself); checks every AC **on dev**, the quick way (test data or calls that write only after your yes); asks if there's anything special for the deployment doc; writes the **deployment doc** in plain words, in two parts: **for QA**, what the card adds and how to try it (an API card: ready-to-run curls, with placeholders for your login and keys; a web card: the menu path to the screen; a consumer card: what to look for), and what was already checked on dev; **for the person deploying**, the order with each MR, the database changes and default data in words (by file name; you review the files first), new settings and after-deploy steps. No code in it, except the API curls; puts the doc on the Jira card as one comment; moves the card to **Ready for Test**.
 - **Options:** `/flow-finish SCRUM-567` only. Run it again to continue (e.g. once an MR is merged, or once it's deployed).
 - **You see:** the merge check, the dev checks per AC, the migrations to review, then `Done: SCRUM-567 is in Ready for Test.`
-- **Where it's remembered:** `runs/SCRUM-567/deployment.md`, the dev check as a new run in `verify.md`; the card's run branch stays as its record.
+- **Where it's remembered:** `runs/SCRUM-567/deployment.md`, the dev check as a new run in `verify.md`, every decision in `decisions.md`; the card's saved copy (its branch) stays as its record.
 - **Good to know:** each repo's dev address comes from its repo file (`/flow-setup-repo <repo-name> dev-address` sets it). A failure on dev is shown with a suggestion, and you decide.
 
 ### `/flow-status`
@@ -327,7 +350,7 @@ The ✋ boxes are where the agent stops and waits for you. A failed AC check or 
 | 5. Check against the ACs | every AC checked with its test cases (API checks for the backend, Playwright for the web app) | `flow-verify <CARD-KEY>` (built) |
 | 6. Developer testing | the repo tests again (written in step 3) and a story check; a failure is shown to you with a suggestion, and you decide | part of `flow-verify` (built) |
 | 7. Ship | rebase, atomic commits you approve, one push that also creates and assigns the merge requests | `flow-push <CARD-KEY>` (built) |
-| 8. Merge request | the MRs' description and reviewers set; the MRs shown on the card; card to Code Review | part of `flow-push` (built) |
+| 8. Merge request | the MRs' description and reviewers set; the MRs shown on the card; card to Code Review; then, while they wait for the merge, a self-review and the reviewers' comments | part of `flow-push` (built); `flow-review <CARD-KEY>` (built) |
 | 9. After the merge | the merge checked, every AC checked on dev, the deployment doc (run folder and Jira card), card to Ready for Test | `flow-finish <CARD-KEY>` (built) |
 | Any time | where a card stands; every step is remembered in `runs/<CARD-KEY>/`, so a card can be paused and picked up again | `flow-status <CARD-KEY>` (built) |
 
@@ -348,12 +371,14 @@ Every flow command that exists is in this table. That's a rule: a new command is
 | [`flow-memory`](commands.md#flow-memory) | Your private memory, followed by every command | `/flow-memory` · `/flow-memory add <text>` · `/flow-memory add <repo> <text>` · `/flow-memory edit <id> <new text>` · `/flow-memory edit <id> phases <phases>` · `/flow-memory remove <id>` · `/flow-memory clear` · `/flow-memory clear <repo>` |
 | [`flow-check-card`](commands.md#flow-check-card) | Checks a Jira card against the card template | `/flow-check-card SCRUM-567` · `/flow-check-card <file.md>` |
 | [`flow-help`](commands.md#flow-help) | Every command and how it's typed | `/flow-help` · `/flow-help <command>` |
+| [`flow-grill`](commands.md#flow-grill) | A plan, an idea or a card questioned with you, in rounds, until nothing is open | `/flow-grill "<plan or idea>"` · `/flow-grill <CARD-KEY>` |
 | [`flow-status`](commands.md#flow-status) | Where a card stands, or every card in progress | `/flow-status` · `/flow-status <CARD-KEY>` |
 | [`flow-start`](commands.md#flow-start) | Picks up a card and plans it, up to your approval of the plan | `/flow-start <CARD-KEY>` |
 | [`flow-develop`](commands.md#flow-develop) | Develops a planned card with you, then your review | `/flow-develop <CARD-KEY>` · or in plain words: "develop <CARD-KEY>" |
-| [`flow-verify`](commands.md#flow-verify) | Checks a developed card, A full check or B quick check: every AC, the tests (A: the story) | `/flow-verify <CARD-KEY> [full\|quick]` |
+| [`flow-verify`](commands.md#flow-verify) | Checks a developed card, A full check or B quick check: every AC, the tests (A: the story) | `/flow-verify <CARD-KEY> [full\|quick] [<QMetry export.xlsx>]` |
 | [`flow-ac-check`](commands.md#flow-ac-check) | Adds or changes the test cases of one AC | `/flow-ac-check <CARD-KEY> <AC>` · `/flow-ac-check <CARD-KEY> <AC> "<what to change>"` |
 | [`flow-push`](commands.md#flow-push) | Ships a verified card: your approved commits, one push per repo with the MRs, Code Review | `/flow-push <CARD-KEY>` |
+| [`flow-review`](commands.md#flow-review) | While the MRs wait for the merge: their state, a self-review of the code, the reviewers' comments | `/flow-review <CARD-KEY>` · `/flow-review <CARD-KEY> check` |
 | [`flow-finish`](commands.md#flow-finish) | After the merge: every AC checked on dev, the deployment doc (run folder and Jira card), Ready for Test | `/flow-finish <CARD-KEY>` |
 
 Codex: the same commands with `$` instead of `/`.
@@ -376,6 +401,7 @@ Codex: the same commands with `$` instead of `/`.
 | [architecture.md](architecture.md) | you want to see the whole flow and what comes next |
 | [agent-rules.md](agent-rules.md) | you want the rules the agent always follows |
 | [design-decisions.md](design-decisions.md) | you want to know why something is the way it is |
+| [the rulesets](../rulesets/): [story-implementation-workflow.md](../rulesets/story-implementation-workflow.md), [grilling.md](../rulesets/grilling.md), [code-review.md](../rulesets/code-review.md) | you want the team's way of building a card, of asking for decisions, and of reviewing code |
 
 ```mermaid
 flowchart TB
@@ -391,3 +417,5 @@ flowchart TB
 One change to a command fans out to four places, and `/flow-doctor` won't go green until all four are done.
 
 **How this guide stays up to date.** `docs/user-guide.md` is the source. Whenever a flow command is added or changed, the same step adds it to that command's own `## Usage` block (and its options to the `argument-hint` line Claude Code's `/` menu shows) and to a group in `/flow-help`, to `commands.md`, to this guide, and updates the Claude artifact from this file (there, each command is a picture, redrawn when the command changes), with the "mirrored" line at the top set to the date and every command. That's rule R17 for whoever builds closio-agent, and rule 11 in `AGENTS.md` for the AI. `/flow-doctor` runs the check ("Commands documented") and shows ❌ until it's done. Only Claude Code can update the artifact; a change made in Codex is finished in Claude Code.
+
+And whenever anything changes (a command, a script, a setting, a rule), the rule files (the rulesets, `AGENTS.md`, the agent rules, the pre-approvals) and every status line ("built", "tested by the user") change with it, in the same step: rule 21 in `AGENTS.md`. `/flow-doctor` also shows ❌ while a rule file still calls a built command "coming" or "not built yet".

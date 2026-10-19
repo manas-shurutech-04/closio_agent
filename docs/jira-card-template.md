@@ -77,7 +77,7 @@ Copy this into the card's description and fill it in. Three sections are **requi
 | Bug | No fixed shape (on the board: screenshots plus a line or two, with a "relates to" link to the story). The dev explains the gaps when the card is picked up | Yes |
 | Spike | — | **No** |
 
-For any card: if something is missing, the dev can explain it in chat when the card is picked up. The agent lists the gaps and waits for that; the explanation is saved with the card (Phase 1, [architecture.md](architecture.md#phase-1--pick-up-the-card-flow-start-card-key)).
+For any card: if something is missing, the dev can explain it in chat when the card is picked up. The agent lists the gaps and waits for that; the explanation is saved with the card (Phase 1, [architecture.md](architecture.md#phase-1--pick-up-the-card-flow-start-card-key-built-in-c2)).
 
 ## 4. Acceptance criteria
 
