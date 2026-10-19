@@ -15,6 +15,7 @@ Phase 6  Developer testing       part of flow-verify · the repo tests again + t
 Phase 7  Ship                    flow-push <CARD-KEY>             (C5, built 2026-10-18) rebase, the commits you approve, one push (also creates, assigns and describes the MRs)
 Phase 8  Merge Request           part of flow-push · MRs linked on Jira → card to Code Review · then flow-review <CARD-KEY> (D78) for a self-review and the reviewers' comments
 Phase 9  After merge             flow-finish <CARD-KEY>           (C6, built 2026-10-18) merged? → you say it's deployed → every AC on dev → deployment doc (run folder + Jira card) → Ready for Test
+QA       QA's questions          flow-qa <CARD-KEY>               (D81, built 2026-10-19) QA's Jira comments checked against the card and dev → a reply; a real bug → a Bug card
 Any time flow-status [<CARD-KEY>]  (C1, built 2026-10-17) where a card stands; the run folder runs/<CARD-KEY>/ remembers it
 ```
 
@@ -75,7 +76,7 @@ Repos in scope ([D23](design-decisions.md#d23)). Each is registered with `flow-c
 2. **The code first** (rule A18, [D63](design-decisions.md#d63)): pull the base branches, bring the latest one into the card's branch (`scripts/card-branch.sh update`), and read the current code of every repo involved (routes, controllers, services, utils, constants, middlewares, migrations, locale files). A plan is never made from the card alone. A plan continued later goes back to this step first.
 3. Summarise the card and list its acceptance criteria (ACs). Detect special cases: migrations, consumers/queues, setups.
 4. **Every difference between the card and the code goes to the user first** (rules A16 and A18): error codes, statuses and messages that exist in the code (nothing new is invented), fields, anything the card names that isn't in the code. Ask, wait for the answers.
-5. Read the ruleset `rulesets/story-implementation-workflow.md` (rule A19, [D64](design-decisions.md#d64); backend repos: all of it, the web app: its common practices) and the user-created memory for the `plan` phase (rule A7).
+5. Read each repo's ruleset (rule A19, [D64](design-decisions.md#d64), [D80](design-decisions.md#d80); backend repos: `rulesets/story-implementation-workflow.md`, the web app: `rulesets/frontend-story-workflow.md`) and the user-created memory for the `plan` phase (rule A7).
 6. Draft the development plan. ✋ **The user approves it in chat; strictly necessary.** Only then it's saved to the run folder and pushed on the card's branch.
 
 ### Phase 3 — Develop (`flow-develop <CARD-KEY>`)
@@ -138,6 +139,14 @@ Built in C6 ([D72](design-decisions.md#d72)); the step-by-step is in [commands.m
 4. Create the deployment doc in the card's run folder, `deployment.md` ([D12](design-decisions.md#d12)), in plain words for two readers: for QA, what the card adds, how to try it (an API card's ready-to-run curls with placeholders for logins and keys, a web card's menu path, a consumer card's test in words) and what was checked on dev; for the person deploying, the order with each MR, the database changes and default data in words (by file name, reviewed by the user first, A23), new settings, after-deploy steps; then the user's special instructions. No code, commands or raw JSON in it, except the curls. The same doc goes on the Jira card as one comment, whose id is kept in `state.md`.
 5. Move the card to **Ready for Test**. The run branch `runs/<CARD-KEY>` stays as the card's record; it isn't merged into `main` (D72).
 
+### After Ready for Test — QA's questions (`flow-qa <CARD-KEY>`)
+Built 2026-10-19 ([D81](design-decisions.md#d81)); the step-by-step is in [commands.md](commands.md#flow-qa).
+1. Read QA's new comments on the Jira card (everyone's except the user's own) since the last round.
+2. For each one, the facts first: the AC it's about, the card's `decisions.md`, the deployment doc, the merged code, and that exact scenario checked on dev the quick way.
+3. Sort it: works as the card says (a drafted answer with the evidence); a real bug (a separate Bug card, drafted, created after the user's yes, then worked with `flow-start`); something the card never asked for (a reply and a new card draft); unclear (a question back).
+4. Jira: the story moves only Blocked → In Development (a Bug card approved) and In Development → Ready for Test once its Bug cards are done (from `flow-qa`, or `flow-finish` on the last Bug card), each after the user's yes; never to Blocked.
+5. One reply comment per round, posted as the user after their yes; the round is kept in `runs/<CARD-KEY>/qa.md`.
+
 ## Applies across all phases
 
 - **All agent rules in one place:** [agent-rules.md](agent-rules.md) lists every rule (G1–G4, A1–A27), with its decision and where it's applied today. The bullets below explain the ones that shape every phase.
@@ -160,7 +169,7 @@ Built in C6 ([D72](design-decisions.md#d72)); the step-by-step is in [commands.m
 - **Pause and resume (built in C1):** every step of every card writes a history entry, and its context is saved in files in the card's run folder, `runs/<CARD-KEY>/` inside this project folder (`state.md`, `history.md`, `card.md`, `plan.md`, `verify.md`, `ship.md`, `deployment.md`; `scripts/run.sh`; [D61](design-decisions.md#d61)). The folder is saved to the branch `runs/<CARD-KEY>` of closio-agent and pushed after every phase; the closio-agent folder itself always stays on `main` ([D61](design-decisions.md#d61)). Each phase command carries on from where the card stopped; `flow-status` shows it. It's **committed and shared**, so **any teammate can pick up a paused card**, and it's **kept** after the card is done ([D36](design-decisions.md#d36), [D38](design-decisions.md#d38)). A paused run continues from the last completed step. Run folders never contain secrets.
 - **VPN:** any GitLab or internal-host operation (fetch, pull, push, MR, dev API, dev DB) connects to the VPN automatically through openfortivpn with SAML login ([D14](design-decisions.md#d14)). On connect, the agent adds a DNS resolver file for `japfacomfeed.co.id` and removes it on disconnect ([D27](design-decisions.md#d27)). The user only types their Mac password into a macOS dialog (`sudo -A`) and completes the SSO login in the browser if they aren't already signed in ([D30](design-decisions.md#d30)). **Built (F3):** `scripts/vpn.sh` (also behind the `flow-vpn` command and the `flow-connectivity` agent). If GitLab already answers (openfortivpn or the FortiClient app), nothing happens; the VPN stays on until the user disconnects.
 - **Secrets:** personal secrets live in the macOS Keychain ([D33](design-decisions.md#d33)); service credentials come from each repo's `.env`, which holds **local values only** ([D34](design-decisions.md#d34)). Scripts and apps load `.env` themselves, and the AI never reads or prints `.env` values in the conversation (rule A6, adopted for now).
-- **FE and BE:** each repo is tagged FE or BE, and that tag decides how much of the ruleset applies (BE: all of it; FE: its common practices until a frontend ruleset exists) and the run/test commands.
+- **FE and BE:** each repo is tagged FE or BE, and that tag decides which ruleset applies (BE: `rulesets/story-implementation-workflow.md`; FE: `rulesets/frontend-story-workflow.md`) and the run/test commands.
 - **Claude Code and Codex:** every command runs in both tools ([D8](design-decisions.md#d8), [D16](design-decisions.md#d16)).
 - **Custom agents:** decided phase by phase ([D16](design-decisions.md#d16)). So far: the AC-check agent in Phase 5, the story-verification agent in Phase 6 ([D19](design-decisions.md#d19)), and the **connectivity agent** at the start of **every phase from 1 to 9** ([D30](design-decisions.md#d30); not in `flow-setup-repo`, [D54](design-decisions.md#d54)).
 - **Agent limits ([D47](design-decisions.md#d47)):** each agent has its own limits: a time limit in the script it runs (works in both tools) and, in Claude Code, a step limit (`maxTurns`). On a limit it reports ❌ with what to do next.

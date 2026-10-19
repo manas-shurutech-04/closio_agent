@@ -12,7 +12,7 @@ Before you start: open a terminal **in the closio-agent folder**, run `nvm use v
 - **Written once, used by both tools ([D8](design-decisions.md#d8)).** Each command lives in `.agents/skills/<name>/SKILL.md`, where Codex reads it. Claude Code reads `.claude/skills/<name>`, which is a link to the same folder. `scripts/link-claude-skills.sh` creates any missing links.
 - **They only run when you type them ([D44](design-decisions.md#d44)).** The tool never starts a command by itself. Claude Code: `disable-model-invocation: true` in `SKILL.md`. Codex: `agents/openai.yaml` in the command's folder. Also, the rules file `AGENTS.md` tells the AI not to do a command's steps by hand: if you ask for what a command does (e.g. "check my setup"), it tells you which command to type ([D45](design-decisions.md#d45)). Tested in both tools on 2026-10-10. This is an instruction, not a hard lock, so the tool still asks before running a script. **One exception ([D61](design-decisions.md#d61), [D65](design-decisions.md#d65)):** `flow-develop` also starts when you ask in plain words to develop a card whose plan is approved (you name it, or it's the only card in the develop phase): `disable-model-invocation: false` in its `SKILL.md`, `allow_implicit_invocation: true` in its Codex file, and `AGENTS.md` rule 1 says when.
 - **Your user memory is applied, every time ([D40](design-decisions.md#d40), [D56](design-decisions.md#d56), rules A7/A8).** Every command loads it first: the setup commands with `bash scripts/memory.sh for setup all`, `flow-check-card` and `flow-status` with `for pick-up all`, each card command with its own phase (`pick-up`, `develop`, `ac-check`, `ship`, `after-merge`) and again before every step, for the card's repos. Claude Code runs the first one by itself when the command loads; in Codex it's the command's first step. Team rules always win. See [`flow-memory`](#flow-memory).
-- **Decisions during a card are asked the grilling way ([D76](design-decisions.md#d76), rule A26, `AGENTS.md` rule 22).** While a card command runs (`flow-start`, `flow-develop`, `flow-verify`, `flow-ac-check`, `flow-push`, `flow-review`, `flow-finish`), every question it asks you, and every prompt you give during it that changes the card's plan, code, tests, data, Jira or GitLab, follows [`rulesets/grilling.md`](../rulesets/grilling.md): the facts it can find are shown as "Found" lines (never asked); only real decisions are asked, in numbered rounds, each with a recommended answer that "yes" (or "yes to all") accepts; follow-up rounds until nothing is open; a summary and your confirmation before anything changes; the decisions recorded in the card's `decisions.md` (next bullet). Short answers, approvals and your questions go straight. Safety stops (migrations, test data, commits and push, Jira and GitLab changes) stay their own plain yes/no. Your memory can't soften it. `flow-grill` does the same on request.
+- **Decisions during a card are asked the grilling way ([D76](design-decisions.md#d76), rule A26, `AGENTS.md` rule 22).** While a card command runs (`flow-start`, `flow-develop`, `flow-verify`, `flow-ac-check`, `flow-push`, `flow-review`, `flow-finish`, `flow-qa`), every question it asks you, and every prompt you give during it that changes the card's plan, code, tests, data, Jira or GitLab, follows [`rulesets/grilling.md`](../rulesets/grilling.md): the facts it can find are shown as "Found" lines (never asked); only real decisions are asked, in numbered rounds, each with a recommended answer that "yes" (or "yes to all") accepts; follow-up rounds until nothing is open; a summary and your confirmation before anything changes; the decisions recorded in the card's `decisions.md` (next bullet). Short answers, approvals and your questions go straight. Safety stops (migrations, test data, commits and push, Jira and GitLab changes) stay their own plain yes/no. Your memory can't soften it. `flow-grill` does the same on request.
 - **Every decision on a card is recorded in its `decisions.md` ([D77](design-decisions.md#d77), rule A27, `AGENTS.md` rule 23).** One numbered row per decision (when, step, question, decided, who or why), written with `bash scripts/run.sh decide` the moment it's confirmed: your answers, your approvals and refusals at a stop, a memory entry that answered for you, a change you asked for. The card's other files keep only a one-line pointer ("decision 3"). Cards started before 2026-10-19 don't have the file.
 - **Shared logic lives in `scripts/`.** The command tells the AI which script to run, so both tools do the same thing.
 - **Every command follows the agent rules** in [agent-rules.md](agent-rules.md), e.g. every problem comes with the steps to fix it (A11).
@@ -42,8 +42,9 @@ Before you start: open a terminal **in the closio-agent folder**, run `nvm use v
 | [`flow-push`](#flow-push) | Ships a verified card: rebase, the atomic commits you approve, one push per repo creating the MRs (description and reviewers set), the card to Code Review | Built 2026-10-18 (C5, D70). Tested by the user (2026-10-18, on SCRUM-540: MRs !248 and !561) |
 | [`flow-review`](#flow-review) | While a pushed card's MRs wait for the merge: their state (approvals, conflicts, pipeline), a self-review of the code (the story and the basics: no redundant code, the right files), the reviewers' comments with drafted replies and tested fixes, sent only after your yes | Built 2026-10-19 (D78). Not yet tested by the user |
 | [`flow-finish`](#flow-finish) | Finishes a card after its merge: the merge checked, every AC checked on dev once you say it's deployed, the deployment doc (run folder and Jira card), Ready for Test | Built 2026-10-18 (C6, D72). Tested by the user (2026-10-19, on SCRUM-540) |
+| [`flow-qa`](#flow-qa) | QA's questions on a finished card: each checked against the card, its decisions, the merged code and dev; a drafted reply, a Bug card for a real bug, a new card for something the card never asked for; nothing posted or created without your yes | Built 2026-10-19 (D81). Not yet tested by the user |
 
-**Every card phase now has its command** ([D61](design-decisions.md#d61)): `flow-start`, `flow-develop`, `flow-verify`, `flow-push`, `flow-review`, `flow-finish`, plus `flow-status`. See [architecture.md](architecture.md).
+**Every card phase now has its command** ([D61](design-decisions.md#d61)): `flow-start`, `flow-develop`, `flow-verify`, `flow-push`, `flow-review`, `flow-finish`, `flow-qa`, plus `flow-status`. See [architecture.md](architecture.md).
 
 ---
 
@@ -103,7 +104,7 @@ $flow-doctor      (Codex: approve running it with network access, so the GitLab 
 | | Old GitLab-only DNS file | ⚠️ "no longer needed" |
 | | VPN certificate pin still valid | ⚠️ in the last 30 days, ❌ after 2027-02-03 |
 | Personal settings | Jira account ID, GitLab username, workspace folder (exists), AI tools | Fix: `/flow-configure-user` ([D15](design-decisions.md#d15)) |
-| Repos | The ruleset file every card follows is there (`rulesets/story-implementation-workflow.md`, rule A19); each registered repo: clone exists and points at the right GitLab project; its Node version is installed in nvm; its dev keys are stored | ⚠️ for repos not set up on this Mac, and ⚠️ (not ❌) for missing dev keys: they're only needed to test on dev. Fix: `/flow-configure-repo <repo>` |
+| Repos | The ruleset files are there (`rulesets/story-implementation-workflow.md` for backend cards, `rulesets/frontend-story-workflow.md` for web-app cards, rule A19); each registered repo: clone exists and points at the right GitLab project; its Node version is installed in nvm; its dev keys are stored | ⚠️ for repos not set up on this Mac, and ⚠️ (not ❌) for missing dev keys: they're only needed to test on dev. Fix: `/flow-configure-repo <repo>` |
 | User memory | How many entries you have (never a warning when you have none); ⚠️ for lines in your memory files that aren't in the format | Fix: `/flow-memory` |
 | Commands documented | Every flow command has its `## Usage` block (and its `argument-hint` when it takes arguments, and its Codex menu line), is in a `flow-help` group, its section in this file, its row in [user-guide.md](user-guide.md), and is covered by the guide's Claude artifact ("mirrored" line); and no rule file (`rulesets/`, `AGENTS.md`, `docs/agent-rules.md`) calls a built command "coming" or "not built yet" | Rule R17, [D60](design-decisions.md#d60), [D75](design-decisions.md#d75). Fix: add what's missing; update the artifact in Claude Code; change the line to say what's built now |
 | Cards in progress | How many cards have a run folder or a run branch; ❌ for a broken run folder (no `state.md`, a missing line, a folder that isn't a card key) | [D61](design-decisions.md#d61). See them with `/flow-status` |
@@ -639,6 +640,36 @@ $flow-finish SCRUM-567        (Codex: approve the scripts outside the sandbox)
 
 ---
 
+### `flow-qa`
+
+**Purpose:** handles QA's questions on a finished card ([D81](design-decisions.md#d81)): reads QA's new comments on the Jira card, checks each one against the card's ACs, its `decisions.md`, the deployment doc, the merged code and the dev environment, and drafts the answer. A real bug becomes a separate Bug card; something the card never asked for becomes a draft of a new card. Nothing is posted, created or moved without your yes.
+
+**Usage:**
+```
+/flow-qa SCRUM-567           a full run: QA's new comments checked; the reply, Bug cards and new cards after your yes
+/flow-qa SCRUM-567 check     only lists QA's new comments and the card's status; writes nothing (repeat it, e.g. /loop 30m)
+$flow-qa …                   (Codex)
+```
+
+**What it does** (a finished card; the grilling way; every decision in `decisions.md`):
+
+| Step | What happens |
+|---|---|
+| 1 Start | Checks the folder and that the card is finished; brings the card's folder onto this Mac; your Jira account from your settings |
+| 2 QA's new comments | Reads the card's status, comments and links (read only); the new comments since the last round, everyone's except yours (your deployment doc and replies are yours). QA's own Bug cards are named, to work with `/flow-start`. The `check` form stops here |
+| 3 The facts | Per comment, as "Found" lines: the AC it's about, the card's decisions, the deployment doc, the merged code, and that scenario checked on dev the quick way (`--env dev`; writes and test data only after your yes) |
+| 4 Sorted | Works as the card says → a drafted answer with the evidence; a real bug → a Bug card draft; not asked for by the card → a drafted reply and a new card draft; unclear → a question back |
+| 5 Bug cards | Shown in full (what QA saw, what the AC expects, what dev shows, How QA can test this, relates to the story); created as a Bug in To Do, unassigned, only after your yes. If QA had put the story in Blocked: it asks to move it to In Development |
+| 6 Back to Ready for Test | When the story is In Development and every Bug card raised for it is in Ready for Test or later: it asks to move the story back to Ready for Test |
+| 7 ✋ The reply | One comment for the round: each of QA's points, quoted, then the answer; posted as you after your yes |
+| 8 Save | `runs/<KEY>/qa.md` (a section per round: the comments seen, what dev showed, the Bug cards, the reply, the Jira moves); the card's folder saved |
+
+`/flow-finish` on a Bug card raised this way also checks its story: once every Bug card of the story is in Ready for Test or later, it asks to move the story back to Ready for Test.
+
+**Files:** `.agents/skills/flow-qa/`, `scripts/run.sh`, `scripts/api-call.sh` and `scripts/e2e.sh` (`--env dev`), `scripts/memory.sh`, the `flow-connectivity` agent; `runs/<KEY>/qa.md`.
+
+---
+
 ### `flow-status`
 
 **Purpose:** shows where a card stands in closio-agent, from its run folder `runs/<CARD-KEY>/` ([D61](design-decisions.md#d61), rule A1). It only reads.
@@ -730,7 +761,7 @@ $flow-develop SCRUM-567        (Codex: approve the scripts outside the sandbox)
 
 **`runs/<CARD-KEY>/develop.md`:** the plan and ruleset it followed and the memory applied; one section per repo (new and changed files, tests and their result, checks, everything not in the plan with your answer); the migrations and seeders run; the review.
 
-**Files:** `.agents/skills/flow-develop/`, `scripts/repo-run.sh`, `scripts/card-branch.sh`, `scripts/configure-repo.sh` (`ruleset`), `scripts/run.sh`, [rulesets/story-implementation-workflow.md](../rulesets/story-implementation-workflow.md), `runs/<CARD-KEY>/develop.md`.
+**Files:** `.agents/skills/flow-develop/`, `scripts/repo-run.sh`, `scripts/card-branch.sh`, `scripts/configure-repo.sh` (`ruleset`), `scripts/run.sh`, [rulesets/story-implementation-workflow.md](../rulesets/story-implementation-workflow.md) (backend) and [rulesets/frontend-story-workflow.md](../rulesets/frontend-story-workflow.md) (the web app), `runs/<CARD-KEY>/develop.md`.
 
 ---
 
@@ -745,7 +776,7 @@ The commands run these scripts (in `scripts/`). You can run them yourself in a t
 | `vpn-admin-steps.sh` | The few VPN steps that need admin rights (one password dialog). Runs as admin: review changes carefully | `vpn.sh` |
 | `password-dialog.sh` | The macOS password dialog for those admin steps | `vpn.sh` |
 | `configure-user.sh check-folder \| show \| set \| secrets \| secret \| gitlab-username-from-token` | Personal settings and the 5 secrets | `flow-configure-user` |
-| `configure-repo.sh check-folder \| list \| detect \| validate \| set-path \| keys \| key \| show \| ruleset \| set-dev-url \| dev-url` | The repo registry, clone paths and dev keys; `ruleset <repo>` says which ruleset the repo follows (rule A19); `set-dev-url <repo> <url>` saves the repo's address on dev in its shared file (`dev_base_url`, D72; it says the old and the new one); `dev-url <repo\|all>` prints it, one line per repo | `flow-configure-repo`; `flow-start` and `flow-develop` (`ruleset`); `flow-setup-repo` (`dev-address`), `flow-finish` |
+| `configure-repo.sh check-folder \| list \| detect \| validate \| set-path \| keys \| key \| show \| ruleset \| set-dev-url \| dev-url` | The repo registry, clone paths and dev keys; `ruleset <repo>` says which ruleset the repo follows: a backend repo the story ruleset, the web app the frontend one (rule A19, D80); `set-dev-url <repo> <url>` saves the repo's address on dev in its shared file (`dev_base_url`, D72; it says the old and the new one); `dev-url <repo\|all>` prints it, one line per repo | `flow-configure-repo`; `flow-start` and `flow-develop` (`ruleset`); `flow-setup-repo` (`dev-address`), `flow-finish` |
 | `setup-repo.sh check-folder \| list \| run <repo\|all> [install\|services]` | Gets repos ready to work on (Node, packages, local Redis/RabbitMQ, `.env` check, tests, folder access) | `flow-setup-repo` |
 | `memory.sh for <phase> [words] \| list \| add \| edit \| set-phases \| remove \| clear-preview \| clear \| count \| problems` | Your user memory: the entries for a command, and managing them | Every command (first step), `flow-memory`, `flow-doctor` |
 | `branch-name.sh make <CARD-KEY> "<title>" \| check <name>` | Builds and checks branch names (strict rule A12) | Later phases (Phase 1); you can use it any time |

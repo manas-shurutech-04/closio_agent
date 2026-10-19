@@ -1,6 +1,6 @@
 # closio-agent, step by step
 
-**Claude artifact:** https://claude.ai/code/artifact/a83b1e2a-0e5a-4378-b791-26b9f34e8b7a · mirrored on 2026-10-19 · commands: flow-ac-check, flow-check-card, flow-configure-repo, flow-configure-user, flow-develop, flow-doctor, flow-finish, flow-grill, flow-help, flow-memory, flow-ping, flow-push, flow-review, flow-setup-repo, flow-start, flow-status, flow-verify, flow-vpn
+**Claude artifact:** https://claude.ai/code/artifact/a83b1e2a-0e5a-4378-b791-26b9f34e8b7a · mirrored on 2026-10-19 · commands: flow-ac-check, flow-check-card, flow-configure-repo, flow-configure-user, flow-develop, flow-doctor, flow-finish, flow-grill, flow-help, flow-memory, flow-ping, flow-push, flow-qa, flow-review, flow-setup-repo, flow-start, flow-status, flow-verify, flow-vpn
 
 This guide walks you through closio-agent from the first minute: which command to type, in what order, what each one asks you, and what you get back. It's written for anyone on the team, even if you've never used an AI tool before.
 
@@ -19,7 +19,7 @@ flowchart TB
     end
     subgraph K["For every card"]
         direction TB
-        k1["/flow-start SCRUM-123<br/>needs a To Do card; you approve the plan"] --> k2["/flow-develop SCRUM-123<br/>you review the code"] --> k3["/flow-verify SCRUM-123<br/>you choose: full or quick check"] --> k4["/flow-push SCRUM-123<br/>you approve; then /flow-review for the comments"] --> k5["/flow-finish SCRUM-123<br/>needs the merge requests merged and deployed on dev"] --> r["Ready for Test"]
+        k1["/flow-start SCRUM-123<br/>needs a To Do card; you approve the plan"] --> k2["/flow-develop SCRUM-123<br/>you review the code"] --> k3["/flow-verify SCRUM-123<br/>you choose: full or quick check"] --> k4["/flow-push SCRUM-123<br/>you approve; then /flow-review for the comments"] --> k5["/flow-finish SCRUM-123<br/>needs the merge requests merged and deployed on dev"] --> r["Ready for Test"] --> q["/flow-qa SCRUM-123<br/>when QA writes on the card"]
     end
     b --> S --> K
     a["Any time: /flow-status · /flow-help · /flow-doctor · /flow-grill"]
@@ -29,7 +29,7 @@ flowchart TB
 
 closio-agent is a helper that lives in your AI tool (Claude Code or Codex). It takes a Jira card from the SCRUM board through the whole delivery flow: pick up the card, plan, develop with you, test, push with tidy commits, create the merge requests, and write the deployment doc.
 
-Today the **setup part** is built: the commands that get your Mac ready and keep it healthy. Of the **card part**, every phase is built: the pick-up, the plan, the development, the checks, the push and the after-merge step (`flow-start`, `flow-develop`, `flow-verify`, `flow-ac-check`, `flow-push`, `flow-review`, `flow-finish`, `flow-status`; [section 6](#6-working-on-a-card)).
+Today the **setup part** is built: the commands that get your Mac ready and keep it healthy. Of the **card part**, every phase is built: the pick-up, the plan, the development, the checks, the push and the after-merge step (`flow-start`, `flow-develop`, `flow-verify`, `flow-ac-check`, `flow-push`, `flow-review`, `flow-finish`, `flow-qa`, `flow-status`; [section 6](#6-working-on-a-card)).
 
 You never run scripts by hand. You type a command, the AI runs the right script and shows you the result. Every problem comes with the steps to fix it.
 
@@ -77,7 +77,7 @@ flowchart LR
     end
     subgraph K["3. Cards (every step built)"]
         direction TB
-        k1["Pick up the card"] --> k2["Plan: you approve it"] --> k3["Develop together"] --> k4["Review, AC check, tests"] --> k5["Push + merge requests,<br/>then /flow-review"] --> k6["After the merge: deploy doc"] --> k7["Ready for Test"]
+        k1["Pick up the card"] --> k2["Plan: you approve it"] --> k3["Develop together"] --> k4["Review, AC check, tests"] --> k5["Push + merge requests,<br/>then /flow-review"] --> k6["After the merge: deploy doc"] --> k7["Ready for Test"] --> k8["QA's questions: /flow-qa"]
     end
     S --> D --> K
 ```
@@ -108,6 +108,7 @@ You set up once, left to right; then every day you only need the middle box; and
 4. `/flow-verify SCRUM-567`: every AC checked, the full way (saved test cases, the story check) or the quick way (straight against the code); the tests again.
 5. `/flow-push SCRUM-567`: your approved commits, one push per repo with the merge requests, the card to Code Review. While they wait for the merge, `/flow-review SCRUM-567`: a self-review and the reviewers' comments.
 6. `/flow-finish SCRUM-567`: after the merge, the checks on dev, the deployment doc (run folder and Jira card), Ready for Test.
+7. `/flow-qa SCRUM-567`: when QA writes questions or problems on the card: each one checked, answered, or turned into a Bug card.
 
 ## 4. One-time setup, in this order
 
@@ -263,7 +264,7 @@ flowchart TB
     p3 --> p4["4. Human review<br/>✋ you review the code"] --> p5["5. Check the ACs<br/>flow-verify: every AC, full or quick"] --> p6["6. Developer testing<br/>flow-verify: tests again (full: story check)"]
     p5 -- "a failure: you decide" --> p3
     p6 -- "e.g. back to 3" --> p3
-    p6 --> p7["7. Ship<br/>flow-push: commits + one push"] --> p8["8. Merge request<br/>flow-push: MRs, Code Review"] --> rv["While it waits<br/>flow-review: self-review, comments<br/>✋ your yes before anything is sent"] --> p9["9. After the merge<br/>flow-finish: doc, test on dev"] --> r["Ready for Test"]
+    p6 --> p7["7. Ship<br/>flow-push: commits + one push"] --> p8["8. Merge request<br/>flow-push: MRs, Code Review"] --> rv["While it waits<br/>flow-review: self-review, comments<br/>✋ your yes before anything is sent"] --> p9["9. After the merge<br/>flow-finish: doc, test on dev"] --> r["Ready for Test"] --> qa["QA's questions<br/>flow-qa: answers, Bug cards<br/>✋ your yes before anything is sent"]
     rv -- "new comments: run it again" --> rv
 ```
 
@@ -272,7 +273,7 @@ The ✋ boxes are where the agent stops and waits for you. A failed AC check or 
 ### `/flow-start`
 
 - **When:** to pick up a card that's To Do and plan it. Run it again any time to continue where it stopped (if it stopped while planning, it reads the latest code again first).
-- **What it does, in order:** the VPN; the card read from Jira and checked against the template (a Spike stops; a card that isn't To Do or belongs to someone else: it asks); into the sprint, **In Development**, assigned to you; the repos it needs, confirmed by you; a branch `SCRUM-<n>/<short-description>` in each repo, the name confirmed by you; everything saved. Then the plan: **the latest code is brought into the new branches and read first**, together with **the team's ruleset** (`rulesets/story-implementation-workflow.md`; your memory can change its points for you), **every difference between the card and the code is asked about** the grilling way (what the code answers shown as found; the rest in rounds, a recommended answer each, until nothing is open), the draft plan is shown, **you approve it**, and only then it's saved.
+- **What it does, in order:** the VPN; the card read from Jira and checked against the template (a Spike stops; a card that isn't To Do or belongs to someone else: it asks); into the sprint, **In Development**, assigned to you; the repos it needs, confirmed by you; a branch `SCRUM-<n>/<short-description>` in each repo, the name confirmed by you; everything saved. Then the plan: **the latest code is brought into the new branches and read first**, together with **the team's ruleset** (`rulesets/story-implementation-workflow.md` for the backend, `rulesets/frontend-story-workflow.md` for the web app; your memory can change its points for you), **every difference between the card and the code is asked about** the grilling way (what the code answers shown as found; the rest in rounds, a recommended answer each, until nothing is open), the draft plan is shown, **you approve it**, and only then it's saved.
 - **Options:** `/flow-start SCRUM-567` only.
 - **You see:** one line per step, each written into the card's `history.md` with the rules and memory it applied; the questions and the plan in chat; at the end `Done: SCRUM-567 is planned. Next: /flow-develop SCRUM-567`, or say "develop SCRUM-567".
 - **Where it's remembered:** `runs/SCRUM-567/` (`state.md`, `history.md`, `card.md`, `plan.md`, and `decisions.md`: every decision on the card) saved to the branch `runs/SCRUM-567` of closio-agent and pushed after every phase, never on `main`; your closio-agent folder itself always stays on `main`. A teammate can pull that branch and continue.
@@ -333,7 +334,16 @@ The ✋ boxes are where the agent stops and waits for you. A failed AC check or 
 - **Options:** `/flow-finish SCRUM-567` only. Run it again to continue (e.g. once an MR is merged, or once it's deployed).
 - **You see:** the merge check, the dev checks per AC, the migrations to review, then `Done: SCRUM-567 is in Ready for Test.`
 - **Where it's remembered:** `runs/SCRUM-567/deployment.md`, the dev check as a new run in `verify.md`, every decision in `decisions.md`; the card's saved copy (its branch) stays as its record.
-- **Good to know:** each repo's dev address comes from its repo file (`/flow-setup-repo <repo-name> dev-address` sets it). A failure on dev is shown with a suggestion, and you decide.
+- **Good to know:** each repo's dev address comes from its repo file (`/flow-setup-repo <repo-name> dev-address` sets it). A failure on dev is shown with a suggestion, and you decide. For a Bug card raised by `/flow-qa`, it also checks the story: once all its Bug cards are fixed and on dev, it asks to move the story back to Ready for Test.
+
+### `/flow-qa`
+
+- **When:** after `/flow-finish`, whenever QA writes a question or a problem on the card in Jira.
+- **What it does, in order:** reads QA's new comments on the card (everyone's except yours); for each one, finds the AC it's about, what was decided on the card, the deployment doc and the merged code, and **checks that exact case on dev** (anything that writes, or test data, only after your yes); then sorts it: **works as the card says** (a drafted answer with the evidence), **a real bug** (a separate Bug card, drafted for you), **something the card never asked for** (a drafted reply and a draft of a new card), or **unclear** (a question back to QA). Then **one reply** for the round, each of QA's points quoted and answered, posted as you **after your yes**.
+- **Bug cards:** each is drafted in full (what QA saw, what the AC expects, what dev shows with the steps to see it, How QA can test this, a link to the story) and created in Jira as a Bug in To Do, unassigned, **only after your yes**. You or a teammate then works it with `/flow-start`. If QA had put the story in Blocked, it asks to move it to In Development; once all its Bug cards are fixed and on dev, it (or `/flow-finish` on the last Bug card) asks to move the story back to Ready for Test.
+- **Options:** `/flow-qa SCRUM-567` (a full run), `/flow-qa SCRUM-567 check` (only lists QA's new comments and the card's status; changes nothing, so you can repeat it, e.g. `/loop 30m /flow-qa SCRUM-567 check` in Claude Code).
+- **Where it's remembered:** `runs/SCRUM-567/qa.md` (a section per round), every decision in `decisions.md`.
+- **Good to know:** it never fixes anything itself (a fix goes through its Bug card), never moves the story to Blocked, and never posts or creates anything without your yes.
 
 ### `/flow-status`
 
@@ -352,6 +362,7 @@ The ✋ boxes are where the agent stops and waits for you. A failed AC check or 
 | 7. Ship | rebase, atomic commits you approve, one push that also creates and assigns the merge requests | `flow-push <CARD-KEY>` (built) |
 | 8. Merge request | the MRs' description and reviewers set; the MRs shown on the card; card to Code Review; then, while they wait for the merge, a self-review and the reviewers' comments | part of `flow-push` (built); `flow-review <CARD-KEY>` (built) |
 | 9. After the merge | the merge checked, every AC checked on dev, the deployment doc (run folder and Jira card), card to Ready for Test | `flow-finish <CARD-KEY>` (built) |
+| After Ready for Test | QA's questions on the card checked and answered; a real bug becomes a Bug card | `flow-qa <CARD-KEY>` (built) |
 | Any time | where a card stands; every step is remembered in `runs/<CARD-KEY>/`, so a card can be paused and picked up again | `flow-status <CARD-KEY>` (built) |
 
 The full design is in [architecture.md](architecture.md).
@@ -380,6 +391,7 @@ Every flow command that exists is in this table. That's a rule: a new command is
 | [`flow-push`](commands.md#flow-push) | Ships a verified card: your approved commits, one push per repo with the MRs, Code Review | `/flow-push <CARD-KEY>` |
 | [`flow-review`](commands.md#flow-review) | While the MRs wait for the merge: their state, a self-review of the code, the reviewers' comments | `/flow-review <CARD-KEY>` · `/flow-review <CARD-KEY> check` |
 | [`flow-finish`](commands.md#flow-finish) | After the merge: every AC checked on dev, the deployment doc (run folder and Jira card), Ready for Test | `/flow-finish <CARD-KEY>` |
+| [`flow-qa`](commands.md#flow-qa) | QA's questions on a finished card: checked and answered; a real bug becomes a Bug card | `/flow-qa <CARD-KEY>` · `/flow-qa <CARD-KEY> check` |
 
 Codex: the same commands with `$` instead of `/`.
 
@@ -401,7 +413,7 @@ Codex: the same commands with `$` instead of `/`.
 | [architecture.md](architecture.md) | you want to see the whole flow and what comes next |
 | [agent-rules.md](agent-rules.md) | you want the rules the agent always follows |
 | [design-decisions.md](design-decisions.md) | you want to know why something is the way it is |
-| [the rulesets](../rulesets/): [story-implementation-workflow.md](../rulesets/story-implementation-workflow.md), [grilling.md](../rulesets/grilling.md), [code-review.md](../rulesets/code-review.md) | you want the team's way of building a card, of asking for decisions, and of reviewing code |
+| [the rulesets](../rulesets/): [story-implementation-workflow.md](../rulesets/story-implementation-workflow.md) (backend), [frontend-story-workflow.md](../rulesets/frontend-story-workflow.md) (web app), [grilling.md](../rulesets/grilling.md), [code-review.md](../rulesets/code-review.md) | you want the team's way of building a card, of asking for decisions, and of reviewing code |
 
 ```mermaid
 flowchart TB
