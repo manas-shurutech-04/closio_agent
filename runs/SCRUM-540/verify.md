@@ -1,5 +1,52 @@
 # SCRUM-540 — verification
 
+## Run 2 — 2026-10-19 · dev check (B)
+Repos: nodejs-ws2targetsalesincentive (MR !248, merge commit 1e8fea4f), nodejs-ws1closio (MR !561, merge commit 65712e8b) · Ruleset: rulesets/story-implementation-workflow.md · Memory applied: none
+
+Setup: dev WS2 `https://dev-target-sales-ws2-apiprivate.japfacomfeed.co.id` (the `http://` address the user gave only redirects to it, so it was saved with `https://`), dev WS1 `https://dev-closio-ws1-apiprivate.japfacomfeed.co.id`, WS1 session from the dev WS1 login. P = the logged-in user's partner `e3d8f926-a1bf-4890-9524-cc2d610152f9` (the seeded October 2026 config only); Q = `a5400000-0000-4000-8000-000000000540` (no configs). The user said both repos are deployed on dev.
+
+### AC checks
+**AC1 — all configs for the partner ❌ (WS2 ✅, WS1 ❌)**
+- ✅ WS2 direct, `X-Partner-Id: P` → 200, P's seeded config (30 days, 2026-10-01..2026-10-31, active). The first try gave 504 Gateway Time-out once; the same call answered 200 right after, and every later call too
+- ❌ WS1 `GET /api/incentives/v1/trader-stock-days-multiplier-configs` → expected 200 with P's config; came back 597 `GENERAL_ERROR` `Tidak ditemukan` (twice). A made-up WS1 path (`/api/incentives/v1/closio-agent-no-such-route`) gives the same 597, and an existing route (`/api/incentives/v1/ageing-deduction-configs`) gives 200: dev WS1 doesn't have the card's route, so it isn't running the merged `develop` yet (origin/develop has it: `src/routes/incentives/index.js:25`)
+
+**AC2 — status filter ✅ on WS2 (through WS1 not checked: see AC1)**
+- ✅ WS2 direct `?status=active` → 200, P's 1 active config
+- ✅ WS2 direct `?status=inactive` → 200, `configs: []` (P has no inactive config on dev)
+- ✅ WS2 direct `?status=foo` → 400 `VALIDATION_ERROR` `status must be one of: active, inactive`
+- not checked: WS1 `?status=active|inactive|foo`
+
+**AC3 — empty result ✅**
+- ✅ WS2 direct, Q → 200 `{ status: success, data: { configs: [] } }`
+
+**AC4 — response shape ✅**
+- ✅ The config has exactly the 8 fields `id`, `valid_from`, `valid_to`, `multiplier_days` (number 30), `status`, `created_by`, `created_by_name`, `created_at`; dates `YYYY-MM-DD`; `created_at` `….004Z`; `created_by` / `created_by_name` null on the seeded row
+
+**AC5 — WS1 forwards correctly ❌**
+- ❌ WS1 with the session → 597 `GENERAL_ERROR` `Tidak ditemukan` (see AC1)
+- not checked: WS1 `?foo=1`, WS1 without a session (meaningful only once dev WS1 has the route)
+
+**AC6 — missing client credentials ✅**
+- ✅ WS2 no keys / only `x-client-id` / only `x-client-secret` → 401 `MISSING_CLIENT_CREDENTIALS` `Missing client credentials` (all 3)
+
+**AC7 — unknown client ✅**
+- ✅ WS2 unknown `x-client-id` → 401 `UNKNOWN_CLIENT` `Unknown client`
+
+**AC8 — wrong client secret ✅**
+- ✅ WS2 known id, wrong secret → 401 `INVALID_CLIENT_AUTH` `Invalid client credentials`
+
+**AC9 — missing partner ID ✅**
+- ✅ WS2 no `X-Partner-Id` → 400 `PARTNER_ID_MISSING` `X-Partner-Id header is required.`
+
+**AC10 — invalid partner ID ✅**
+- ✅ WS2 `X-Partner-Id: abc` → 400 `VALIDATION_ERROR` `Request validation failed`, `details.missing_or_invalid: ["X-Partner-Id"]`
+
+### Test data
+None: every check is a GET, on the seeded config and a partner with no configs. Write calls sent: none. WS1 session forgotten, `local/quick-checks/SCRUM-540/` removed.
+
+### Result
+❌ 1 failure: dev WS1 doesn't have the card's route yet (AC1 and AC5 through WS1; AC2's WS1 checks not run). Every WS2 check on dev passed (AC1–AC4, AC6–AC10). Suggested: deploy (or restart) nodejs-ws1closio on dev from `develop` (merge commit 65712e8b), then `/flow-finish SCRUM-540` again. Not a code problem: the same code passed locally (run 1).
+
 ## Run 1 — 2026-10-18 15:50 · B quick check
 Repos: nodejs-ws2targetsalesincentive, nodejs-ws1closio · Ruleset: rulesets/story-implementation-workflow.md · Memory applied: none
 

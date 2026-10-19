@@ -68,3 +68,9 @@ One line per step (rule A1). The last column says which team rules and user-memo
 | 2026-10-18 16:13 | push 9 | one push per repo, not forced; MRs created: WS2 !248, WS1 !561; descriptions set via the GitLab API; written in ship.md | rules: G4, A6, A17 · memory: — |
 | 2026-10-18 16:13 | push 10 | Jira: card had no MR links; one comment added with both MR links; moved to Code Review (transition 31) | rules: A3, A17 · memory: — |
 | 2026-10-18 16:13 | push 11 | pushed, MRs created, Code Review | rules: A1, A17 · memory: — |
+| 2026-10-18 23:46 | finish 1 | started: run folder on this Mac, VPN on, GitLab reachable, both repo folders reachable | rules: A5, A15, A17 · memory: — |
+| 2026-10-18 23:46 | finish 2 | stopped: MR !248 (WS2) and MR !561 (WS1) are still open, not merged | rules: A17 · memory: — |
+| 2026-10-19 10:13 | finish 1 | started again (typed as scrum-540): card's folder on this Mac, VPN on, GitLab reachable, both repo folders reachable earlier | rules: A5, A15, A17, A25 · memory: — |
+| 2026-10-19 10:13 | finish 2 | both merged: WS2 MR !248 (merge commit 1e8fea4f), WS1 MR !561 (merge commit 65712e8b), 2026-10-19 11:42 UTC | rules: A17 · memory: — |
+| 2026-10-19 10:14 | finish 3 | user: deployed on dev (both repos) | rules: A17 · memory: — |
+| 2026-10-19 10:17 | finish 4 | dev check (B): WS2 all passed; dev WS1 answers 597 (route not found) for the card's route: WS1 not running the merged develop yet; WS2 dev address saved (https); waiting for the user | rules: A6, A11, A16, A17, A23, A24, A25 · memory: — |
