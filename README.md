@@ -10,6 +10,8 @@ It runs as commands inside **Claude Code** (`/flow-start`) and **Codex** (`$flow
 
 > **The guide in pictures:** https://claude.ai/code/artifact/a83b1e2a-0e5a-4378-b791-26b9f34e8b7a (a Claude artifact; its first picture is every command in order, with what each one needs).
 
+> **The presentation:** [closio-agent at a glance](https://claude.ai/artifact/TvNhSGz3gP8YdxkqHXJPaZ): 21 slides for the whole team, with flowcharts and the reasons behind each decision. It's private until it's shared from its Share menu.
+
 > **Every time you use it:** open a terminal in **this folder**, run `nvm use v22`, then start `claude` or `codex`. Never start it inside a code repo; the agent adds the repos it needs itself ([D41](docs/design-decisions.md#d41), [D42](docs/design-decisions.md#d42)).
 
 0. **Get it (one-time):** `git clone https://github.com/manas-shurutech-04/closio_agent.git closio-agent`. The repo is private, so ask Manas for access first. The `closio-agent` at the end names the folder the way the docs expect.

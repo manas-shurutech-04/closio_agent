@@ -2,6 +2,8 @@
 
 **Claude artifact:** https://claude.ai/code/artifact/a83b1e2a-0e5a-4378-b791-26b9f34e8b7a · mirrored on 2026-10-19 · commands: flow-ac-check, flow-check-card, flow-configure-repo, flow-configure-user, flow-develop, flow-doctor, flow-finish, flow-grill, flow-help, flow-memory, flow-ping, flow-push, flow-qa, flow-review, flow-setup-repo, flow-start, flow-status, flow-verify, flow-vpn
 
+**Presentation:** [closio-agent at a glance](https://claude.ai/artifact/TvNhSGz3gP8YdxkqHXJPaZ): 21 slides for the whole team, with flowcharts and the reasons behind each decision. It's private until it's shared from its Share menu.
+
 This guide walks you through closio-agent from the first minute: which command to type, in what order, what each one asks you, and what you get back. It's written for anyone on the team, even if you've never used an AI tool before.
 
 This file is the source and holds the full text. The Claude artifact linked above shows the same information as pictures with less text, for reading in your browser: one picture per command (when to use it, every way to type it, what you see) and flowcharts for the steps. Both are kept up to date by a rule ([section 9](#9-where-to-read-more)), and `/flow-doctor` tells you if the artifact falls behind.
@@ -413,6 +415,7 @@ Codex: the same commands with `$` instead of `/`.
 | [architecture.md](architecture.md) | you want to see the whole flow and what comes next |
 | [agent-rules.md](agent-rules.md) | you want the rules the agent always follows |
 | [design-decisions.md](design-decisions.md) | you want to know why something is the way it is |
+| [The presentation: closio-agent at a glance](https://claude.ai/artifact/TvNhSGz3gP8YdxkqHXJPaZ) | you want the whole picture in 21 slides, with the reasons behind each decision, e.g. to show the team |
 | [the rulesets](../rulesets/): [story-implementation-workflow.md](../rulesets/story-implementation-workflow.md) (backend), [frontend-story-workflow.md](../rulesets/frontend-story-workflow.md) (web app), [grilling.md](../rulesets/grilling.md), [code-review.md](../rulesets/code-review.md) | you want the team's way of building a card, of asking for decisions, and of reviewing code |
 
 ```mermaid
