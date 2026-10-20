@@ -7,7 +7,7 @@ disable-model-invocation: true
 
 # flow-check-card
 
-Checks one card against the Jira card template (`docs/jira-card-template.md`, F7, D58): the required sections, the AC format, the QA steps, placeholders, forbidden tables, secrets. ❌ = not ready (the agent's pick-up would stop here and wait), ⚠️ = worth a look. It only reads; it never changes the card in Jira.
+Checks one card against the Jira card template (`docs/jira-card-template.md`, F7, D58, D82): the required sections, the AC format, the QA steps (and the ACs they name), the Error reference for error ACs, placeholders, forbidden tables, secrets. ❌ = not ready (the agent's pick-up would stop here and wait), ⚠️ = worth a look. It only reads; it never changes the card in Jira.
 
 ## Usage
 

@@ -93,7 +93,7 @@
 - F7 draft questions answered (2026-10-17): recorded as D58; the error-codes hard rule as A16 (D59, `AGENTS.md` rule 10). No title check; Spike ignored, Subtask picked up; one `## Out of Scope` section; personal `CLAUDE.md` untouched. (The first answer was "no command"; `flow-check-card` was asked for later the same day.)
 - F7 final-draft readings confirmed (2026-10-17): ❌ gaps at pick-up wait for the dev to fix the card or explain; `## Out of Scope` stays optional. The user asked for a `flow-check-card` command after all (D58).
 - F7 final draft approved and built (2026-10-17, D58).
-- Example cards stay as they are (user, 2026-10-17): the ⚠️ on their SQL revert steps (no "Expect" line) are left; the examples doc says so.
+- Example cards stay as they are (user, 2026-10-17): the ⚠️ on their SQL revert steps (no "Expect" line) are left; the examples doc says so. **2026-10-20 ([D82](../docs/design-decisions.md#d82)):** A and B were updated to the amended template (User Story, AC names in QA steps, cleanup, Error reference with Raised by) and Example C (SCRUM-532) was added; the ⚠️ on SQL revert and cleanup steps stay.
 - F7 user tests passed (user, 2026-10-17: "F7 cases are tested already"). F7 complete.
 - F8 draft questions answered (2026-10-17): recorded as D60 (doc + published page with its link in the code; placeholders listed; `## Usage` blocks; hard rule R17 / rule 11 / doctor check).
 - F8 final draft approved and built (2026-10-17, D60).

@@ -910,7 +910,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d58"></a>
 ### D58 — Jira card template (F7): a template doc, two example cards, a structure checker and a `flow-check-card` command
 - **Date:** 2026-10-17
-- **Status:** Accepted (the user's answers to the F7 draft and to the final draft, both 2026-10-17). **Built 2026-10-17** after the user's yes; my tests passed (see "Built" below); **tested by the user the same day** ("F7 cases are tested already"). The `Write(/local/cards/**)` pre-approval was removed on 2026-10-17; the `Edit` rule covers writing the card file ([D57](#d57)).
+- **Status:** Accepted (the user's answers to the F7 draft and to the final draft, both 2026-10-17). **Built 2026-10-17** after the user's yes; my tests passed (see "Built" below); **tested by the user the same day** ("F7 cases are tested already"). The `Write(/local/cards/**)` pre-approval was removed on 2026-10-17; the `Edit` rule covers writing the card file ([D57](#d57)). **Amended 2026-10-20 by [D82](#d82):** the Error reference is required when any AC is an error (with a "Raised by" column); a User Story line, web-card tables, AC names in QA steps and four new checks in `card-check.sh`; a third example (SCRUM-532).
 - **Context:** Phase 1 checks each card against a template ([architecture.md](architecture.md#phase-1--pick-up-the-card-flow-start-card-key-built-in-c2)). On 2026-10-17 the user pasted the card rules collected from their past chats (`build-memory/jira-card-rules-input.md`): the sections, the AC and QA rules, the code-alignment rules and two full example cards (SCRUM-559, SCRUM-567). Cards are written by people, and later by a separate pipeline; **closio-agent never creates cards**.
 - **Decision:**
   - **Purpose (user):** closio-agent knows what a card looks like, so the development phases work in the right format, and it checks that a picked-up card follows the template with little deviation. The template and the examples are stored in the team docs.
@@ -953,7 +953,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d59"></a>
 ### D59 — Error codes, statuses and messages always come from the code (rule A16)
 - **Date:** 2026-10-17
-- **Status:** Accepted (a hard rule from the user, 2026-10-17). Written into `AGENTS.md` (rule 10). Applied by Phases 2 and 3 (`flow-start` and `flow-develop`, built 2026-10-17); the card checker ([D58](#d58)) can't check it.
+- **Status:** Accepted (a hard rule from the user, 2026-10-17). Written into `AGENTS.md` (rule 10). Applied by Phases 2 and 3 (`flow-start` and `flow-develop`, built 2026-10-17); the card checker ([D58](#d58)) can't check it. **2026-10-20 ([D82](#d82)):** the card's Error reference table is now required when any AC is an error (the user's answer for the card-writing pipeline); the rule itself is unchanged: the code still wins over the card for every code and message.
 - **Context:** The F7 draft asked whether the card's `**Error reference**` table should be required. The user's answer: the table stays optional, because before developing, the agent must look at the error codes that exist in the code anyway. In their words: "if not present then the development card should first check the existing error codes available and then should start developing. That should be a hard rule. If the error codes are present, then also it should first check whether these codes are available in the code or they are differing from what is present. The exact errors are used for the right conditions."
 - **Decision (rule A16):** before developing a card (the plan in Phase 2, the code in Phase 3), in every repo the card touches:
   1. **No error reference in the card:** the agent first reads the error codes, HTTP statuses, messages and error-body shapes that already exist in the code (constants, utils, controllers, middlewares, the WS1 locale files) and uses those.
@@ -1382,3 +1382,62 @@ Every decision taken while building the agent, including the options we rejected
   - Only named QA people's comments: a list to keep up to date.
 - **Built (2026-10-19):** `.agents/skills/flow-qa/` (`SKILL.md`, `agents/openai.yaml`) + the Claude Code link, the Cards group in `scripts/help.sh`; `flow-finish` step 7 (a Bug card's story back to Ready for Test); rules A3, A5, A15, A17, A26, A27 (where applied), `AGENTS.md` rules 12 and 22; D11 note; docs: `docs/commands.md`, `docs/user-guide.md` + the artifact, `docs/architecture.md`, both READMEs, `docs/setup-guide.md`, `docs/changelog.md`; build memory.
 
+
+<a id="d82"></a>
+### D82 — The card template, amended for the card-writing pipeline (from a review of the Shuru ticket skill)
+- **Date:** 2026-10-20
+- **Status:** Accepted (the user's answers, 2026-10-20). **Built 2026-10-20** after "now go ahead"; my tests passed (see "Built"); the user's tests are pending.
+- **Context:**
+  - The user is building a card-writing pipeline in the sibling folder `Ticket creation pipeline`, for Claude Code only. It imports this template, so every card written there follows it.
+  - The SCRUM board's web cards were read live on 2026-10-20. Only SCRUM-532 had a QA section.
+  - QA's comments and bugs showed what was missing: a warning the screen didn't show (SCRUM-503, then SCRUM-569) and errors on the wrong field (SCRUM-562, SCRUM-563).
+  - The user also shared a "Jira Ticket Creation — Shuru Team (Tech Spec-driven)" skill. Its useful parts were kept; where it clashed with earlier decisions (C1–C5, Q6), those decisions won.
+- **Decision:**
+  - **A User Story line** before Context: "As a …, I want …, so that …" (user: "this works as well"). Not checked by the script.
+  - **Context in simple language QA can follow, in no fixed order** (user: "I don't want everything to be very specific and in order, because then it will be difficult for the QAs").
+  - **Web cards take SCRUM-532's shape** (user: "yess"):
+    - Screens in Scope (Screen | Route), and Screen Changes (Element | Current | New per screen);
+    - every response the screen can get, warnings too, and the field or block that shows each error;
+    - the APIs in Dev notes;
+    - Figma opened, with the real link.
+    - **Screen sizes aren't in the card** (user: "the QA's have a fixed set of rules which they check for each screen").
+  - **The Error reference is required when any AC is an error, with a "Raised by" column** (user: "yes error codes will be required in an error AC"). This changes D58 (optional). Rule A16 ([D59](#d59)) is unchanged: the code still wins.
+  - **ACs:**
+    - the full set: success, validation errors, state rules, boundaries, "a run is in progress", the WS1 502 / 500, all-or-nothing;
+    - "Also accepted: …" for edge values allowed on purpose;
+    - a per-AC check in chat;
+    - no "can't trigger" or "code review only" ACs.
+  - **QA steps:**
+    - each step names the AC it proves;
+    - a cleanup at the end;
+    - a response QA can't get from dev is given as its exact body, or "copy the real response and change this field", **and QA mocks it with their own tool** (user: "yess"). This replaces the "Chrome DevTools Override" wording.
+  - **Before drafting:**
+    - name the sources;
+    - search Jira for a card that already covers it;
+    - **ask every open point, blocking or not; nothing moves forward until each one is answered** (user: "without these non blocking points answered nothing is moved forward"). No Jira comments for open points.
+  - **What decides what:** the code for what exists, the spec or plan for what's new; a clash goes to the user; with no spec, the user's description plus the code (user: "this works as you mentioned").
+  - **Backend and web:** one card for a small change; two cards don't have to be linked (user).
+  - **`scripts/card-check.sh`:**
+    - ❌ an AC with an HTTP 4xx/5xx status or `error_code` but no Error reference;
+    - ❌ an Error reference without "Raised by";
+    - ⚠️ an AC that no QA step names;
+    - ⚠️ "can't trigger", "code review only" or "not testable by QA" wording.
+  - **Examples:** A (SCRUM-559) and B (SCRUM-567) updated, and C (SCRUM-532, web) added, each with its edits listed. The cards in Jira weren't changed.
+- **Why:** User decisions. QA's own questions and bugs showed the gaps.
+- **Effect on cards already on the board:** an older card with an error AC but no Error reference now gets ❌ at pick-up. As for any gap ([D58](#d58)), the dev adds the table or explains it in chat. Checked on 2026-10-20: SCRUM-523 ("a 404 (`AGEING_CONFIG_NOT_FOUND`)", no Error reference), and SCRUM-564 and SCRUM-567 (an Error reference without "Raised by"; plus an ⚠️ for ACs no QA step names). Cards whose AC headings aren't `**AC 1 — Title**` already fail earlier, and their ACs aren't read for errors.
+- **Rejected options:**
+  - From the Shuru skill:
+    - the AC self-check table printed in the card (C5 stands);
+    - a "dense technical" Context (Q6);
+    - the Tech Spec as the only source, stopping when there's none;
+    - non-blocking open points as a Jira comment (the user chose to ask them all first);
+    - backend and web always as separate, linked cards.
+  - A fixed order for Context.
+  - The `**Screen:**` / `**APIs used:**` labels (replaced by SCRUM-532's tables).
+  - DevTools Override as the only mock tool.
+  - Listing screen sizes.
+  - Keeping SCRUM-532's `#### AC N — Title` headings (the template rule stays).
+- **Built (2026-10-20):**
+  - `docs/jira-card-template.md`; `docs/jira-card-examples.md` (all three examples: 0 ❌); `scripts/card-check.sh` (tested with five broken cards: each new check caught its case, and an error AC with no status or code isn't caught, as documented); `.agents/skills/flow-check-card/SKILL.md` (its list of checks).
+  - The D58 and D59 status notes; `docs/commands.md`, `docs/architecture.md`, `rulesets/frontend-story-workflow.md` (Step 1), `docs/changelog.md`; build memory.
+  - The pipeline itself lives in `../Ticket creation pipeline`: `CLAUDE.md`, a reminder hook, a Jira write gate, `card-draft` / `card-edit`, `card-code-reader`, `cards/`.

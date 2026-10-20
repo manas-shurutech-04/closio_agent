@@ -416,12 +416,13 @@ $flow-check-card …                          (Codex)
 | an AC without Given, When and Then | "test after SCRUM-… lands"-style wording |
 | an "Assumption:" line, `⟦…⟧`, TODO or TBD | a literal `\n` in the text |
 | a "Files changed" or "AC self-check" table | out-of-scope lines outside `## Out of Scope` |
-| QA section with no numbered steps; anything that looks like a secret | |
+| QA section with no numbered steps; anything that looks like a secret | an AC that no QA step names ("(AC 3)") |
+| an AC names an error (an HTTP 4xx/5xx status or `error_code`) but there's no `**Error reference**`; an Error reference without a "Raised by" column ([D82](design-decisions.md#d82)) | "can't trigger", "code review only" or "not testable by QA" wording |
 
 3. Adds one line for the card type: a Spike isn't picked up by the agent; for a Bug, missing sections are fine (you explain them at pick-up); a Subtask is picked up like a Story or Task.
 4. Ends with "Ready", "Ready, with N things worth a look" or "Not ready: fix the ❌ lines above".
 
-What the script can't judge (alignment with the code, the WS1 rules, ACs inside the card's scope, real boundary values, every AC covered by a QA step) is checked by the AI when the card is picked up and planned (Phase 2, rule A16). Cards are written by people, later also by a separate pipeline; closio-agent never creates them.
+What the script can't judge (alignment with the code, the WS1 rules, ACs inside the card's scope, real boundary values, whether the QA step that names an AC really proves it, an error AC that names no status or code) is checked by the AI when the card is picked up and planned (Phase 2, rule A16). Cards are written by people, later also by a separate pipeline; closio-agent never creates them.
 
 **Output example (shortened):**
 ```

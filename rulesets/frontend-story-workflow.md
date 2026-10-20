@@ -27,7 +27,7 @@
 
 ## Step 1 — Read the card
 
-`flow-start` reads the card and checks it against the card template ([D58](../docs/design-decisions.md#d58)). For a web card, note:
+`flow-start` reads the card and checks it against the card template ([D58](../docs/design-decisions.md#d58)). A web card written to the template since [D82](../docs/design-decisions.md#d82) has `### Screens in Scope` (screen and route), `### Screen Changes` (Element | Current | New per screen), every response the screen can get with the field that shows each error, and the APIs in its Dev notes; read those first. For a web card, note:
 - **The screens**: list, detail, create, edit, a dialog; and where each sits in the menu (its menu path, e.g. Manajemen Insentif › Tipe Insentif).
 - **The APIs each screen calls**: method, WS1 path, the request and the response fields. They come from the backend card and the backend code; the backend error codes, statuses and messages too (rule A16). The web app never invents an error code.
 - **The copy**: the Indonesian labels, buttons and messages the card gives. Where the card gives none, the screen uses the module's existing copy (see Step 5, Wording).

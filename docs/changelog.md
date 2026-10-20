@@ -2,6 +2,17 @@
 
 Dated list of what changed in closio-agent. Newest first.
 
+## 2026-10-20
+
+- **The Jira card template is amended for the new card-writing pipeline** ([D82](design-decisions.md#d82)). The sibling folder `Ticket creation pipeline` writes cards with Claude Code and imports [jira-card-template.md](jira-card-template.md). What's new for every card writer:
+  - A one-line User Story ("As a …, I want …, so that …") before Context. Context is in simple language QA can follow, in no fixed order.
+  - **Web cards** get SCRUM-532's shape: Screens in Scope (screen and route), Screen Changes (Element / Current / New per screen), every response the screen can get (warnings too) with the field that shows each error, and the APIs in Dev notes.
+  - **The Error reference is required** whenever an AC is an error, with a "Raised by" column (WS2, WS1 or Web).
+  - **QA steps name the AC they prove** ("(AC 3)") and end with a cleanup. A response QA can't get from dev is given as its exact body, for QA to mock with their own tool.
+  - Before drafting: name the sources, search Jira for a card that already covers it, and get an answer to every open point.
+  - [jira-card-examples.md](jira-card-examples.md) has a third example, the web card SCRUM-532, and the two backend examples follow the new rules.
+  - `scripts/card-check.sh` (and so `/flow-check-card` and the pick-up) has new checks: ❌ an error AC with no Error reference, ❌ an Error reference without "Raised by", ⚠️ an AC that no QA step names, ⚠️ "can't trigger" or "code review only" wording. **Older cards with error ACs now show ❌ until the table is added or the dev explains the gap at pick-up.**
+
 ## 2026-10-19
 
 - **New: `/flow-qa`** ([D81](design-decisions.md#d81)), for a finished card that QA is testing. It reads QA's new comments on the Jira card, checks each one against the card's ACs, its decisions, the deployment doc, the merged code and the dev environment, and drafts the answer: one reply per round, each point quoted, posted as you after your yes. A real bug becomes a separate Bug card (drafted for you; created in To Do, unassigned, linked to the story, only after your yes), worked with `/flow-start` like any card. The story moves only from Blocked to In Development (when you approve a Bug card) and back to Ready for Test once its Bug cards are done (from `/flow-qa`, or `/flow-finish` on the last Bug card), each after your yes. `/flow-qa SCRUM-567 check` only lists QA's new comments.

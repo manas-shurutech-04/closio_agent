@@ -162,7 +162,9 @@ if [ "$ac_count" -gt 0 ]; then
 fi
 
 # Every AC has Given, When and Then (its block runs to the next AC heading, the Error reference table or the next section)
+# While reading each block, note whether it's an error AC: an HTTP 4xx/5xx status or error_code (D82).
 gwt_missing=0
+error_ac=""
 for start in $ac_lines; do
   j=$((start + 1)); block=""
   while [ "$j" -lt "$n" ]; do
@@ -172,6 +174,9 @@ for start in $ac_lines; do
     block="$block ${lc[j]}"
     j=$((j + 1))
   done
+  if [ -z "$error_ac" ] && printf '%s' "$block" | grep -q -E 'http[[:space:]]*[45][0-9]{2}([^0-9]|$)|error_code|`[45][0-9]{2}([^0-9]|$)|(^|[^0-9])[45][0-9]{2}[[:space:]]*[(:]?[[:space:]]*`[a-z][a-z0-9_]+`'; then
+    error_ac="$(printf '%s' "${lines[start]}" | sed -E 's/^\*\*AC ([0-9]+) — .*/\1/')"
+  fi
   lacks=""
   has_word "$block" "given" || lacks="$lacks Given"
   has_word "$block" "when" || lacks="$lacks When"
@@ -184,6 +189,35 @@ for start in $ac_lines; do
 done
 if [ "$ac_count" -gt 0 ] && [ "$bad_ac" -eq 0 ] && [ "$gwt_missing" -eq 0 ] && [ "${order_ok:-1}" -eq 1 ]; then
   pass "$ac_count acceptance criteria, numbered 1–$ac_count, each with Given / When / Then"
+fi
+
+# An error AC needs the Error reference table, with a "Raised by" column (D82)
+err_ref_at=-1
+i=0
+while [ "$i" -lt "$n" ]; do
+  case "${lc[i]}" in "**error reference"*|"error reference"*|"#"*"error reference"*) err_ref_at=$i; break ;; esac
+  i=$((i + 1))
+done
+if [ -n "$error_ac" ]; then
+  if [ "$err_ref_at" -lt 0 ]; then
+    fail "AC $error_ac names an error, but the card has no **Error reference** table" "Add **Error reference** after the last AC: | HTTP | error_code | message | details | Raised by | Trigger |, one row per error the ACs name, codes and messages from the code ($TEMPLATE, section 2)."
+  fi
+fi
+if [ "$err_ref_at" -ge 0 ]; then
+  head_row=""
+  j=$((err_ref_at + 1))
+  while [ "$j" -lt "$n" ]; do
+    case "${lc[j]}" in "|"*) head_row="${lc[j]}"; break ;; esac
+    is_section_heading "${lc[j]}" && break
+    j=$((j + 1))
+  done
+  if [ -z "$head_row" ]; then
+    fail "**Error reference** has no table (line $((err_ref_at + 1)))" "Add the table: | HTTP | error_code | message | details | Raised by | Trigger | ($TEMPLATE, section 2)."
+  elif ! printf '%s' "$head_row" | grep -q 'raised by'; then
+    fail "The Error reference table has no \"Raised by\" column (line $((j + 1)))" "Add a Raised by column: WS2, WS1, or Web for a screen-only message ($TEMPLATE, section 2)."
+  else
+    pass "Error reference table with a Raised by column"
+  fi
 fi
 
 # ---------------------------------------------------------------- 3. QA steps
@@ -228,6 +262,22 @@ if [ "$qa_at" -ge 0 ]; then
     fi
     i=$((i + 1))
   done
+
+  # Every AC is named by at least one QA step, e.g. "(AC 3)" (D82)
+  if [ "$ac_count" -gt 0 ]; then
+    qa_text=""
+    i=$((qa_at + 1))
+    while [ "$i" -lt "$qa_end" ]; do qa_text="$qa_text ${lc[i]}"; i=$((i + 1)); done
+    unnamed=""
+    for num in $ac_numbers; do
+      printf '%s' "$qa_text" | grep -q -E "(^|[^[:alnum:]])ac ?$num([^0-9]|$)" || unnamed="$unnamed $num"
+    done
+    if [ -n "$unnamed" ]; then
+      warn "No QA step names AC$(printf '%s' "$unnamed" | sed 's/ /, /g; s/^,//')" "End the step that proves each AC with its name, e.g. \"Expect … (AC 3)\". Every AC needs a QA step ($TEMPLATE, section 5)."
+    else
+      pass "Every AC is named by a QA step"
+    fi
+  fi
 fi
 
 # ---------------------------------------------------------------- 4. whole card
@@ -257,6 +307,9 @@ while [ "$i" -lt "$n" ]; do
       warn "Literal \\n in the text (line $((i + 1)))" "Replace it with a real line break; Jira shows \\n as text ($TEMPLATE, section 8)."
       literal_nl=$((literal_nl + 1)) ;;
   esac
+  if printf '%s' "$low" | grep -q -E "(can'?t|cannot|can not) trigger|code review only|checked in code review|not testable by qa"; then
+    warn "An AC left out of QA's testing (line $((i + 1))): $l" "Every AC is testable by QA on its own: give a workaround (seed SQL, a direct API call, or a mocked response with its exact body) ($TEMPLATE, sections 4 and 5)."
+  fi
   if ! in_oos "$i" && [ "$i" -ne "$oos_at" ]; then
     if printf '%s' "$low" | grep -q -E 'not in (this card|scope)|out of scope|out-of-scope'; then
       warn "Out-of-scope line outside the Out of Scope section (line $((i + 1))): $l" "Move it into the ## Out of Scope section, the only place for out-of-scope ($TEMPLATE, section 2)."
@@ -272,6 +325,6 @@ fi
 # ---------------------------------------------------------------- result
 echo
 echo "Result: $to_fix to fix, $to_look to look at."
-echo "Not checked by this script (the AI does it when it plans the card): alignment with the code, the WS1 rules, ACs inside the card's scope, real boundary values, every AC covered by a QA step."
+echo "Not checked by this script (the AI does it when it plans the card): alignment with the code, the WS1 rules, ACs inside the card's scope, real boundary values, whether the QA step that names an AC really proves it."
 [ "$to_fix" -eq 0 ] && exit 0
 exit 1
