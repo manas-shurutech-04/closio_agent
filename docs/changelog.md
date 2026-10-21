@@ -4,6 +4,12 @@ Dated list of what changed in closio-agent. Newest first.
 
 ## 2026-10-21
 
+- **Two review and build rules** ([D85](design-decisions.md#d85)), for backend cards:
+  - **The WS1 schema holds every key of the card's request and response structure**, with its type: the body, the query and each response. A missing key or a wrong type is a must fix in `/flow-review`; a key the card doesn't have is shown to you. Rule A22 (`AGENTS.md` rule 17) now takes the keys from the card's structure, not from what the WS2 response can return.
+  - **Schema blocks are shared:** a block a shared helper already gives is reused; pagination and the audit fields come from a shared helper in every new schema (where the first one goes is asked while planning). The schemas that still copy them are moved through a separate card.
+  - **Better queries:** one list in the backend ruleset (one query instead of several, only the columns needed, filtering and counting in the database, indexes, transactions). `/flow-develop` writes new queries by it and says why for each one in its summary; `/flow-review` suggests a better query with a "Why" line, from the code only.
+  - Request input in raw SQL is no longer checked in the review (your decision).
+
 - **Request and response structures now come only from you** ([D84](design-decisions.md#d84), new rule 24 in `AGENTS.md`). The AI never writes one, never takes one from the code and never fills a gap: if one is missing, it asks you.
   - **The card template** has a new section, `## API request and response`, right after Context: each API's request and response, exactly as you give them. Backend cards: every API the card adds or changes. Web cards: every API the card relies on.
   - **`/flow-check-card`** and the pick-up show ❌ when a card names an API but has no structure for it. **Older cards that name an API now stop at pick-up until you paste the structures.**
