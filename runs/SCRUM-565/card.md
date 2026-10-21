@@ -11,3 +11,8 @@ This issue occurs when open the web page on mobile phone
 - Screenshot-only Bug card (no Context/ACs/QA); proceeding and keeping the gaps (decision 1).
 - Screenshot shows, on small/mobile resolution, in the incentive scheme form "1. Channel" block: the channel dropdown collapses to a tiny width (options render one character per line, e.g. C A T E R I N G stacked) and the "+ Tipe Salesman" button overlaps the dropdown.
 - Expected behavior: on small/mobile widths the dropdown keeps a usable width (options on one line) and the + Tipe Salesman button does not overlap the dropdown; the Channel row lays out responsively (decision 2).
+
+## Decided before planning
+
+- Fix in the shared ChannelBox.vue `<style scoped>`; covers AgeingConfigForm and SlabConfigForm (decision 5).
+- `@media (max-width: 768px)` stacks `.channel-header` vertically (title, full-width dropdown, full-width + Tipe Salesman button; trash icon kept accessible); CSS only, no template/logic change (decision 6).
