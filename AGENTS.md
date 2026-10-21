@@ -63,8 +63,11 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
 16. No redundant code (rule A21, D66): before creating any function, helper, constant or regex, search the repo for one that does
     exactly the same and reuse it. Close but not the same: ask the user (reuse, extend or new). Record each search in the card's
     `develop.md`. Never add another copy of a helper that already exists.
-17. WS1 response fields (rule A22, D66): a WS1 schema lists every field the WS2 response can return, optional ones too (e.g.
-    `updated_at`, `updated_by`, `updated_by_name`), as nullable and not required; ask the user to confirm the full list when planning.
+17. WS1 schema keys (rule A22, D66, D85): a WS1 schema holds every key of the card's request and response structure (rule
+    24), at every level, with its JSON type: the body under `request`, the query under `queryParameter`, each response under
+    `responses.<status>`; `null` in the structure = nullable and not required (e.g. `updated_at`, `updated_by`,
+    `updated_by_name`). A field the WS2 code has that the structure doesn't is shown to the user, who decides. Common blocks
+    (pagination, the audit fields) come from a shared schema helper, never copied (rule 16).
 18. Migration review (rule A23, D66): before any migration or seeder runs, or the user is asked to run one on a server, show the
     files for review (the full up and down, what it changes, the repo, the database its `.env` names), then wait for a separate
     yes. Never run one without it.

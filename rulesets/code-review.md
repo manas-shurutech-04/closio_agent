@@ -31,13 +31,14 @@ Each of the card's repos: its changes on the card's branch against the MR's targ
 **No redundant code (rule A21), a must-fix when broken:**
 - Every new function, helper, constant, regex or query: search the repo for one that already does the same job (by name, by what it does, in the `utils`, `helpers`, `constants`, `middlewares` folders and the closest services; e.g. `isValidUuid` in `pgDbUtils.js`, `isUuid` in `dataTypeUtils.js`, WS1's `isValidUUID` in `helperFunctions.js`, `createError`). One that does the same job and was written again: **must fix**, reuse the existing one.
 - The same logic written twice within the change (two handlers with the same checks, a copied block): **should fix**, one function in the right file.
+- **WS1 schema blocks** ([D85](../docs/design-decisions.md#d85); the backend ruleset's "Shared schema blocks"): a block a shared helper already gives, written again: **must fix**, reuse the helper. The same block twice within the change: **should fix**, one helper in the module's `shared/` folder. A common block (pagination, the audit fields) copied into a new schema instead of coming from a shared helper: **must fix**; the existing schemas that still copy it are listed for a separate card, never moved in this merge request.
 
 **The right place** (the repo's own layout, rules A20, A21):
 - Business logic in services; request-only checks in the controller (small) or the repo's domain utils file (over about 30 lines, used by more than one handler, or a nested body); checks that need the database in the service.
 - Database access only in services and models; never in a controller or a route.
 - Constants in the repo's constants files; shared helpers in its utils; error codes where the repo keeps them.
 - Routes registered in their index files; WS1 holds no business logic (a proxy: schema checks of presence, type and format; a URL ID through `isValidUUID`); new WS1 routes run `validateSchema` before `isAuthenticated`.
-- Every field the WS2 response can return listed in the WS1 schema, optional ones nullable and not required (A22).
+- **The WS1 schema has every key of the card's structure** (A22, [D85](../docs/design-decisions.md#d85)): every key of the card's `## API request and response`, or of the structure the user pasted, at every level and with its JSON type: the body under `request`, the query under `queryParameter`, each response under `responses.<status>`; `null` in the structure = nullable and not required. A key missing, or with another type: **must fix**. A key in the schema that isn't in the structure: shown to the user, who decides.
 - The request each API accepts and the response it returns match the card's `## API request and response`, the user's structure (A28, D84); any difference was asked about, not decided.
 
 **The basics:**
@@ -46,7 +47,7 @@ Each of the card's repos: its changes on the card's branch against the MR's targ
 - No debug output left in (`console.log` and the like); the repo's logger where it has one.
 - No hard-coded value that exists as a constant, a setting or an env variable name; no key, password or token in the code (A6).
 - Errors through the repo's own error helper and error handler, with existing codes; async errors handled the way the repo's closest route does (Express 5).
-- No database call inside a loop where one query would do; request input never put straight into SQL (the repo's ORM or its replacements).
+- **Better queries** ([D85](../docs/design-decisions.md#d85)): every query the change adds or touches, raw SQL and ORM calls alike, against the backend ruleset's "Queries" list (one query instead of several, only the columns needed, filtering, sorting, paging and counting in the database, existence checks and counts, an index for an unindexed `WHERE` or join column, one transaction for writes that belong together). One that misses a point: **should fix**, with the better query and a **Why** line, from the code only (the query, the migrations' indexes; no `EXPLAIN` unless the user asks); after a fix the repo's tests must still pass. Older queries elsewhere aren't reviewed. Request input in raw SQL isn't checked (the user's decision, D85).
 - A function does one job; one over about 30 lines is flagged.
 - Tests: the new branches and error paths covered; no skipped or focus-only test (`.skip`, `.only`); the repo's coverage gate passes (`bash scripts/repo-run.sh <repo> test`).
 - Lint warnings on the changed files (`bash scripts/repo-run.sh <repo> check`): shown, never older ones elsewhere.
@@ -69,6 +70,13 @@ One line each, plain words, grouped by repo:
 [must fix]   src/controllers/xController.js:42   isValidUuid is written again here; reuse it from src/utils/pgDbUtils.js
 [should fix] src/services/xService.js:88         a database call inside the loop; one findAll with the ids would do
 [small]      src/routes/xRoutes.js:3             unused import of asyncHandler
+```
+
+A better query gets a second line with the reason, from the code only:
+
+```
+[should fix] src/services/xService.js:88         a findOne per id inside the loop → one findAll with the ids (Op.in)
+             Why: one database round trip instead of one per id; the same rows come back
 ```
 
 - **must fix:** breaks a team rule, the story, or works wrongly (a bug).

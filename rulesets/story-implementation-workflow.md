@@ -133,7 +133,7 @@ Ruleset: rulesets/story-implementation-workflow.md · Memory applied: M2 (change
 
 ### WS1 — nodejs-ws1closio (N files)
 1. Controller — BFF forwarding logic
-2. Schema — presence, type and format checks; every response field
+2. Schema — presence, type and format checks; every key of the card's request and response structure; common blocks through a shared helper
 3. Route — middleware chain
 4. Register in index file
 
@@ -195,8 +195,25 @@ WS1:
 - Write each search in the card's `develop.md` ("searched for X: none" or "reused X from <file>").
 - Where copies already exist, use the one in the shared utils file. WS1's `asyncHandler` has no shared copy: reuse the one in the route file you add to; a new route file copies that one line, as the other route files do.
 
-**Every WS1 response field (rule A22):**
-- The WS1 schema's `responses` lists every field the WS2 response can return, as confirmed by the user when planning. Fields that aren't always there are nullable (`type: ['string', 'null']`) and left out of `required`, as `getAgeingDeductionConfigs.js` lists `updated_by`, `updated_by_name` and `updated_at`.
+**The WS1 schema matches the card's structure (rule A22, [D85](../docs/design-decisions.md#d85)):**
+- Every key of the card's `## API request and response`, or of the structure the user pasted (rule A28), is in the WS1 schema, at every level, with its JSON type: the body's keys under `request`, the query's keys under `queryParameter`, each response the card gives under `responses.<status>`. `null` in the structure = nullable (`type: ['string', 'null']`) and left out of `required`, as `getAgeingDeductionConfigs.js` lists `updated_by`, `updated_by_name` and `updated_at`.
+- A field the WS2 model or service has that the structure doesn't (or the other way round) is shown to the user, who decides; it's never added or dropped by the agent.
+
+**Shared schema blocks (rule A21, [D85](../docs/design-decisions.md#d85)):**
+- A block a shared helper already gives (`schemas/v1/<module>/shared/`, e.g. `buildChannelsSchema` in `incentives/shared/ageingDeductionConfigSchemas.js`) is reused, never written again.
+- A block the change needs twice goes into one helper in the module's `shared/` folder.
+- **Common blocks are shared from now on:** pagination and the audit fields (`created_by` … `updated_at`) come from a shared helper in every new schema. None exists yet (on 2026-10-21 pagination was copied in 21 schemas, the audit fields in 14): the first card that needs one asks the user, while planning, where the helper goes and its name, and the plan names it. Existing schemas that copy a block are moved to the helper only through a separate card, never in a story's merge request.
+
+**Queries ([D85](../docs/design-decisions.md#d85)):** every query the card adds or touches, raw SQL (`sequelize.query`) and ORM calls alike:
+- One query instead of several: never one per row in a loop; a join or `include` instead of separate lookups.
+- Only the columns needed (an explicit column list, or `attributes`), not `SELECT *` or a whole model when a few fields are used.
+- Filtering, sorting, paging and counting in the database (`WHERE`, `ORDER BY`, `LIMIT`/`OFFSET`, `COUNT`), not in JavaScript.
+- An existence check that stops at the first row (`LIMIT 1`, `findOne`), and a count that counts instead of loading the rows.
+- A `WHERE` or join column with no index in the repo's migrations: an index is suggested, as a migration the user reviews first (rule A23).
+- Writes that must succeed or fail together run in one transaction, as the repo's closest service does.
+- **While developing** (`flow-develop`): new queries follow this list, and the per-repo summary names each new query with a one-line why. A better version of an existing query the card touches is offered to the user as a question, never changed silently.
+- **At review** (`flow-review`): a query that misses a point of this list is a should fix, with the better query and a "Why" line (`code-review.md`).
+- A reason comes only from the code (the query, the migrations' indexes): never a made-up speed or table size. No `EXPLAIN` against a database unless the user asks.
 
 **Common pitfalls (from SCRUM-517 review):**
 - **Express 5 (all backend repos, `express ^5.1.0`):** an error thrown in an async route handler reaches the error middleware by itself. Copy what the closest existing route file does: WS2 routes don't wrap their handlers; some WS1 route files (all the incentives ones) wrap them with a small local `asyncHandler`, so a new route in such a file does the same.
@@ -496,9 +513,10 @@ Read: WS1 routes/incentives/index.js   → route registered?
 - [ ] WS2 controller created
 - [ ] WS2 route created and registered
 - [ ] WS1 controller created
-- [ ] WS1 schema created: presence, type and format only; every response field, optional ones nullable (rules A20, A22)
+- [ ] WS1 schema created: presence, type and format only; every key of the card's request and response structure with its type, `null` ones nullable; common blocks through a shared helper (rules A20, A21, A22)
 - [ ] Business-logic checks in WS2: controller (inline or utils) or service (database) (rule A20)
 - [ ] Every new function searched for first; nothing duplicated (rule A21)
+- [ ] Every new query follows the query list; the summary says why for each one (D85)
 - [ ] WS1 route created and registered (`validateSchema` first, then `isAuthenticated`)
 - [ ] All index files verified
 - [ ] WS2 controller unit test written
