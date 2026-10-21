@@ -21,3 +21,8 @@ One line per step (rule A1). The last column says which team rules and user-memo
 | 2026-10-21 15:35 | develop 8-9 | Wrote develop.md summary; closio-web-v2 done (1 of 1). | rules: A1 · memory: — |
 | 2026-10-21 15:41 | review 10 | Review iteration 1: broke at 786px (>768). Switched to container-driven fix: flex-wrap on header + min-width:200px on dropdown wrap. ChannelBox(11)+SlabConfigForm(14) tests pass. Updated develop.md. Awaiting re-review. | rules: A21, A26, A27 · memory: — |
 | 2026-10-21 15:41 | review 11 | review approved | rules: A27 · memory: — |
+| 2026-10-21 15:56 | verify 1 | B quick check chosen. Web card (closio-web-v2). VPN connected. | rules: A5 · memory: — |
+| 2026-10-21 15:56 | verify 2 | Read card.md (ACs), plan.md, develop.md, and the uncommitted ChannelBox.vue diff. Web card; backend APIs resolve to dev via VITE base URLs. | rules: A6 · memory: — |
+| 2026-10-21 16:01 | verify 4 | Listed 2 GET APIs (ageing-options, channels) in api-list.json; user confirmed both available on dev (no mocks). Wrote one-off Playwright tests ac-1/2/3.spec.ts: AC1 dropdown width >=190px at 786 and 390; AC2 no overlap of + Tipe Salesman and dropdown at 786; AC3 single-row desktop at 1280. No API structures in the card (CSS card). | rules: A6, A28 · memory: — |
+| 2026-10-21 16:01 | verify 5 | No calls that write and no test data needed (layout checks only; GET APIs). | rules: A23 (n/a) · memory: — |
+| 2026-10-21 16:04 | verify 6 | API probe failed twice: e2e login returns server error 'Terjadi kesalahan, silakan coba lagi' for FE login 6285200001; waitForURL timed out. Blocked before AC checks. Not a code issue. Specs kept for re-run. | rules: A11, A24 · memory: — |
