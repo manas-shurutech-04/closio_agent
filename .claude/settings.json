@@ -16,6 +16,7 @@
       "Bash(bash scripts/repo-run.sh *)",
       "Bash(bash scripts/api-call.sh *)",
       "Bash(bash scripts/api-check.sh *)",
+      "Bash(bash scripts/response-shape.sh *)",
       "Bash(bash scripts/db-run.sh *)",
       "Bash(bash scripts/e2e.sh *)",
       "Bash(bash scripts/qmetry-import.sh *)",

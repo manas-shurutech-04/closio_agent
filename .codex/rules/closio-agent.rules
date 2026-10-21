@@ -17,6 +17,7 @@ prefix_rule(pattern = ["bash", "scripts/card-branch.sh"], decision = "allow", ju
 prefix_rule(pattern = ["bash", "scripts/repo-run.sh"], decision = "allow", justification = "closio-agent: a repo's own checks, tests, migrations, seeders, servers and Codex's review, on its Node version (flow-develop, flow-verify, flow-ac-check, flow-push, flow-review)")
 prefix_rule(pattern = ["bash", "scripts/api-call.sh"], decision = "allow", justification = "closio-agent: one API call to a repo on this Mac, keys added by the script (flow-verify)")
 prefix_rule(pattern = ["bash", "scripts/api-check.sh"], decision = "allow", justification = "closio-agent: a card's API test cases (flow-verify, flow-ac-check)")
+prefix_rule(pattern = ["bash", "scripts/response-shape.sh"], decision = "allow", justification = "closio-agent: an API's real response against the card's structure (flow-verify; rule A28)")
 prefix_rule(pattern = ["bash", "scripts/db-run.sh"], decision = "allow", justification = "closio-agent: a card's test data, only after the user's yes (flow-verify)")
 prefix_rule(pattern = ["bash", "scripts/e2e.sh"], decision = "allow", justification = "closio-agent: Playwright setup and a card's web tests (flow-configure-user, flow-verify)")
 prefix_rule(pattern = ["bash", "scripts/qmetry-import.sh"], decision = "allow", justification = "closio-agent: a QMetry export into the card's run folder (flow-verify, flow-ac-check)")
