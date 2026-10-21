@@ -29,7 +29,7 @@
 
 `flow-start` reads the card and checks it against the card template ([D58](../docs/design-decisions.md#d58)). A web card written to the template since [D82](../docs/design-decisions.md#d82) has `### Screens in Scope` (screen and route), `### Screen Changes` (Element | Current | New per screen), every response the screen can get with the field that shows each error, and the APIs in its Dev notes; read those first. For a web card, note:
 - **The screens**: list, detail, create, edit, a dialog; and where each sits in the menu (its menu path, e.g. Manajemen Insentif › Tipe Insentif).
-- **The APIs each screen calls**: method, WS1 path, the request and the response fields. They come from the backend card and the backend code; the backend error codes, statuses and messages too (rule A16). The web app never invents an error code.
+- **The APIs each screen calls**: method, WS1 path, the request and the response fields. **The request and response come from the card's `## API request and response`, as the user gave them; if the card has none for an API the card relies on, ask the user for it. Never write one or derive it from the backend code** (rule A28, [D84](../docs/design-decisions.md#d84)). The backend error codes, statuses and messages come from the backend code (rule A16). The web app never invents an error code.
 - **The copy**: the Indonesian labels, buttons and messages the card gives. Where the card gives none, the screen uses the module's existing copy (see Step 5, Wording).
 - **Out of scope** items.
 
@@ -180,6 +180,7 @@ Ruleset: rulesets/frontend-story-workflow.md · Memory applied: M2 (changes: …
 - **What a page test asserts:** the API called with the exact arguments and payload; the loading, error, empty, not-found and retry states; the rendered values and copy; the toasts; the navigation (`push`); disabled buttons; the unsaved-changes guard.
 - **An API module:** axios mocked (`vi.mock('../axios', …)`), `vi.stubEnv` for the base URL; asserts the URL, the method, the params, the headers (`X-Secure-Transmission-Type: 'x'` on writes), the returned success and error shapes, the network error, and that a cancel is thrown again.
 - **A utils file:** plain function tests, no mounting.
+- **The API answers in tests** (a mocked API module, a mocked axios reply, shared fixtures) follow the card's response structure, as the user gave it; never a shape written or derived by the AI (rule A28, [D84](../docs/design-decisions.md#d84)). If the card has none for that API, ask the user.
 - **Naming:** `describe('<Component>.vue')`, then a `describe` per behaviour; `it` titles as plain sentences of what happens. A `describe('AC <n> — <title>')` per acceptance criterion is fine (as `EditAgeingConfig.test.ts`).
 - Imports `describe`, `it`, `expect`, `vi` from `'vitest'` explicitly.
 - Every AC is covered, its error paths too.
@@ -194,7 +195,7 @@ Ruleset: rulesets/frontend-story-workflow.md · Memory applied: M2 (changes: …
 
 ## Step 8 — Browser checks
 
-`flow-verify` writes and runs Playwright tests **outside the repo** (`runs/<KEY>/e2e/`, [D24](../docs/design-decisions.md#d24)), against the dev APIs; an API not on dev yet is mocked with the exact 200 response the user gives ([D69](../docs/design-decisions.md#d69)). The quick check uses one-off Playwright tests. A new screen's test ids (Step 5) make these checks steady.
+`flow-verify` writes and runs Playwright tests **outside the repo** (`runs/<KEY>/e2e/`, [D24](../docs/design-decisions.md#d24)), against the dev APIs; an API not on dev yet is mocked with the exact 200 response the user gives ([D69](../docs/design-decisions.md#d69)), which is the card's Response structure when the card has one and the user agrees (D84). The quick check uses one-off Playwright tests. A new screen's test ids (Step 5) make these checks steady.
 
 ---
 

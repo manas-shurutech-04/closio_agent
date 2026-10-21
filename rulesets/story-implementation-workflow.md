@@ -35,7 +35,7 @@ Read the card with your AI tool's Jira tools (Claude Code: the Atlassian connect
 **Output a summary with:**
 - Endpoint path and HTTP method
 - Acceptance criteria table
-- Response shape (JSON example)
+- Request and response structure: copied exactly from the card's `## API request and response`. **If the card has none, ask the user for it; never write one or derive it from the code** (rule A28, [D84](../docs/design-decisions.md#d84))
 - Error reference table (HTTP code, error_code, message, trigger): **to check against the code** (rule A16). The codes and messages that already exist in the code win, and every difference is asked about before planning (rule A18).
 - Out of scope items
 
@@ -143,7 +143,7 @@ Ruleset: rulesets/story-implementation-workflow.md · Memory applied: M2 (change
 ## Validation, reuse and response fields
 - Validation (rule A20): each check and where it goes: WS1 schema (presence, type, format) · WS2 controller inline · WS2 utils (which file, why) · WS2 service (needs the database)
 - Reused (rule A21): <function> from <file> · … · new ones: <function> (searched, none found)
-- WS1 response fields (rule A22): every field, required or optional (nullable), as confirmed by the user
+- WS1 response fields (rule A22): every field, required or optional (nullable), from the card's response structure (rule A28) and as confirmed by the user
 
 ## Error codes          (the existing ones, from the code)
 ## Migrations, seeders, queues
@@ -208,6 +208,8 @@ WS1:
 ## Step 6 — Write Tests
 
 **Goal:** Write unit tests (controller + service) and API integration tests, committed to the repo, in the format the repo registered (`test_framework` and `test_layout` in `config/repos/<repo>.yaml`). Repos whose `test_command` is `none` get no committed tests ([D25](../docs/design-decisions.md#d25)): today `nodejs-ws1closio` and `ws2jauth`.
+
+**The request bodies and the expected responses in the tests follow the card's `## API request and response`, as the user gave it; never a structure written or derived by the AI** (rule A28, [D84](../docs/design-decisions.md#d84)). If the card has none for an API, ask the user.
 
 ### Test stack (the WS2 repos)
 - **mocha** — test runner

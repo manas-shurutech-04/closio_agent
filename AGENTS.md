@@ -96,3 +96,9 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     test data, the commits, the push, a Jira move), every memory entry that answered for the user ("memory M2"), every
     change the user asked for during a command. The card's other files (card.md, plan.md, develop.md, verify.md, ship.md)
     only point to it in one line, e.g. "- Error code for a bad status: VALIDATION_ERROR (decision 3)".
+24. Request and response structures come only from the user (rule A28, D84): every API request or response structure
+    in a plan, the code's expected response, a mock, a test case, a page.route answer or a doc comes from the card's
+    `## API request and response` (written from the user's own structure) or from what the user pastes in chat. Never
+    write one yourself, never derive one from the code, never fill in a missing field. If it's missing, ask the user for it
+    and record their answer (rule 23). Where the code returns something different, show the difference as a "Found" line
+    and let the user decide. Error codes and messages still come from the code (rule 10).

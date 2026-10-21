@@ -38,6 +38,7 @@ Each of the card's repos: its changes on the card's branch against the MR's targ
 - Constants in the repo's constants files; shared helpers in its utils; error codes where the repo keeps them.
 - Routes registered in their index files; WS1 holds no business logic (a proxy: schema checks of presence, type and format; a URL ID through `isValidUUID`); new WS1 routes run `validateSchema` before `isAuthenticated`.
 - Every field the WS2 response can return listed in the WS1 schema, optional ones nullable and not required (A22).
+- The request each API accepts and the response it returns match the card's `## API request and response`, the user's structure (A28, D84); any difference was asked about, not decided.
 
 **The basics:**
 - Names say what the thing does, in the repo's naming style.

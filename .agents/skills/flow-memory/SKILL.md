@@ -43,7 +43,7 @@ Your user memory (F6b, D40, D56): short entries the agent follows in every flow 
 2. **Ask once, in one short message**, showing your suggestion so the user can just confirm:
    - the **phases** it applies to: `all`, or some of `setup`, `pick-up`, `plan`, `develop`, `review`, `ac-check`, `testing`, `ship`, `mr`, `after-merge`. Suggest the ones that fit the text (or `all`);
    - the **card** it came from, if any (e.g. `SCRUM-519`), or none.
-3. **Team rules first (rule A8):** compare the entry with the team rules: `AGENTS.md`, `docs/agent-rules.md` (G1–G4, A1–A27) and the repo's file in `config/repos/`. If it goes against one, tell the user which rule, and that the entry would never override it. Save it only if they still want it.
+3. **Team rules first (rule A8):** compare the entry with the team rules: `AGENTS.md`, `docs/agent-rules.md` (G1–G4, A1–A28) and the repo's file in `config/repos/`. If it goes against one, tell the user which rule, and that the entry would never override it. Save it only if they still want it.
 4. **No secrets:** if the text holds a password, token, key or `.env` value, don't save it, don't repeat it, and tell the user to change that secret. The script refuses anything that looks like a secret too.
 5. Run `bash scripts/memory.sh add <general|repo> <phases> <card or -> '<text>'`. Put the text in single quotes; write a `'` inside it as `'\''`. Show the output.
 
