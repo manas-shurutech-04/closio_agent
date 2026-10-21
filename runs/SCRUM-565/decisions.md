@@ -14,3 +14,5 @@ Every decision made on this card, in order and in full: the answers, the approva
 | 8 | 2026-10-21 15:40 | review 10 | Fix still broke at 786px (above the 768 breakpoint). Change approach? | Switch from a pure 768px stack to a container-driven fix: .channel-header flex-wrap:wrap and .channel-dropdown-wrap flex:1 1 200px/min-width:200px so the dropdown can't collapse and the row wraps at any width; keep the <=768px column stack for clean mobile | you |
 | 9 | 2026-10-21 15:41 | review 10 | Review approved? | Yes, approved after the container-driven fix | you |
 | 10 | 2026-10-21 15:56 | verify 1 | Full or quick check? | B quick check | you |
+| 11 | 2026-10-21 16:16 | push 7 | Approve the atomic commit? | Yes: one commit 'SCRUM-565: Make the channel header responsive on small screens' (ChannelBox.vue) | you |
+| 12 | 2026-10-21 16:18 | push 9 | Push and create the MR? Reviewers/labels? | Yes, push; no reviewers, no labels | you |

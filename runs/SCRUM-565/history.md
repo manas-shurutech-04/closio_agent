@@ -31,3 +31,13 @@ One line per step (rule A1). The last column says which team rules and user-memo
 | 2026-10-21 16:12 | verify 7 (run 2) | Repo tests re-run: 219 files, 4075/4075 passed (the prior Roles flaky test passed this run). No check commands for closio-web-v2. | rules: A13 · memory: — |
 | 2026-10-21 16:12 | verify 8 (run 2) | Story check skipped (quick check). | rules: — · memory: — |
 | 2026-10-21 16:12 | verify 9-10 (run 2) | Cleaned up quick-check scratch; wrote Run 2 result = PASSED (all 3 ACs, repo tests). Moving to ship phase. | rules: A1 · memory: — |
+| 2026-10-21 16:13 | push 2 | Read card.md, plan.md, develop.md, verify.md (top run PASSED). Web card, one repo. | rules: — · memory: — |
+| 2026-10-21 16:13 | push 3 | ship status: 1 uncommitted file (ChannelBox.vue) — matches develop.md; 0 commits ahead of development. | rules: G3 · memory: — |
+| 2026-10-21 16:14 | push 4 | Rebased onto latest development (0b419614); nothing new came in; no conflict. Wrote ship.md rebase line. | rules: G2 · memory: — |
+| 2026-10-21 16:15 | push 5 | Tests re-run after rebase: 219 files, 4075/4075 passed. No check commands. | rules: A13 · memory: — |
+| 2026-10-21 16:15 | push 6 | Nothing new came in with the rebase; the AC checks of the 2026-10-21 verify run (Run 2, all passed) still hold. No AC re-check needed. | rules: G2, A26 · memory: — |
+| 2026-10-21 16:17 | push 7 | Committed closio-web-v2: 2543abd7 'SCRUM-565: Make the channel header responsive on small screens' (git hooks passed). | rules: G3, D70 · memory: — |
+| 2026-10-21 16:17 | push 8 | MR prepared: title 'SCRUM-565: <card title>', target development, assignee Manas. Wrote mr-closio-web-v2.md (Jira link; no migrations/seeders). Repo defaults: labels none, reviewers none. | rules: D70 · memory: — |
+| 2026-10-21 16:18 | push 10 | Pushed closio-web-v2; MR !653 into development (assignee ext_manas, no reviewers/labels); description set from mr-closio-web-v2.md. | rules: G4, D31, D32 · memory: — |
+| 2026-10-21 16:19 | push 11 | Added MR link comment (15492); moved card To Code Review (transition 31). | rules: A3, D11 · memory: — |
+| 2026-10-21 16:19 | push 12 | pushed, MRs created, Code Review | rules: — · memory: — |
