@@ -10,6 +10,8 @@
 #                                    own commits it's left alone (the rebase is flow-push's, rule G2). Needs the VPN.
 #   rebase <repo> <branch-name>      flow-push's order (rule G2, D10): stashes the card's uncommitted work (new files too),
 #                                    fetches, rebases the branch onto the latest base branch, pops the stash. Needs the VPN.
+#                                    Then says what came in: "N newer commit(s) from <base> came in" or "nothing new on
+#                                    <base>" (flow-push checks the ACs again when something came in or after a conflict, D83).
 #   rebase-continue <repo> <branch-name>
 #                                    After the user resolved a conflict that stopped `rebase` (exit 4): finishes the
 #                                    rebase and the stash pop. After `git rebase --abort` it just puts the stash back.
@@ -145,8 +147,12 @@ do_update() { # <repo> <branch-name>
 # ---------------------------------------------------------------- rebase (C5, flow-push; rule G2, D10)
 state_file() { echo "$REBASE_DIR/$REPO"; }
 state_get() { [ -f "$(state_file)" ] && grep -m1 "^$1=" "$(state_file)" | sed "s/^$1=//"; }
-state_set() { # <stash sha or none> <stage> [<conflicted files, ;-separated>]
-  mkdir -p "$REBASE_DIR"; printf 'branch=%s\nstash=%s\nstage=%s\nfiles=%s\n' "$NAME" "$1" "$2" "${3:-}" > "$(state_file)"
+state_set() { # <stash sha or none> <stage> [<conflicted files, ;-separated>]   (NEWER: the newer base commits)
+  mkdir -p "$REBASE_DIR"; printf 'branch=%s\nstash=%s\nstage=%s\nfiles=%s\nnewer=%s\n' "$NAME" "$1" "$2" "${3:-}" "${NEWER:-}" > "$(state_file)"
+}
+came_in() { # what the rebase brought from the base branch; flow-push checks the ACs again when something did (D83)
+  [ -n "${NEWER:-}" ] || return 0
+  if [ "$NEWER" -gt 0 ] 2>/dev/null; then ok "$REPO: $NEWER newer commit(s) from $BASE came in"; else ok "$REPO: nothing new on $BASE"; fi
 }
 rebasing() { [ -d "$PATH_/.git/rebase-merge" ] || [ -d "$PATH_/.git/rebase-apply" ]; }
 unmerged() { g diff --name-only --diff-filter=U; }
@@ -166,13 +172,14 @@ undone() { look "$REPO: the rebase was undone (git rebase --abort): the card's c
 pop_stash() { # the last step: the card's work back on top of the latest base branch
   local sha ref files
   sha="$(state_get stash)"
-  if [ -z "$sha" ] || [ "$sha" = "none" ]; then rm -f "$(state_file)"; on_latest || { undone; return 1; }; ok "$REPO: $NAME is rebased onto the latest $BASE ($(g rev-parse --short HEAD)); there were no uncommitted changes"; return 0; fi
+  if [ -z "$sha" ] || [ "$sha" = "none" ]; then rm -f "$(state_file)"; on_latest || { undone; return 1; }; ok "$REPO: $NAME is rebased onto the latest $BASE ($(g rev-parse --short HEAD)); there were no uncommitted changes"; came_in; return 0; fi
   ref="$(stash_ref "$sha")"
   [ -n "$ref" ] || { bad "$REPO: the stash with the card's changes ($sha) is gone" "Look for it: git -C \"$PATH_\" stash list; git -C \"$PATH_\" fsck --unreachable | grep commit. Ask the user before doing anything else."; return 1; }
   if g stash pop -q "$ref" >/dev/null 2>&1; then
     rm -f "$(state_file)"
     on_latest || { undone; return 1; }
     ok "$REPO: $NAME is rebased onto the latest $BASE ($(g rev-parse --short HEAD)); the card's changes are back ($(g status --porcelain | wc -l | tr -d ' ') file(s))"
+    came_in
     return 0
   fi
   files="$(unmerged)"
@@ -197,6 +204,7 @@ do_rebase() { # <repo> <branch-name>
     bad "$REPO: can't reach GitLab to fetch" "Connect the VPN: /flow-vpn connect (Codex: \$flow-vpn connect), then run this again."; return 1
   fi
   g show-ref --verify --quiet "refs/remotes/origin/$BASE" || { bad "$REPO: the base branch $BASE isn't on GitLab" "Check base_branch in config/repos/$REPO.yaml."; return 1; }
+  NEWER="$(g rev-list --count "HEAD..origin/$BASE" 2>/dev/null)"; NEWER="${NEWER:-0}"   # base commits the branch doesn't have yet
   sha="none"
   changes="$(g status --porcelain | wc -l | tr -d ' ')"
   if [ "$changes" -gt 0 ]; then
@@ -218,6 +226,7 @@ do_rebase_continue() { # <repo> <branch-name>
   locate "$1" || return 1
   [ -f "$(state_file)" ] || { ok "$REPO: nothing to continue (no rebase was stopped)"; return 0; }
   [ "$(state_get branch)" = "$NAME" ] || { bad "$REPO: the stopped rebase is for $(state_get branch), not $NAME" "Run: bash scripts/card-branch.sh rebase-continue $REPO $(state_get branch)"; return 1; }
+  NEWER="$(state_get newer)"
   case "$(state_get stage)" in
     rebase)
       if rebasing; then
@@ -238,7 +247,8 @@ do_rebase_continue() { # <repo> <branch-name>
       g reset -q || { bad "$REPO: couldn't clear the resolved conflict" "Run git -C \"$PATH_\" reset, then this again."; return 1; }
       local ref; ref="$(stash_ref "$(state_get stash)")"; [ -n "$ref" ] && g stash drop -q "$ref"
       rm -f "$(state_file)"
-      ok "$REPO: conflicts resolved; $NAME is on the latest $BASE ($(g rev-parse --short HEAD)) with the card's changes on top" ;;
+      ok "$REPO: conflicts resolved; $NAME is on the latest $BASE ($(g rev-parse --short HEAD)) with the card's changes on top"
+      came_in ;;
     *) bad "$REPO: unknown rebase state in local/rebase/$REPO" "Look at git -C \"$PATH_\" status and git stash list, then delete local/rebase/$REPO."; return 1 ;;
   esac
 }
