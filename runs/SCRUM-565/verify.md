@@ -1,5 +1,35 @@
 # SCRUM-565 — verification
 
+## Run 2 — 2026-10-21 16:12 · B quick check
+Repos: closio-web-v2 · Ruleset: rulesets/frontend-story-workflow.md · Memory applied: none
+
+### APIs (web cards)
+- `ageing-options` — GET `/api/incentives/v1/ageing-deduction-configs/options` — available on dev; probe → 200.
+- `channels` — GET `/api/dashboard/v1/field-list/046226b9-5e58-416a-9613-dc583c97d3e5/options` — available on dev; probe → 200.
+- API probe: ✅ every GET API answers on dev (login succeeded after fe-login-password was updated).
+
+### AC checks
+- AC 1 — channel dropdown stays usable at 786px: ✅ (dropdown width ≥ 190px)
+- AC 1 — channel dropdown stays usable at 390px: ✅
+- AC 2 — "+ Tipe Salesman" does not overlap the dropdown at 786px: ✅
+- AC 3 — header stays a single row on desktop (1280px): ✅
+- Playwright: 3 ACs, 4 tests, all passed.
+
+### API structures
+- None in the card (CSS-only card; no `## API request and response`).
+
+### Repo tests and checks
+- `closio-web-v2 test`: 219 files, 4075/4075 passed (coverage: branches 78.33%, statements/lines 65.03%, functions 62.82%). The Roles flaky test passed this run. No check commands for this repo.
+
+### Story check
+- skipped (quick check)
+
+### Test data
+- none (layout checks only; GET APIs). Quick-check scratch files removed.
+
+### Result
+PASSED — all 3 ACs ✅, repo tests ✅. The container-driven fix (flex-wrap + min-width on the dropdown) holds at 786px, 390px and 1280px.
+
 ## Run 1 — 2026-10-21 16:05 · B quick check
 Repos: closio-web-v2 · Ruleset: rulesets/frontend-story-workflow.md · Memory applied: none
 
