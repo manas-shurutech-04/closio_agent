@@ -201,7 +201,7 @@ Ruleset: rulesets/frontend-story-workflow.md · Memory applied: M2 (changes: …
 ## Step 9 — Verify and ship
 
 - Read every edited file once more: the routes registered, the menu entry, the breadcrumbs, no leftover debug output.
-- `flow-push`: atomic commits (`<KEY>: <what this commit does>`), the MR into `development`, titled `<KEY>: <card title>`.
+- `flow-push`: the rebase onto `development` (every AC checked again the quick way when it had a conflict or brought newer commits, [D83](../docs/design-decisions.md#d83)), atomic commits (`<KEY>: <what this commit does>`), the MR into `development`, titled `<KEY>: <card title>`.
 - `flow-review`: the self-review with [code-review.md](code-review.md) (its web-app part) and this ruleset, then the reviewers' comments.
 
 ---

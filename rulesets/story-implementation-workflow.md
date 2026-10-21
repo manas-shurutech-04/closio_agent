@@ -472,7 +472,7 @@ Read: WS1 routes/incentives/index.js   → route registered?
 - The Jira card: its key, title and link (e.g., `[SCRUM-517: <card title>](https://productclosio.atlassian.net/browse/SCRUM-517)`)
 - The migrations and seeders to run, in order (or none)
 
-**Commits and the MR** (`flow-push`, [D70](../docs/design-decisions.md#d70)): atomic commits, each layer's code with its own tests, messages `SCRUM-517: <what this commit does>`; the repo's git hooks always run; one push per repo creates the MR, titled `SCRUM-517: <card title>`, ready for review, assigned to you.
+**Commits and the MR** (`flow-push`, [D70](../docs/design-decisions.md#d70)): first the rebase onto the latest base branch; when it had a conflict or brought newer commits, every AC is checked again the quick way before any commit, and a failure goes back to develop ([D83](../docs/design-decisions.md#d83)); then atomic commits, each layer's code with its own tests, messages `SCRUM-517: <what this commit does>`; the repo's git hooks always run; one push per repo creates the MR, titled `SCRUM-517: <card title>`, ready for review, assigned to you.
 
 **The MR's review** (`flow-review`, [D78](../docs/design-decisions.md#d78)): while the MR waits for the merge, a self-review against [code-review.md](code-review.md) (the story; the basics: no redundant code, the right file for each piece), then the reviewers' comments; fixes as new commits on top, pushed into the same MR after the user's yes (no rebase, never forced).
 
