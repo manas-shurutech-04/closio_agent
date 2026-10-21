@@ -11,3 +11,5 @@ Every decision made on this card, in order and in full: the answers, the approva
 | 5 | 2026-10-21 15:26 | plan 8 | Where to fix the layout? | In the shared ChannelBox.vue <style scoped> (covers both AgeingConfigForm and SlabConfigForm) | you |
 | 6 | 2026-10-21 15:26 | plan 8 | Responsive breakpoint and behavior? | @media (max-width: 768px) stacks .channel-header vertically: title, then full-width dropdown, then full-width + Tipe Salesman button; trash icon kept accessible. CSS only, no template/logic change | you |
 | 7 | 2026-10-21 15:29 | plan 10 | Plan approved? | Yes, approved as-is | you |
+| 8 | 2026-10-21 15:40 | review 10 | Fix still broke at 786px (above the 768 breakpoint). Change approach? | Switch from a pure 768px stack to a container-driven fix: .channel-header flex-wrap:wrap and .channel-dropdown-wrap flex:1 1 200px/min-width:200px so the dropdown can't collapse and the row wraps at any width; keep the <=768px column stack for clean mobile | you |
+| 9 | 2026-10-21 15:41 | review 10 | Review approved? | Yes, approved after the container-driven fix | you |

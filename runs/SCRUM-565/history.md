@@ -19,3 +19,5 @@ One line per step (rule A1). The last column says which team rules and user-memo
 | 2026-10-21 15:34 | develop 6 | closio-web-v2 has no check commands (check_commands: none); nothing to run. | rules: — · memory: — |
 | 2026-10-21 15:34 | develop 7 | No migrations or seeders for this CSS-only card. | rules: A23 (n/a) · memory: — |
 | 2026-10-21 15:35 | develop 8-9 | Wrote develop.md summary; closio-web-v2 done (1 of 1). | rules: A1 · memory: — |
+| 2026-10-21 15:41 | review 10 | Review iteration 1: broke at 786px (>768). Switched to container-driven fix: flex-wrap on header + min-width:200px on dropdown wrap. ChannelBox(11)+SlabConfigForm(14) tests pass. Updated develop.md. Awaiting re-review. | rules: A21, A26, A27 · memory: — |
+| 2026-10-21 15:41 | review 11 | review approved | rules: A27 · memory: — |
