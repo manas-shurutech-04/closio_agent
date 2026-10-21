@@ -64,7 +64,8 @@ Steps 4 to 8 are done **repo by repo, in the plan's order** (WS2 before WS1, D26
    - **Create the new files** the plan lists, and any other new file the work needs; each one goes in the summary (step 8) and in `develop.md`.
    - **Request validation (rule A20):** WS1 is a proxy: its schema checks only presence (`required`), type and format, with messages through `replaceMessagePlaceholders` and keys already in its locale files; a URL ID's format is checked in the WS1 controller with the existing `isValidUUID`; no business rule in WS1. WS2 checks everything it receives again and owns every business-logic check: in the controller when it needs only the request (inline when small; a function in the repo's domain utils file when it's over about 30 lines, used by more than one handler, or checks a nested body), in the service when it needs the database. Follow the plan's `## Validation, reuse and response fields`.
    - **No redundant code (rule A21):** before creating any function, helper, constant or regex, search the repo for one that does exactly the same job (by name, by what it does, in `utils`, `helpers`, `constants`, `middlewares`). The same: import and reuse it. Close but not the same: **ask the user** (reuse, extend or new) and wait. None: create it. Write each search in `develop.md` under "Reused and new".
-   - **Every WS1 response field (rule A22):** the WS1 schema's `responses` lists every field confirmed in the plan; optional ones nullable (`['string', 'null']`) and not in `required`.
+   - **The WS1 schema from the card's structure (rule A22, D85):** every key of the card's request and response structure, with its type, under `request`, `queryParameter` and `responses.<status>`; `null` ones nullable (`['string', 'null']`) and not in `required`. A block a shared schema helper gives is reused; common blocks (pagination, the audit fields) come from the shared helper the plan names, never copied.
+   - **Queries (D85; the ruleset's "Queries" list):** every new query follows the list (one query instead of several, only the columns needed, filtering, sorting, paging and counting in the database, existence checks and counts, an index for an unindexed `WHERE` or join column, one transaction for writes that belong together). A better version of an existing query the card touches: **ask the user**, never change it silently.
    - **Error codes, HTTP statuses, messages, fields, columns, headers and constants come from the code** (rule A16). Anything the code doesn't have yet, or anything that differs from the plan: **ask the user first** and wait; write their answer under "Not in the plan" in `develop.md`.
    - **Never commit, stash, rebase or push** in the repo (rule G3: the atomic commits come in `flow-push`). Never clone (D53).
    - Log the step with the files created and changed; `set <KEY> step 5`.
@@ -88,6 +89,7 @@ Tests:    <the result line of repo-run.sh test, or "no test suite">
 Checks:   <passed / what was fixed> · lint: <passed, or ⚠️ N problems in the card's files>
 Not in the plan: <each item with the user's answer, or none>
 Reused and new: <reused X from <file> · new Y (searched, none found)>
+Queries:  <each new query, one line each: what it does · why it's written this way>
 Next:     <the next repo, or "your review">
 ```
 After the last repo: log the step; `set <KEY> step 9`.

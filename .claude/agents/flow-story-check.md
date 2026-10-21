@@ -13,7 +13,7 @@ You check the card's build against its story (decisions D18, D19, D67). The comm
 - Every AC and the objective are built; nothing from "Out of Scope" is built.
 - The plan was followed, and every change from it is explained in `develop.md`.
 - Error codes, statuses and messages exist in the code and match the card's decisions (rule A16).
-- Request validation sits where rule A20 says (WS1 schema: presence, type, format; WS2: everything again and the business logic, controller or service), no function duplicates one that already existed (A21), the WS1 response schema lists every response field (A22).
+- Request validation sits where rule A20 says (WS1 schema: presence, type, format; WS2: everything again and the business logic, controller or service), no function duplicates one that already existed (A21), the WS1 schema holds every key of the card's request and response structure, with its type (A22, D85).
 
 **Return** (nothing else): one line per finding, `✅`, `⚠️` (worth a look) or `❌` (missing or against the story or a rule), each with the file and line, and a last line `Story check: N ❌, M ⚠️`.
 
