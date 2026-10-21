@@ -2,6 +2,15 @@
 
 Dated list of what changed in closio-agent. Newest first.
 
+## 2026-10-21
+
+- **`/flow-push` checks every AC again after a rebase that brought new code** ([D83](design-decisions.md#d83)). Before, after the rebase only each repo's unit tests and lint ran before the commits, so a conflict resolved by hand, or newer code from the base branch, wasn't AC-checked until dev, after the merge. Now:
+  - The rebase says what came in for each repo: "3 newer commit(s) from develop came in" or "nothing new on develop".
+  - **When a repo had a conflict or newer commits came in**, a new step 6 checks every AC again **the quick way** (as `/flow-verify`'s quick check does it, whichever way the card was checked before), before any commit. Test data and calls that write still wait for your yes. No story check. The result is a new run in the card's `verify.md`.
+  - When nothing came in and there was no conflict, one line says the earlier checks still hold.
+  - **A failure stops the push before any commit** (the tests, the ACs, or a commit hook). It's written as a failed run in `verify.md`, and **`/flow-develop` now takes the card back** from the push step (before, it refused, so its suggestion led nowhere). Then `/flow-verify` and `/flow-push` again.
+  - `/flow-push`'s steps 6–11 are now 7–12.
+
 ## 2026-10-20
 
 - **The Jira card template is amended for the new card-writing pipeline** ([D82](design-decisions.md#d82)). The sibling folder `Ticket creation pipeline` writes cards with Claude Code and imports [jira-card-template.md](jira-card-template.md). What's new for every card writer:

@@ -12,7 +12,7 @@ Phase 3  Develop                 flow-develop <CARD-KEY>          (C3, built 202
 Phase 4  Human review            part of flow-develop · ✋
 Phase 5  Check against ACs       flow-verify <CARD-KEY>           (C4, built 2026-10-18) every AC's test cases; flow-ac-check <CARD-KEY> <AC> edits one AC's
 Phase 6  Developer testing       part of flow-verify · the repo tests again + the story check; a failure: the user decides (e.g. back to Phase 3)
-Phase 7  Ship                    flow-push <CARD-KEY>             (C5, built 2026-10-18) rebase, the commits you approve, one push (also creates, assigns and describes the MRs)
+Phase 7  Ship                    flow-push <CARD-KEY>             (C5, built 2026-10-18) rebase (every AC again when new code came in, D83), the commits you approve, one push (also creates, assigns and describes the MRs)
 Phase 8  Merge Request           part of flow-push · MRs linked on Jira → card to Code Review · then flow-review <CARD-KEY> (D78) for a self-review and the reviewers' comments
 Phase 9  After merge             flow-finish <CARD-KEY>           (C6, built 2026-10-18) merged? → you say it's deployed → every AC on dev → deployment doc (run folder + Jira card) → Ready for Test
 QA       QA's questions          flow-qa <CARD-KEY>               (D81, built 2026-10-19) QA's Jira comments checked against the card and dev → a reply; a real bug → a Bug card
@@ -117,12 +117,13 @@ The coverage gate that husky runs on every commit (ws2targetsalesincentive, ws2n
 Built in C5 ([D70](design-decisions.md#d70)); the step-by-step is in [commands.md](commands.md#flow-push).
 1. The connectivity agent connects the VPN if needed ([D30](design-decisions.md#d30)); the card must be verified.
 2. Per repo, `scripts/card-branch.sh <repo> rebase <branch>`: stash the changes (new files too), fetch the base branch and rebase onto it, pop the stash ([D10](design-decisions.md#d10), G2).
-3. ✋ If the rebase or the stash pop causes a conflict, the user resolves it in their editor, then `rebase-continue` carries on.
+3. ✋ If the rebase or the stash pop causes a conflict, the user resolves it in their editor, then `rebase-continue` carries on. Each repo's rebase says what came in from the base branch.
 4. Re-run the repo's tests and checks.
-5. ✋ The AI proposes the atomic commits per repo, each layer's code with its own tests, messages `SCRUM-<n>: <what this commit does>`; the user approves the list; `scripts/ship.sh <repo> commit` makes them, the repo's git hooks running every time (G3).
-6. The MRs: title `SCRUM-<n>: <card title>`, ready for review, into `mr_target_branch`, assigned to the user; the repo's default **labels and reviewers** confirmed or changed by the user ([D51](design-decisions.md#d51)); the description: the Jira link and the migrations and seeders to run (nothing more, D70).
-7. ✋ Everything shown; pushed only after the user's explicit yes.
-8. Push once per repo, never forced (G4): `scripts/ship.sh <repo> push` **creates the MR and assigns it to the user** with git push options ([D31](design-decisions.md#d31)). Right after, `scripts/gitlab-mr.sh <repo> describe` sets the **full description and the reviewers** through the GitLab REST API, using the token from the Keychain ([D32](design-decisions.md#d32)).
+5. When the rebase had a conflict or brought newer commits, **every AC is checked again the quick way** (as in Phase 5, B), before any commit ([D83](design-decisions.md#d83)). A failure in 4 or 5 stops the push before any commit: it's written as a failed run in `verify.md`, and `flow-develop` takes the card back to Phase 3.
+6. ✋ The AI proposes the atomic commits per repo, each layer's code with its own tests, messages `SCRUM-<n>: <what this commit does>`; the user approves the list; `scripts/ship.sh <repo> commit` makes them, the repo's git hooks running every time (G3).
+7. The MRs: title `SCRUM-<n>: <card title>`, ready for review, into `mr_target_branch`, assigned to the user; the repo's default **labels and reviewers** confirmed or changed by the user ([D51](design-decisions.md#d51)); the description: the Jira link and the migrations and seeders to run (nothing more, D70).
+8. ✋ Everything shown; pushed only after the user's explicit yes.
+9. Push once per repo, never forced (G4): `scripts/ship.sh <repo> push` **creates the MR and assigns it to the user** with git push options ([D31](design-decisions.md#d31)). Right after, `scripts/gitlab-mr.sh <repo> describe` sets the **full description and the reviewers** through the GitLab REST API, using the token from the Keychain ([D32](design-decisions.md#d32)).
 
 ### Phase 8 — Merge Request
 Part of `flow-push`.

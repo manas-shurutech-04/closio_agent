@@ -1,6 +1,6 @@
 # closio-agent, step by step
 
-**Claude artifact:** https://claude.ai/code/artifact/a83b1e2a-0e5a-4378-b791-26b9f34e8b7a · mirrored on 2026-10-19 · commands: flow-ac-check, flow-check-card, flow-configure-repo, flow-configure-user, flow-develop, flow-doctor, flow-finish, flow-grill, flow-help, flow-memory, flow-ping, flow-push, flow-qa, flow-review, flow-setup-repo, flow-start, flow-status, flow-verify, flow-vpn
+**Claude artifact:** https://claude.ai/code/artifact/a83b1e2a-0e5a-4378-b791-26b9f34e8b7a · mirrored on 2026-10-21 · commands: flow-ac-check, flow-check-card, flow-configure-repo, flow-configure-user, flow-develop, flow-doctor, flow-finish, flow-grill, flow-help, flow-memory, flow-ping, flow-push, flow-qa, flow-review, flow-setup-repo, flow-start, flow-status, flow-verify, flow-vpn
 
 **Presentation:** [closio-agent at a glance](https://claude.ai/artifact/TvNhSGz3gP8YdxkqHXJPaZ): 21 slides for the whole team, with flowcharts and the reasons behind each decision. It's private until it's shared from its Share menu.
 
@@ -283,7 +283,7 @@ The ✋ boxes are where the agent stops and waits for you. A failed AC check or 
 
 ### `/flow-develop`
 
-- **When:** once the plan of a card is approved (`/flow-start` ends with "Next: /flow-develop"). Run it again any time to continue where it stopped, on the same Mac. Also after a failed check: if `/flow-verify` found failures, it shows them and asks whether to go back to development and fix them.
+- **When:** once the plan of a card is approved (`/flow-start` ends with "Next: /flow-develop"). Run it again any time to continue where it stopped, on the same Mac. Also after a failed check: if `/flow-verify` found failures, or a check `/flow-push` ran after its rebase failed, it shows them and asks whether to go back to development and fix them.
 - **Plain words work too:** "develop SCRUM-567" starts it, but only for a card whose plan is approved (you name it, or it's the only card waiting to be developed).
 - **What it does, in order:** the VPN; your repos on the card's branch, with the latest base branch; then, repo by repo in the plan's order: **the code** (copying how the closest existing files do it, reusing what the repo already has instead of writing it again, creating new files where needed, and **asking you first** about anything new or different from the plan), **the unit tests** (run with the coverage gate until they pass), **the repo's checks** (lint only looks at the files the card changed and only warns; other checks must pass), and migrations or seeders **only after you've reviewed them and said yes**; a short summary after each repo, then it goes straight on. At the end it shows everything for **your review**: you look at the changes in your editor and say "review approved", or what to change.
 - **Options:** `/flow-develop SCRUM-567` only (or the plain words).
@@ -314,10 +314,11 @@ The ✋ boxes are where the agent stops and waits for you. A failed AC check or 
 ### `/flow-push`
 
 - **When:** after `/flow-verify` says the card is verified.
-- **What it does, in order:** brings each repo up to the latest base branch (your uncommitted work is put aside, the branch rebased, your work put back; a conflict waits for you to fix it in your editor); runs the repo's tests again; proposes the **atomic commits**, each layer's code with its own tests, messages like `SCRUM-567: Add the ageing config model`, and **you approve the list**; makes them (in the repos with husky, the coverage gate runs on every commit, so it takes a while); prepares each **merge request**: title `SCRUM-567: <card title>`, into the repo's MR branch, assigned to you, the labels and reviewers you confirm, and a short description (the Jira link, the migrations and seeders to run); shows you everything and pushes **only after your yes**, once per repo; then sets each MR's description and reviewers, checks the card shows the MRs (adds a comment if one is missing) and moves the card to **Code Review**.
+- **What it does, in order:** brings each repo up to the latest base branch (your uncommitted work is put aside, the branch rebased, your work put back; a conflict waits for you to fix it in your editor), and says what came in from the base branch ("3 newer commit(s) from develop came in" or "nothing new on develop"); runs the repo's tests again; **when the rebase had a conflict or brought newer code, checks every AC again the quick way** ([D83](design-decisions.md#d83)), with test data and calls that write only after your yes; proposes the **atomic commits**, each layer's code with its own tests, messages like `SCRUM-567: Add the ageing config model`, and **you approve the list**; makes them (in the repos with husky, the coverage gate runs on every commit, so it takes a while); prepares each **merge request**: title `SCRUM-567: <card title>`, into the repo's MR branch, assigned to you, the labels and reviewers you confirm, and a short description (the Jira link, the migrations and seeders to run); shows you everything and pushes **only after your yes**, once per repo; then sets each MR's description and reviewers, checks the card shows the MRs (adds a comment if one is missing) and moves the card to **Code Review**.
 - **Options:** `/flow-push SCRUM-567` only. Run it again to continue where it stopped (e.g. after a conflict).
 - **You see:** the files per repo, the commit list to approve, the MRs to approve, then the MR links and `Done: SCRUM-567 is pushed and in Code Review.`, with what comes next: `/flow-review SCRUM-567` while the MRs wait, `/flow-finish SCRUM-567` once they're merged.
-- **Where it's remembered:** `runs/SCRUM-567/ship.md` (the commits, the pushes, the MR links), each MR's description in `runs/SCRUM-567/mr-<repo>.md`, every decision in `decisions.md`.
+- **Where it's remembered:** `runs/SCRUM-567/ship.md` (what the rebase brought in, the commits, the pushes, the MR links), the AC checks after the rebase as a run in `verify.md`, each MR's description in `runs/SCRUM-567/mr-<repo>.md`, every decision in `decisions.md`.
+- **If a check after the rebase fails** (the tests, the ACs, or a commit hook): nothing is committed or pushed. The failure is written in `verify.md`, and `/flow-develop SCRUM-567` takes the card back to development to fix it; then `/flow-verify` and `/flow-push` again.
 - **Good to know:** a push is never forced, and the repos' git hooks always run. Your GitLab token is read from the Keychain by the script and never shown.
 
 ### `/flow-review`
@@ -361,7 +362,7 @@ The ✋ boxes are where the agent stops and waits for you. A failed AC check or 
 | 4. Human review | you review the changes in your editor | part of `flow-develop` (built) |
 | 5. Check against the ACs | every AC checked with its test cases (API checks for the backend, Playwright for the web app) | `flow-verify <CARD-KEY>` (built) |
 | 6. Developer testing | the repo tests again (written in step 3) and a story check; a failure is shown to you with a suggestion, and you decide | part of `flow-verify` (built) |
-| 7. Ship | rebase, atomic commits you approve, one push that also creates and assigns the merge requests | `flow-push <CARD-KEY>` (built) |
+| 7. Ship | rebase (every AC again the quick way when it brought new code or a conflict), atomic commits you approve, one push that also creates and assigns the merge requests | `flow-push <CARD-KEY>` (built) |
 | 8. Merge request | the MRs' description and reviewers set; the MRs shown on the card; card to Code Review; then, while they wait for the merge, a self-review and the reviewers' comments | part of `flow-push` (built); `flow-review <CARD-KEY>` (built) |
 | 9. After the merge | the merge checked, every AC checked on dev, the deployment doc (run folder and Jira card), card to Ready for Test | `flow-finish <CARD-KEY>` (built) |
 | After Ready for Test | QA's questions on the card checked and answered; a real bug becomes a Bug card | `flow-qa <CARD-KEY>` (built) |
