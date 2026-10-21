@@ -16,3 +16,6 @@ Every decision made on this card, in order and in full: the answers, the approva
 | 10 | 2026-10-21 15:56 | verify 1 | Full or quick check? | B quick check | you |
 | 11 | 2026-10-21 16:16 | push 7 | Approve the atomic commit? | Yes: one commit 'SCRUM-565: Make the channel header responsive on small screens' (ChannelBox.vue) | you |
 | 12 | 2026-10-21 16:18 | push 9 | Push and create the MR? Reviewers/labels? | Yes, push; no reviewers, no labels | you |
+| 13 | 2026-10-21 16:41 | finish 3 | Deployed on dev? | Yes, deployed on dev (closio-web-v2) | you |
+| 14 | 2026-10-21 17:03 | finish 4 | Re-run the AC checks on dev? | No — skip the dev re-check; the ACs already passed on dev in verify Run 2 (all 3 ACs) | you |
+| 15 | 2026-10-21 17:04 | finish 5 | Anything special for the deployment doc (order, flag, manual step)? | None | you |

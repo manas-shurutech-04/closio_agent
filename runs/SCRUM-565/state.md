@@ -2,11 +2,12 @@
 card: SCRUM-565
 title: The channel dropdown become messy and add salesman button overlap channel dropdown on small resolution.
 type: Bug
-phase: after-merge
+phase: done
 step: 1
-jira_status: Code Review
+jira_status: Ready for Test
 repos: closio-web-v2
 branch: SCRUM-565/fix-channel-dropdown-overlap
 run_branch: runs/SCRUM-565
-next: /flow-finish SCRUM-565
-updated: 2026-10-21 16:19
+next: finished
+updated: 2026-10-21 17:07
+jira_comment: 15493

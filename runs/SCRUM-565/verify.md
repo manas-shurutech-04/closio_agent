@@ -1,5 +1,8 @@
 # SCRUM-565 — verification
 
+## Dev check (finish) — 2026-10-21 · skipped on user instruction
+The dev AC re-check was skipped at the user's request ("skip this test phase and move ahead; we don't need to check this again for this story", decision 14). Basis: the 3 ACs already passed on dev in Run 2 (below) — the web app ran against the dev APIs, dev login succeeded, and AC1/AC2/AC3 all passed. No dev re-run was performed.
+
 ## Run 2 — 2026-10-21 16:12 · B quick check
 Repos: closio-web-v2 · Ruleset: rulesets/frontend-story-workflow.md · Memory applied: none
 

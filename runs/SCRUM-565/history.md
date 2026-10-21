@@ -41,3 +41,10 @@ One line per step (rule A1). The last column says which team rules and user-memo
 | 2026-10-21 16:18 | push 10 | Pushed closio-web-v2; MR !653 into development (assignee ext_manas, no reviewers/labels); description set from mr-closio-web-v2.md. | rules: G4, D31, D32 · memory: — |
 | 2026-10-21 16:19 | push 11 | Added MR link comment (15492); moved card To Code Review (transition 31). | rules: A3, D11 · memory: — |
 | 2026-10-21 16:19 | push 12 | pushed, MRs created, Code Review | rules: — · memory: — |
+| 2026-10-21 16:20 | finish 2 | MR !653 merged (merge commit d831ac63, 2026-10-21 17:50 UTC). | rules: — · memory: — |
+| 2026-10-21 16:41 | finish 3 | User confirmed deployed on dev. | rules: — · memory: — |
+| 2026-10-21 17:03 | finish 4 | Dev AC re-check skipped on user instruction (decision 14); ACs already passed on dev in verify Run 2. Noted in verify.md. | rules: A17, A27 · memory: — |
+| 2026-10-21 17:04 | finish 5 | No special instructions for the deployment doc (decision 15). | rules: A17, A27 · memory: — |
+| 2026-10-21 17:05 | finish 6 | Wrote deployment.md (web card, closio-web-v2 only; QA + deployer sections; MR !653; no DB/seeder/env changes). Menu path from AppSidebar.vue: Manajemen Insentif > Tipe Insentif. No migrations/seeders to review (A23 n/a). | rules: A17, A23, A25, A27 · memory: — |
+| 2026-10-21 17:06 | finish 7 | Posted deployment doc as one Jira comment (id 15493); no related story (no issue links) so D81 n/a; moved card Code Review -> Ready for Test (transition 3). | rules: A3, A17, D11, D81 · memory: — |
+| 2026-10-21 17:07 | finish 8 | finished: deployment doc on the card (comment 15493), Ready for Test. Regenerated quick-check scratch removed. | rules: A1, A17 · memory: — |
