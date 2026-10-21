@@ -1386,7 +1386,7 @@ Every decision taken while building the agent, including the options we rejected
 <a id="d82"></a>
 ### D82 — The card template, amended for the card-writing pipeline (from a review of the Shuru ticket skill)
 - **Date:** 2026-10-20
-- **Status:** Accepted (the user's answers, 2026-10-20). **Built 2026-10-20** after "now go ahead"; my tests passed (see "Built"); the user's tests are pending.
+- **Status:** Accepted (the user's answers, 2026-10-20). **Built 2026-10-20** after "now go ahead"; my tests passed (see "Built"); the user's tests are pending. **2026-10-21 ([D84](#d84)):** a card that names an API also needs `## API request and response`, with the structures from the user.
 - **Context:**
   - The user is building a card-writing pipeline in the sibling folder `Ticket creation pipeline`, for Claude Code only. It imports this template, so every card written there follows it.
   - The SCRUM board's web cards were read live on 2026-10-20. Only SCRUM-532 had a QA section.
@@ -1462,3 +1462,30 @@ Every decision taken while building the agent, including the options we rejected
   - Running the story check again: the rebase doesn't change the card, and `flow-review`'s self-review checks the story after the push.
   - Re-checking after every rebase, also when nothing came in: nothing changed, so the earlier checks still hold.
 - **Built (2026-10-21):** `scripts/card-branch.sh` (`came_in`, the `newer=` line in the state file; tested in temporary git repos in a folder with spaces: nothing new, two newer commits, a stash-pop conflict and a rebase conflict each resolved, and a state file from before this change: 10 of 10 passed); `.agents/skills/flow-push/SKILL.md` (step 6 new, steps 7–12 renumbered, steps 2, 4, 5 and 7, the long-step lines, the rules; its Codex line); `.agents/skills/flow-develop/SKILL.md` (step 1); rule G2 in `docs/agent-rules.md` and `build-memory/project-context.md`; both rulesets; docs: `docs/commands.md`, `docs/architecture.md`, `docs/user-guide.md` + the artifact, `docs/changelog.md`; the D10, D67 and D70 notes; build memory; the presentation's push slide.
+
+<a id="d84"></a>
+### D84 — Request and response structures come only from the user: a card section, a pick-up question, a check in flow-verify (rule A28)
+- **Date:** 2026-10-21
+- **Status:** Accepted (the user's answers, 2026-10-21). **Built 2026-10-21** after "Build it as drafted in both repos"; my tests passed (see "Built"). **Waiting on the user:** the real structures for the three example cards, which keep the new ❌ until then. The user's own tests are pending.
+- **Context:** The user: "It should have the API request and response structure clearly mentioned in the templates for backend, and in the front end template… You're not going to make the structure on your own. You will ask the user to provide you a structure. You are not at all ever going to create that structure of request and response on your own. You can't do that. Make it a rule in the Closio agent pipeline as well as in this repository." Until now the backend ruleset had the agent write a "Response shape (JSON example)" at pick-up, the web ruleset took a screen's request and response fields "from the backend card and the backend code", and the `flow-ac-checker` agent shaped `page.route` answers from the code.
+- **Decision:**
+  - **Rule A28** (`AGENTS.md` rule 24): every request or response structure the agent uses comes from the card's `## API request and response` (written from the user's own structure) or from what the user pastes. It's never written, derived from the code or completed by the AI. If one is missing, the user is asked. Where the code returns something different, the difference is shown and the user decides. Error codes and messages still come from the code (A16).
+  - **The card template:** a `## API request and response` section, right after Context: `### <METHOD> <path>` per API, `**Request**` and `**Response (200)**` (and optionally `**Error response**`) as JSON blocks, exactly as the user gave them. **Backend cards:** every API added or changed. **Web cards:** every API the card relies on (new or changed, or whose fields the ACs or QA steps check; user: "The ones the card relies on"); the others stay as a method + path line in Dev notes.
+  - **`scripts/card-check.sh`:** ❌ when the card names an API but has no section; ❌ for an API with no Response JSON, or a POST/PUT/PATCH with no Request JSON (user: "❌, you give the examples'").
+  - **`flow-start` step 8:** an API with no structure in the card: the user is asked to paste it, and it's saved to `card.md` and recorded (A27). The WS1 schema's response fields (A22) come from the card's structure, with every difference from the WS2 model shown.
+  - **`flow-develop`:** the code's request and response follow the card's structure; a difference is asked about.
+  - **`flow-verify`** (user: "Yes, include it"): every API in the card's section gets one success call (web cards: only the GETs on dev), and **`scripts/response-shape.sh`** compares the real response with the card's structure: keys and JSON types at every level, values not compared, `null` = may be null, type words count as types. Results under `### API structures` in `verify.md`. A difference is the user's call.
+  - **Mocks and test cases:** a web mock offers the card's Response (200) first, otherwise the user sends it (D69 unchanged); the `flow-ac-checker` agent's request bodies, response checks and `page.route` answers follow the card's structure, never the code; both rulesets' tests too.
+- **Why:** User decision. A structure made up by the AI looks plausible and is easy to trust, so it can spread into the code, the tests and the mocks without anyone checking it against what was agreed.
+- **Rejected options:**
+  - ⚠️ only, so older cards and the examples aren't stopped (Claude offered it as the second choice).
+  - Every API a web card's screens call (the user picked only the ones the card relies on).
+  - Copying the structure from the code and asking the user to confirm it: still a structure made by the AI.
+  - Leaving the flow-verify comparison for later (Claude's recommendation): the user wanted it now.
+- **Built (2026-10-21):**
+  - **The template, the examples and the checker:** `docs/jira-card-template.md`; `docs/jira-card-examples.md` (a note that A, B and C wait for the user's structures); `scripts/card-check.sh` (tested on a good card and four broken ones, each caught).
+  - **The new script:** `scripts/response-shape.sh` (tested: same structure, a missing, an extra and a wrongly typed field, type words, `null`, the `--save` format, a missing API, invalid JSON in the card, usage), pre-approved in `.claude/settings.json` and `.codex/rules/closio-agent.rules` (Codex policy check: allow).
+  - **The rules:** `AGENTS.md` rule 24; `docs/agent-rules.md` A28; `build-memory/project-context.md`; "A1–A28" in every rule list.
+  - **The commands and agents:** `flow-start`, `flow-develop`, `flow-verify`, `flow-ac-check`, `flow-check-card`; the `flow-ac-checker` agent (Claude Code and Codex); both rulesets and `rulesets/code-review.md`.
+  - **The docs:** `docs/commands.md`, `docs/architecture.md`, `docs/user-guide.md` and its Claude artifact (mirrored).
+

@@ -4,6 +4,13 @@ Dated list of what changed in closio-agent. Newest first.
 
 ## 2026-10-21
 
+- **Request and response structures now come only from you** ([D84](design-decisions.md#d84), new rule 24 in `AGENTS.md`). The AI never writes one, never takes one from the code and never fills a gap: if one is missing, it asks you.
+  - **The card template** has a new section, `## API request and response`, right after Context: each API's request and response, exactly as you give them. Backend cards: every API the card adds or changes. Web cards: every API the card relies on.
+  - **`/flow-check-card`** and the pick-up show ❌ when a card names an API but has no structure for it. **Older cards that name an API now stop at pick-up until you paste the structures.**
+  - **`/flow-start`** asks you to paste any missing structure and saves it with the card. **`/flow-develop`** builds to it, and the tests and mocks use it.
+  - **`/flow-verify`**, both ways, makes one success call per API in the card's section and compares the answer with the structure you gave (new `scripts/response-shape.sh`): each missing, extra or wrongly typed field is listed, and you decide.
+  - The three example cards are waiting for their real structures from you, so they show the new ❌ until then.
+
 - **`/flow-push` checks every AC again after a rebase that brought new code** ([D83](design-decisions.md#d83)). Before, after the rebase only each repo's unit tests and lint ran before the commits, so a conflict resolved by hand, or newer code from the base branch, wasn't AC-checked until dev, after the merge. Now:
   - The rebase says what came in for each repo: "3 newer commit(s) from develop came in" or "nothing new on develop".
   - **When a repo had a conflict or newer commits came in**, a new step 6 checks every AC again **the quick way** (as `/flow-verify`'s quick check does it, whichever way the card was checked before), before any commit. Test data and calls that write still wait for your yes. No story check. The result is a new run in the card's `verify.md`.

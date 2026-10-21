@@ -21,6 +21,12 @@ Plain language QA can follow, in any order: the current gap, what changes, why; 
 ### Screens in Scope                                       web cards: Screen | Route
 ### Screen Changes                                        web cards: #### <screen>, then an Element | Current | New table
 
+## API request and response                              REQUIRED when the card names an API (D84)
+### <METHOD> <path>                                       one per API: backend, every API added or changed; web, every API the card relies on
+**Request**   ```json … ```                                exactly as the user gave it (a GET: "no body" + its query parameters)
+**Response (200)**   ```json … ```                         exactly as the user gave it
+**Error response**   ```json … ```                         optional, only if the user gives one
+
 ## Scope                                                   optional: when several repos or APIs change
 ### WS2 (nodejs-ws2targetsalesincentive)
 ### Web (closio-web-v2)
@@ -58,6 +64,7 @@ n. Cleanup …                                               when the steps leav
 | Summary (the Jira title) | the title field | Required | No fixed format. The newest cards use `<Layer> [Business 1] - <what changes> (<repos or APIs>)`, e.g. `Backend - Add details.missing_or_invalid to every channel validation error (Slab, Ageing, Target APIs)`. |
 | User Story | one line before `## Context`: `As a <who>, I want <what>, so that <why>.` | Every new card ([D82](design-decisions.md#d82)); not checked by the script | The real actor (an admin, a salesperson, the web app, a WS1 caller), the capability, and the outcome. One line; the explanation goes in Context. |
 | Context | `## Context` | **Required** | The current behaviour and the gap. What changes. Why: the business reason and what goes wrong without it. Dependencies. A short real-life example ("On Oct 2 the cron calculates September… on Oct 5 an admin deactivates it"). **Simple language that QA can follow without reading the code, in no fixed order** (user, 2026-10-20): bold labels (`**Current gap:**`, `**What changes:**`, `**Why:**`, `**Already in place today:**`, `**What's missing:**`, `**Example:**`, `**Good to know for QA:**`) and `###` sub-headings are optional helpers. A table helps for reference data (e.g. "API \| Today \| After"). Web cards: the screen tables below. **No out-of-scope lines here**: they go in `## Out of Scope`. |
+| API request and response | `## API request and response`, then `### <METHOD> <path>` per API, each with `**Request**` and `**Response (200)**` (and optionally `**Error response**`) as ```json blocks | **Required when the card names an API** ([D84](design-decisions.md#d84)) | **Backend cards:** every API the card adds or changes. **Web cards:** every API the card relies on (new or changed, or whose fields the ACs or QA steps check); APIs the screens call unchanged stay as a method + path line in Dev notes. **The structures always come from the user, exactly as given; the AI never writes, derives or completes one** (rule A28). A GET's Request says "no body" plus the query parameters the user gives. Where the code returns something else, that's shown to the user, who decides. |
 | Scope | `## Scope`, one sub-heading per repo: `### WS2 (nodejs-ws2targetsalesincentive)`, `### Web (closio-web-v2)`, `### WS1 (nodejs-ws1closio)` | Optional (several repos or APIs change) | What changes in each repo, what is "Not changed", the check order. File or function names **only when necessary** to pin the exact spot, in the text. Never a "files changed" table. |
 | Dev notes | `### Dev notes` or `**Dev notes**` | Optional | Notes for the developer: blocking cards, exact message strings, what WS1 does, "the implementation approach is up to the developer". |
 | Data cleanup | `### Data cleanup (dev runs this once on the dev DB; not a migration)` | Optional | One-off SQL the dev runs. |
@@ -71,7 +78,7 @@ n. Cleanup …                                               when the steps leav
 - `### Screens in Scope` inside Context: a `Screen | Route` table.
 - `### Screen Changes`: one `#### <screen name>` per screen, each with an `Element | Current | New` table. Use the exact on-screen labels (Indonesian, as shown) and say "No change" where something stays.
 - **Every response the screen can get:** the success, each error code and **each warning** (e.g. `NON_MONOTONIC_PAYOUT`), and for each one what the screen shows and **which field or block** shows it. QA asked about a missing warning on SCRUM-503, which led to SCRUM-569, and found errors on the wrong field in SCRUM-562 and SCRUM-563. The codes come from the backend code (rule A16).
-- **The APIs each screen calls** (method and WS1 path) go in `### Dev notes`.
+- **The APIs each screen calls** (method and WS1 path) go in `### Dev notes`. The ones the card relies on also get their request and response in `## API request and response`, as the user gives them (D84).
 - **Figma or screenshots:** open them, and put the real link in the card. Never only a link with no text.
 - **Screen sizes aren't in the card.** QA has a fixed set of checks for every screen.
 
@@ -171,7 +178,7 @@ Also used: `* **And when** …`, `* **And given** …`, or a second When / Then 
 
 - **API endpoints:** method plus full path in backticks, e.g. `PATCH /api/incentives/v1/incentive-points/:incentive_point_metric_id/slab-configs/:slab_config_id`. Flags like `is_slabs_updated` are named. Request bodies appear as JSON in the QA steps.
 - **Headers:** the S2S headers in the QA setup; the WS1 → WS2 contract (params, S2S headers, `X-Partner-Id`, `X-User-Id`, `X-User-Name`) in the ACs.
-- **Response values** go in the ACs and the QA expectations (older cards had a `## Response (200)` section).
+- **Request and response structures** go in `## API request and response`, exactly as the user gives them: **never written, derived from the code or completed by the AI** (rule A28, [D84](design-decisions.md#d84)). If the user hasn't given one, ask. The values the ACs check go in the ACs and the QA expectations.
 - **Errors:** each error has an HTTP status, `error_code`, the exact message and the `details` shape (e.g. `details.missing_or_invalid: ["groups[<i>].channel"]`). An Error reference table, and the JSON body for a new code.
 - **Validation order:** "Check order is unchanged everywhere. Earlier errors still win:" followed by the earlier codes, plus an AC for the order.
 - **Database:** table and column names, constraints, seeded IDs; migration ACs ("runs safely on existing data", "can be rolled back"); one-off cleanup SQL.
@@ -195,6 +202,7 @@ Also used: `* **And when** …`, `* **And given** …`, or a second When / Then 
   - **The tech spec or plan section decides what's new;** a spec beats a PRD.
   - **A clash between them is shown to the user, who decides.** It's never settled silently.
   - **With no spec,** the user's description plus the code is enough.
+  - **Request and response structures are the exception: they always come from the user,** never from the code or the AI (rule A28, [D84](design-decisions.md#d84)). Where the code differs, show it; the user decides.
 - **Error codes always come from the code (rule A16, [D59](design-decisions.md#d59), hard rule):** before developing a card, the agent reads the error codes, statuses and messages that already exist in every repo the card touches. If the card has no Error reference, it uses those. If the card lists error codes, it checks each one against the code, points out every difference, and uses the code's exact errors and messages for the right conditions.
 - **For error or validation cards, also check:** how WS1 relays WS2 errors (the incentives controllers rebuild errors with `createError`: translated message plus `upstream_*` keys in `details`; the target-sales controllers pass the body through); the WS1 locale files; the error shape each sibling API really uses (count them; never call one "the standard" without checking); related To Do / In Development cards that touch the same code.
 
@@ -226,6 +234,7 @@ Also used: `* **And when** …`, `* **And given** …`, or a second When / Then 
 3. **Re-read the code** (section 7).
 4. **Ask the open questions first, on their own, and wait.** Short, each with what was found and a recommended default. Never a full draft with questions at the end. Never "Assumption: … confirm before development" in a card.
    - **Every open point is asked,** blocking (an AC depends on it) or not.
+   - **Every API's request and response structure is one of them:** "paste the request and the response of `<METHOD> <path>`". It's copied into the card exactly as given, never written or completed by the AI (rule A28, D84).
    - **Nothing moves forward until each one has an answer** (user, 2026-10-20, D82).
    - **Open points never go into the card or into a Jira comment.**
 5. **Run the 12-point AC check and the per-AC check in chat** (section 4).
@@ -256,6 +265,7 @@ Checked by `scripts/card-check.sh` (❌ = not ready, the pick-up stops and waits
 | a "Files changed" or "AC self-check" table | out-of-scope lines outside `## Out of Scope` |
 | QA section with no numbered steps; anything that looks like a secret | an AC that no QA step names ("(AC 3)") (D82) |
 | an AC names an error (an HTTP 4xx/5xx status or `error_code`) but there's no `**Error reference**`; an Error reference without a "Raised by" column (D82) | "can't trigger", "code review only" or "not testable by QA" wording (D82) |
+| the card names an API (`GET`/`POST`/`PUT`/`PATCH`/`DELETE` and a path) but has no `## API request and response`; an API there with no Response JSON, or a POST/PUT/PATCH with no Request JSON (D84) | |
 
 Checked by people, and by the AI when it plans the card (Phase 2):
 
@@ -263,6 +273,7 @@ Checked by people, and by the AI when it plans the card (Phase 2):
 - [ ] Was the code re-read in every repo involved, right before drafting?
 - [ ] Was every open point, blocking or not, asked and answered before the draft?
 - [ ] Is there a one-line User Story before Context?
+- [ ] Does every API the card adds, changes or relies on have its request and response, exactly as the user gave them (none written by the AI)?
 - [ ] Was the 12-point AC check done in chat, with an N/A reason for each point that doesn't apply?
 - [ ] Was the full final draft shown in chat, with an explicit "go ahead" or "update it"?
 - [ ] Does Context cover the current behaviour and gap, what changes, why, and dependencies, in plain language?
@@ -309,3 +320,4 @@ Corrections the team has given before; each is now a rule above.
 | An error shown on the wrong field (SCRUM-562, SCRUM-563) | Name the field or block for each error (section 2, web cards) |
 | An AC left to code review: "QA can't trigger this" (SCRUM-532 AC 11) | A QA workaround, e.g. a mocked response (sections 4 and 5) |
 | A card for something a plan section had already asked for, but missed | Search Jira and the plan first (section 8) |
+| A request or response structure written by the AI | Never: the user gives it, and it's copied exactly (section 2, rule A28) |

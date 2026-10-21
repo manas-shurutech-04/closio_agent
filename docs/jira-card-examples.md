@@ -4,7 +4,8 @@ Three real cards from the SCRUM board, in the shape of the [card template](jira-
 
 - All three were edited only to match the template; the edits are listed under each title. **The cards in Jira weren't changed.**
 - `<B1_PARTNER_ID>` stands for the Business 1 partner ID, which is written in the real card but not in these docs. `<SP_ID>`, `<T1_ID>` and the like are values QA picks themselves.
-- All three pass `bash scripts/card-check.sh` with no ❌ (checked 2026-10-20). The ⚠️ lines are the SQL revert and cleanup steps, which have no "Expect".
+- All three passed `bash scripts/card-check.sh` with no ❌ on 2026-10-20. The ⚠️ lines are the SQL revert and cleanup steps, which have no "Expect".
+- **Waiting for the user (D84, 2026-10-21):** each example names APIs, so it now needs `## API request and response` with the real structures, and shows ❌ until the user gives them. They're never written here by the AI (rule A28). A needs POST and PATCH slab-configs; B the same two, POST ageing-deduction-configs, and POST and PATCH target-value; C GET target-type-details, GET target-type-values, POST and PATCH target-value, and GET users.
 
 ---
 
