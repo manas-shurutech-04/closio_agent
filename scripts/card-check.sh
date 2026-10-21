@@ -220,6 +220,54 @@ if [ "$err_ref_at" -ge 0 ]; then
   fi
 fi
 
+# ---------------------------------------------------------------- 2b. API request and response (D84, rule A28)
+# A card that names an API (a method and a path) needs ## API request and response, with the user's structures:
+# one ### <METHOD> <path> block per API, a Response JSON in each, and a Request JSON for POST, PUT and PATCH.
+api_line="$(grep -n -m 1 -E '(^|[^A-Za-z])(GET|POST|PUT|PATCH|DELETE)[[:space:]]+`?(/|\.\.\.|<)' "$FILE" | cut -d: -f1)"
+api_at=-1
+i=0
+while [ "$i" -lt "$n" ]; do
+  case "${lc[i]}" in "#"*) is_heading "${lc[i]}" "api request and response" && { api_at=$i; break; } ;; esac
+  i=$((i + 1))
+done
+if [ -n "$api_line" ] && [ "$api_at" -lt 0 ]; then
+  fail "The card names an API (line $api_line) but has no ## API request and response" "Add ## API request and response with ### <METHOD> <path> per API, each with **Request** and **Response (200)** as JSON blocks, exactly as the user gives them; never write one ($TEMPLATE, section 2, rule A28)."
+elif [ "$api_at" -ge 0 ]; then
+  api_end="$(section_end "$api_at")"
+  apis=0; api_bad=0
+  i=$((api_at + 1))
+  while [ "$i" -lt "$api_end" ]; do
+    if printf '%s' "${lines[i]}" | grep -q -E '^###[[:space:]]+`?(GET|POST|PUT|PATCH|DELETE)[[:space:]]'; then
+      apis=$((apis + 1))
+      method="$(printf '%s' "${lines[i]}" | sed -E 's/^###[[:space:]]+`?([A-Z]+).*/\1/')"
+      j=$((i + 1)); req=0; resp=0; seen_req=0; seen_resp=0
+      while [ "$j" -lt "$api_end" ]; do
+        case "${lc[j]}" in "###"*) break ;; esac
+        case "${lc[j]}" in *"**request"*) seen_req=1; seen_resp=0 ;; *"**response"*) seen_resp=1; seen_req=0 ;; *"**error response"*) seen_req=0; seen_resp=0 ;; esac
+        case "${lc[j]}" in '```'*|*'```json'*)
+          [ "$seen_req" -eq 1 ] && req=1
+          [ "$seen_resp" -eq 1 ] && resp=1 ;;
+        esac
+        j=$((j + 1))
+      done
+      if [ "$resp" -eq 0 ]; then
+        fail "No Response JSON for ${lines[i]#\#\#\# } (line $((i + 1)))" "Add **Response (200)** with the JSON the user gave for this API (rule A28)."; api_bad=$((api_bad + 1))
+      fi
+      case "$method" in POST|PUT|PATCH)
+        if [ "$req" -eq 0 ]; then
+          fail "No Request JSON for ${lines[i]#\#\#\# } (line $((i + 1)))" "Add **Request** with the JSON body the user gave for this API (rule A28)."; api_bad=$((api_bad + 1))
+        fi ;;
+      esac
+    fi
+    i=$((i + 1))
+  done
+  if [ "$apis" -eq 0 ]; then
+    fail "## API request and response has no API in it (line $((api_at + 1)))" "Add a ### <METHOD> <path> block per API, each with **Request** and **Response (200)** JSON from the user (rule A28)."
+  elif [ "$api_bad" -eq 0 ]; then
+    pass "API request and response: $apis API(s), each with its structure"
+  fi
+fi
+
 # ---------------------------------------------------------------- 3. QA steps
 if [ "$qa_at" -ge 0 ]; then
   step_lines=""
