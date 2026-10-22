@@ -9,6 +9,8 @@
 #   - it names a card key (SCRUM-567, any case);
 #   - an earlier prompt in the same session was about a card (decisions are made in replies like "yes"):
 #     the session is remembered in local/card-sessions/ (git-ignored; entries older than 7 days are removed).
+# When Codex runs it (only Codex sends a turn_id), it leaves local/card-sessions/codex-ran: flow-doctor's sign that the
+# user has trusted the hook in Codex (D86).
 # Otherwise it prints nothing. It never blocks a prompt and never reads .env values or secrets (A6): on any problem
 # it prints nothing and exits 0, so the prompt goes on as typed.
 #
@@ -30,6 +32,10 @@ field() { printf '%s' "$input" | jq -r --arg f "$1" '.[$f] // empty' 2>/dev/null
 prompt="$(field prompt)"
 session="$(field session_id | tr -cd 'A-Za-z0-9._-')"
 event="$(field hook_event_name)"; event="${event:-UserPromptSubmit}"
+CODEX_RAN="$SESSIONS_DIR/codex-ran"
+if [ -n "$(field turn_id)" ]; then   # Codex runs it, so the user has trusted it there
+  mkdir -p "$SESSIONS_DIR" 2>/dev/null && : > "$CODEX_RAN" 2>/dev/null
+fi
 
 KEY_RE="${JIRA_PROJECT_KEY:-SCRUM}-[0-9]+"
 CARD_COMMAND='^[[:space:]]*[/$]flow-(start|develop|verify|ac-check|push|review|finish|qa)([[:space:]]|$)'
@@ -48,7 +54,7 @@ marker=""
 if [ "$about_card" = yes ]; then
   if [ -n "$marker" ]; then
     mkdir -p "$SESSIONS_DIR" 2>/dev/null && : > "$marker" 2>/dev/null
-    find "$SESSIONS_DIR" -type f -mtime +7 -delete 2>/dev/null
+    find "$SESSIONS_DIR" -type f -mtime +7 ! -name codex-ran -delete 2>/dev/null
   fi
 elif [ -n "$marker" ] && [ -f "$marker" ]; then
   about_card=yes   # a later prompt in a session that's working on a card

@@ -484,7 +484,16 @@ else
   fail "Claude Code: the card-rules hook isn't set in \`.claude/settings.json\`" "Restore the file's \`hooks\` block: \`git checkout -- .claude/settings.json\`, then start Claude Code again in this folder."
 fi
 if grep -q "$hook_cmd" "$AGENT_ROOT/.codex/hooks.json" 2>/dev/null; then
-  pass "Codex: the hook is set in \`.codex/hooks.json\` (Codex runs it once you've trusted it)"
+  pass "Codex: the hook is set in \`.codex/hooks.json\`"
+  case " ${AI_TOOLS:-} " in
+    *" codex "*)
+      if [ -f "$AGENT_ROOT/local/card-sessions/codex-ran" ]; then
+        pass "Codex: the hook is trusted and has run"
+      else
+        warn "Codex hasn't run the card-rules hook yet: it waits for your OK once" \
+          "(1) Start Codex in the closio-agent folder (after \`nvm use v22\`); it says \"… hooks need review before they can run\". (2) Type \`/hooks\`. (3) In the list, select the hook under \"When the user submits a prompt\" (\`bash scripts/card-rules-hook.sh\`) and approve it. (4) Send any prompt that names a card (e.g. \"Is SCRUM-567 picked up?\"), then \`\$flow-doctor\` again: this line turns ✅. If the hook file changes later, Codex asks again."
+      fi ;;
+  esac
 else
   fail "Codex: the card-rules hook isn't set in \`.codex/hooks.json\`" "Restore it: \`git checkout -- .codex/hooks.json\`, start Codex again in this folder and trust the hook when it asks."
 fi
