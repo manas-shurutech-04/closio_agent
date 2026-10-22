@@ -5,7 +5,7 @@ Dated list of what changed in closio-agent. Newest first.
 ## 2026-10-23
 
 - **The card rules, at every prompt about a card** ([D86](design-decisions.md#d86), new rule 25 in `AGENTS.md`). A hook adds [`rulesets/card-rules.md`](../rulesets/card-rules.md) to every card command, every prompt that names a card key (for example "develop SCRUM-567"), and every later prompt in that session, in Claude Code and Codex. **Its first rule:** every decision on the card is written to the card's `decisions.md` the moment it's confirmed, and checked before the AI ends its reply. More rules can be added to the same file.
-  - **Codex:** trust the hook once (`.codex/hooks.json`); until then Codex skips it.
+  - **Codex:** trust the hook once (`.codex/hooks.json`); until then Codex skips it. The steps: start Codex in the closio-agent folder, type `/hooks`, approve the hook under "When the user submits a prompt", then send any prompt that names a card. `/flow-doctor` shows these steps as a ⚠️ until Codex has run the hook.
   - `/flow-doctor` has a new section, "Card rules hook", that tests it and checks it's set in both tools.
 
 ## 2026-10-21

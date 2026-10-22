@@ -152,7 +152,7 @@ nvm use v22
 claude        # or: codex
 ```
 
-Two rules that never change: **start in the closio-agent folder** (never inside a code repo), and **run `nvm use v22` first**. The first time, the tool asks whether you trust the folder: say yes. That lets our own scripts run without asking you for permission each time, and turns on Claude Code's suggestions while you type a flow command and its card-rules hook. **In Codex, also trust closio-agent's hook once** (`.codex/hooks.json`): Codex skips a hook until you do ([D86](design-decisions.md#d86)).
+Two rules that never change: **start in the closio-agent folder** (never inside a code repo), and **run `nvm use v22` first**. The first time, the tool asks whether you trust the folder: say yes. That lets our own scripts run without asking you for permission each time, and turns on Claude Code's suggestions while you type a flow command and its card-rules hook. **In Codex, also trust closio-agent's hook once** (`.codex/hooks.json`), or Codex skips it ([D86](design-decisions.md#d86)): (1) start Codex in the closio-agent folder (after `nvm use v22`); it says "… hooks need review before they can run"; (2) type `/hooks`; (3) in the list, select the hook under "When the user submits a prompt" (`bash scripts/card-rules-hook.sh`) and approve it; (4) send any prompt that names a card (e.g. "Is SCRUM-567 picked up?"), then `$flow-doctor`: "Codex: the hook is trusted and has run" shows ✅. `/flow-doctor` shows these steps until it's done.
 
 ### Step 4: `/flow-ping`
 

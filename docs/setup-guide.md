@@ -100,7 +100,7 @@ The first time you start Claude Code in this folder, it asks whether you trust i
 
 **Codex:** when Codex asks whether to trust this folder, say yes too. Then the shared file `.codex/rules/closio-agent.rules` lets Codex run the same scripts without asking (Codex calls these "rules"; they're still experimental).
 
-**The card-rules hook ([D86](design-decisions.md#d86)):** a prompt hook adds closio-agent's card rules (`rulesets/card-rules.md`) to every prompt about a card. In Claude Code it's on once you've trusted the folder (`.claude/settings.json`). **In Codex, trust the hook once** (`.codex/hooks.json`): Codex skips a hook until you've trusted it, and asks again if the hook file changes. `/flow-doctor`'s "Card rules hook" section shows it's set in both tools.
+**The card-rules hook ([D86](design-decisions.md#d86)):** a prompt hook adds closio-agent's card rules (`rulesets/card-rules.md`) to every prompt about a card. In Claude Code it's on once you've trusted the folder (`.claude/settings.json`). **In Codex, trust the hook once** (`.codex/hooks.json`); Codex skips a hook until you've trusted it, and asks again if the hook file changes: (1) start Codex in the closio-agent folder (after `nvm use v22`); it says "… hooks need review before they can run"; (2) type `/hooks`; (3) in the list, select the hook under "When the user submits a prompt" (`bash scripts/card-rules-hook.sh`) and approve it; (4) send any prompt that names a card (e.g. "Is SCRUM-567 picked up?"), then `$flow-doctor`: "Codex: the hook is trusted and has run" shows ✅. Until then `/flow-doctor`'s "Card rules hook" section shows a ⚠️ with these steps (when your AI tools include Codex).
 
 ### First-time setup, in order
 
