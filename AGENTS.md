@@ -105,3 +105,8 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     write one yourself, never derive one from the code, never fill in a missing field. If it's missing, ask the user for it
     and record their answer (rule 23). Where the code returns something different, show the difference as a "Found" line
     and let the user decide. Error codes and messages still come from the code (rule 10).
+25. The card rules (rule A29, D86): `rulesets/card-rules.md` holds the rules to apply at every prompt about a card. The
+    card-rules hook (`scripts/card-rules-hook.sh`, set in `.claude/settings.json` and `.codex/hooks.json`) adds it to every
+    card command, every prompt that names a card key and every later prompt in that session. Follow it every time; its
+    rule 1: every decision on the card goes into `runs/<CARD-KEY>/decisions.md` the moment it's confirmed (rule 23).
+    Codex runs the hook only after the user has trusted it once.
