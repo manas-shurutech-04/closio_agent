@@ -12,6 +12,7 @@ install_command: npm ci
 dev_command: npm run dev
 port: from the repo's .env (VITE_PORT)
 health_url: /   # no health endpoint in the web app; the dev server start page
+dev_base_url: https://dev-closio.japfa.com/home   # the repo on the dev environment (D72)
 check_commands: none
 test_command: npm test -- --run   # --run: always one run, never watch mode (D54)
 test_framework: vitest, @vue/test-utils
