@@ -467,6 +467,28 @@ fi
 section "Commands documented" "\`/flow-help\`, user guide, Claude artifact"
 relay "$(bash "$AGENT_ROOT/scripts/help.sh" check 2>/dev/null)"
 
+# ---------------------------------------------------------------- Card rules hook (D86, rule A29)
+section "Card rules hook" "\`rulesets/card-rules.md\`, sent with every prompt about a card"
+hook_cmd="card-rules-hook.sh"
+if ! command -v jq >/dev/null 2>&1; then
+  fail "jq isn't installed, so the card-rules hook can't add the card rules" "Install it: \`brew install jq\`, then run \`/flow-doctor\` again."
+elif printf '{"prompt":"/flow-develop %s-1"}' "${JIRA_PROJECT_KEY:-SCRUM}" | bash "$AGENT_ROOT/scripts/$hook_cmd" 2>/dev/null |
+     jq -e '.hookSpecificOutput.additionalContext | test("card-rules")' >/dev/null 2>&1; then
+  pass "The hook adds \`rulesets/card-rules.md\` to a card command (tested just now)"
+else
+  fail "The card-rules hook doesn't add the card rules" "Check that \`rulesets/card-rules.md\` and \`scripts/$hook_cmd\` exist (\`git status\`; restore them with \`git checkout -- rulesets/card-rules.md scripts/$hook_cmd\`), then run \`/flow-doctor\` again."
+fi
+if grep -q "$hook_cmd" "$AGENT_ROOT/.claude/settings.json" 2>/dev/null; then
+  pass "Claude Code: the hook is set in \`.claude/settings.json\`"
+else
+  fail "Claude Code: the card-rules hook isn't set in \`.claude/settings.json\`" "Restore the file's \`hooks\` block: \`git checkout -- .claude/settings.json\`, then start Claude Code again in this folder."
+fi
+if grep -q "$hook_cmd" "$AGENT_ROOT/.codex/hooks.json" 2>/dev/null; then
+  pass "Codex: the hook is set in \`.codex/hooks.json\` (Codex runs it once you've trusted it)"
+else
+  fail "Codex: the card-rules hook isn't set in \`.codex/hooks.json\`" "Restore it: \`git checkout -- .codex/hooks.json\`, start Codex again in this folder and trust the hook when it asks."
+fi
+
 # ---------------------------------------------------------------- Cards in progress (C1, D61)
 section "Cards in progress" "\`runs/\`, \`/flow-status\`"
 cards_n="$(bash "$AGENT_ROOT/scripts/run.sh" count 2>/dev/null)"
