@@ -152,7 +152,7 @@ nvm use v22
 claude        # or: codex
 ```
 
-Two rules that never change: **start in the closio-agent folder** (never inside a code repo), and **run `nvm use v22` first**. The first time, the tool asks whether you trust the folder: say yes. That lets our own scripts run without asking you for permission each time, and turns on Claude Code's suggestions while you type a flow command.
+Two rules that never change: **start in the closio-agent folder** (never inside a code repo), and **run `nvm use v22` first**. The first time, the tool asks whether you trust the folder: say yes. That lets our own scripts run without asking you for permission each time, and turns on Claude Code's suggestions while you type a flow command and its card-rules hook. **In Codex, also trust closio-agent's hook once** (`.codex/hooks.json`): Codex skips a hook until you do ([D86](design-decisions.md#d86)).
 
 ### Step 4: `/flow-ping`
 
@@ -167,7 +167,7 @@ Two rules that never change: **start in the closio-agent folder** (never inside 
 - **When:** now, and again after every fix. Also any time something feels wrong.
 - **What it does:** checks your whole setup and tells you how to fix each problem. It only reads.
 - **Options:** `/flow-doctor` on its own. In Codex, approve running it with network access.
-- **You see:** a heading per section (Project, Tools, VPN and GitLab, Personal settings, User memory, Commands documented, Cards in progress, Checking web cards, Repos, Repo setup, Keychain, Jira), one ✅/⚠️/❌ line per check, each problem in bold with its **Fix:** or **Tip:** under it, commands in color, and at the end **Result: N to fix, M to look at.** `bash scripts/doctor.sh` in a terminal shows the same, in color (without the Jira check).
+- **You see:** a heading per section (Project, Tools, VPN and GitLab, Personal settings, User memory, Commands documented, Card rules hook, Cards in progress, Checking web cards, Repos, Repo setup, Keychain, Jira), one ✅/⚠️/❌ line per check, each problem in bold with its **Fix:** or **Tip:** under it, commands in color, and at the end **Result: N to fix, M to look at.** `bash scripts/doctor.sh` in a terminal shows the same, in color (without the Jira check).
 - **If ❌:** do what the "Fix:" line says, then run `/flow-doctor` again. The first time, expect ❌ for the personal settings, the Keychain items and the repos: the next steps fill them in.
 
 ### Step 6: `/flow-configure-user`
@@ -248,7 +248,7 @@ Every step is built: picking a card up, planning it, developing it with you, che
 
 **How it asks you things.** While a card command runs, every question is asked the same way (the "grilling" way, `rulesets/grilling.md`): what the agent can find in the card, its folder or the code, it shows you as "Found" lines and never asks; only real decisions are asked, numbered, in rounds, each with a recommended answer ("yes" accepts it, "yes to all" the round); follow-up rounds until nothing is open; then a summary of what you agreed, and nothing changes before you confirm. The same happens when you ask for a change in the middle of a command (e.g. "also return the partner name"); short answers, approvals and your questions go straight. The safety stops (a migration, test data, the commits, the push, a Jira move) still ask their own plain yes or no.
 
-**Every decision is written down.** Each card's folder has `decisions.md`: one numbered row per decision, from pick-up to Ready for Test (when, at which step, the question, what was decided, and who: you, your memory, or the recommendation you accepted). Your approvals at the safety stops are in it too. The card's other files only point to it ("decision 3"), so there's one place to see why the card was built the way it was.
+**Every decision is written down.** Each card's folder has `decisions.md`: one numbered row per decision, from pick-up to Ready for Test (when, at which step, the question, what was decided, and who: you, your memory, or the recommendation you accepted). Your approvals at the safety stops are in it too. The card's other files only point to it ("decision 3"), so there's one place to see why the card was built the way it was. **A hook keeps it so:** every card command, every prompt that names a card, and every later prompt in that session get the card rules (`rulesets/card-rules.md`) added, in Claude Code and Codex, and their first rule is to record each decision the moment it's made ([D86](design-decisions.md#d86)).
 
 **Make it ask you less.** The commands stop before anything that matters: the plan, test data, the commits, the push, a migration. Three questions can be answered by your memory instead, once and for all:
 

@@ -100,6 +100,8 @@ The first time you start Claude Code in this folder, it asks whether you trust i
 
 **Codex:** when Codex asks whether to trust this folder, say yes too. Then the shared file `.codex/rules/closio-agent.rules` lets Codex run the same scripts without asking (Codex calls these "rules"; they're still experimental).
 
+**The card-rules hook ([D86](design-decisions.md#d86)):** a prompt hook adds closio-agent's card rules (`rulesets/card-rules.md`) to every prompt about a card. In Claude Code it's on once you've trusted the folder (`.claude/settings.json`). **In Codex, trust the hook once** (`.codex/hooks.json`): Codex skips a hook until you've trusted it, and asks again if the hook file changes. `/flow-doctor`'s "Card rules hook" section shows it's set in both tools.
+
 ### First-time setup, in order
 
 1. Get closio-agent and install the tools (above).
