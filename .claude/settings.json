@@ -34,5 +34,18 @@
       "mcp__claude_ai_Atlassian_MCP__editJiraIssue",
       "mcp__claude_ai_Atlassian_MCP__addOrEditJiraIssueComment"
     ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/card-rules-hook.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }
