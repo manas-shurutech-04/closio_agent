@@ -27,7 +27,7 @@
 
 - **Waiting on the user (D84, 2026-10-21):** the real request and response structures for the example cards' APIs, to add to `docs/jira-card-examples.md` exactly as given. A (SCRUM-559): POST and PATCH slab-configs. B (SCRUM-567): the same two, POST ageing-deduction-configs, POST and PATCH target-value. C (SCRUM-532): GET target-type-details, GET target-type-values, POST and PATCH target-value, GET users. Until then the three examples show the new ❌.
 - **Waiting on the user (D85, 2026-10-21):** a separate Jira card to move the WS1 schemas that copy a common block into a shared helper (on the `scrum-521` clone: pagination copied in 21 schemas, the audit fields in 14). Until a story creates the first shared helper, where it goes and its name are asked while planning.
-- **Waiting on the user (D86, 2026-10-23):** trust closio-agent's card-rules hook once in Codex (its interactive screen; `.codex/hooks.json`), then try a card command in both tools. The exact wording of Codex's trust prompt wasn't seen (only the bypass was tested).
+- **Waiting on the user (D86, 2026-10-23):** trust closio-agent's card-rules hook once in Codex (`/hooks`, approve the hook under "When the user submits a prompt"), then try a card command in both tools; `/flow-doctor` shows a ⚠️ with the steps until Codex has run it. The keys inside Codex's `/hooks` screen weren't seen (not in its built-in text), so the steps say "select it and approve it".
 
 ## Resolved
 
