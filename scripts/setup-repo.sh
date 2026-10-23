@@ -214,12 +214,32 @@ wait_for_port() { # <port> <seconds>
   return 1
 }
 
+# BullMQ needs Redis 6.2+ with maxmemory-policy noeviction (BullMQ docs). Once per run: in "all", a BullMQ repo after
+# a repo that set Redis up earlier still gets it (the service itself is checked once, D92).
+bullmq_memory_check() { # <port>
+  case " $DONE_SERVICES " in *" bullmq-memory "*) return 0 ;; esac
+  DONE_SERVICES="$DONE_SERVICES bullmq-memory"
+  case "$(redis_reply 127.0.0.1 "$1" "CONFIG GET maxmemory-policy" | tr '\n' ' ')" in
+    *noeviction*) ok "Redis memory setting is right for BullMQ (noeviction)" ;;
+    *NOAUTH*|'') look "Couldn't read Redis's memory setting (BullMQ needs 'noeviction')" "Check it with: redis-cli CONFIG GET maxmemory-policy" ;;
+    *) look "Redis's memory setting isn't 'noeviction', which BullMQ needs" "Run: redis-cli CONFIG SET maxmemory-policy noeviction (and set it in the Redis config file to keep it)" ;;
+  esac
+}
+
 # Finds the local copy of one service and makes sure it's running (D54). Sets USED_FROM_<service>
 # (homebrew|docker) and USED_PORT_<service>.
 setup_service() { # <service>
   local s="$1" label brew docker choice="" brew_ver brew_status d_name d_state d_port port answer from_text
   label="$(service_label "$s")"
-  case " $DONE_SERVICES " in *" $s "*) ok "Local $label: checked above"; return 0 ;; esac
+  case " $DONE_SERVICES " in
+    *" $s "*)
+      ok "Local $label: checked above"
+      if [ "$s" = "redis" ] && [ "${NEEDS_BULLMQ:-}" = "yes" ]; then
+        eval "port=\${USED_PORT_redis:-}"
+        [ -z "$port" ] || bullmq_memory_check "$port"
+      fi
+      return 0 ;;
+  esac
   DONE_SERVICES="$DONE_SERVICES $s"
 
   # 1. Check both: Homebrew and Docker.
@@ -315,14 +335,7 @@ setup_service() { # <service>
     return 1
   fi
 
-  # BullMQ needs Redis 6.2+ with maxmemory-policy noeviction (BullMQ docs).
-  if [ "$s" = "redis" ] && [ "${NEEDS_BULLMQ:-}" = "yes" ]; then
-    case "$(redis_reply 127.0.0.1 "$port" "CONFIG GET maxmemory-policy" | tr '\n' ' ')" in
-      *noeviction*) ok "Redis memory setting is right for BullMQ (noeviction)" ;;
-      *NOAUTH*|'') look "Couldn't read Redis's memory setting (BullMQ needs 'noeviction')" "Check it with: redis-cli CONFIG GET maxmemory-policy" ;;
-      *) look "Redis's memory setting isn't 'noeviction', which BullMQ needs" "Run: redis-cli CONFIG SET maxmemory-policy noeviction (and set it in the Redis config file to keep it)" ;;
-    esac
-  fi
+  if [ "$s" = "redis" ] && [ "${NEEDS_BULLMQ:-}" = "yes" ]; then bullmq_memory_check "$port"; fi
   return 0
 }
 

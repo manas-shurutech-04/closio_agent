@@ -390,6 +390,10 @@ flow-setup-repo — setting up: demo-api demo-jobs"
   assert_contains "$OUT" "✅ .env: Redis points to this Mac, and it answers"
   assert_contains "$OUT" "✅ Local Redis: checked above"
   assert_eq "$(printf '%s\n' "$OUT" | grep -c 'answering on port')" "1"
+  # demo-jobs uses BullMQ: Redis was set up for demo-api above, and its memory setting is still checked (once)
+  assert_contains "$OUT" "✅ Local Redis: checked above
+✅ Redis memory setting is right for BullMQ (noeviction)"
+  assert_eq "$(printf '%s\n' "$OUT" | grep -c 'memory setting is right for BullMQ')" "1"
   assert_contains "$OUT" "   codex --add-dir \"$T/work/demo-api\" --add-dir \"$T/work/demo-jobs\""
 }
 
@@ -670,4 +674,16 @@ Saved choice for when you have both a Homebrew and a Docker copy: Redis: none ·
 ✅ g-go: set up on 2026-10-05 10:00 · tests: not run · services: none
 
 Saved choice for when you have both a Homebrew and a Docker copy: Redis: docker · RabbitMQ: none"
+}
+test_run_all_checks_the_bullmq_memory_setting_once_when_two_repos_use_bullmq() {
+  setup_box
+  demo local_services=bullmq
+  repo_config demo-jobs local_services=bullmq install_command=none test_command=none env_file=none node_version=none
+  clone demo-jobs
+  brew_has redis 7.2.4 started; nc_answers 0 "+PONG" '*2|$16|maxmemory-policy|$10|noeviction'
+  printf 'REDIS_HOST=127.0.0.1\nREDIS_PORT=6379\n' >> "$T/work/demo-api/.env"
+  run setup-repo.sh run all
+  assert_rc 0
+  assert_contains "$OUT" "✅ Local Redis: checked above"
+  assert_eq "$(printf '%s\n' "$OUT" | grep -c 'memory setting is right for BullMQ')" "1"
 }
