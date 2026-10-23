@@ -291,14 +291,16 @@ test_push_that_fails_for_another_reason() {
   assert_contains "$OUT" "        lint failed: 2 problems"
   assert_eq "$(git -C "$G" rev-parse -q --verify SCRUM-1/add-filter)" ""
 }
-test_a_push_gitlab_declines_is_reported_as_someone_else_pushed() {
+test_a_push_gitlab_declines_says_so_with_gitlabs_reason() {
   setup_ship; commit_here feature.js "f"; touch "$T/refuse"
   run ship.sh fake-repo push "SCRUM-1: Scheme list filter"
   assert_rc 1
-  # Today's behaviour (a bug): push_failed takes any "rejected" in git's output as "someone else pushed", so a push
-  # GitLab's own hook declines ("! [remote rejected] … (pre-receive hook declined)") gets that ❌ and its fix.
-  assert_contains "$OUT" "❌ fake-repo: GitLab refused the push: the branch there has commits this Mac doesn't have"
+  # GitLab's own hook declines it ("! [remote rejected] … (pre-receive hook declined)"): not someone else's push
+  assert_contains "$OUT" "❌ fake-repo: GitLab declined the push (a protected branch, a push rule or a server hook)
+   Fix: Read GitLab's reason below; ask the user, or a maintainer if it's a rule. Nothing was pushed."
   assert_contains "$OUT" "        remote: GL-HOOK-ERR: the server refused this push"
+  assert_not_contains "$OUT" "someone else pushed"
+  assert_eq "$(git -C "$G" rev-parse -q --verify SCRUM-1/add-filter)" "" "nothing reached GitLab"
 }
 test_a_push_over_the_time_limit_is_stopped() {
   setup_ship; commit_here feature.js "f"

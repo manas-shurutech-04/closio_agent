@@ -102,7 +102,9 @@ do_commit() { # <repo> <message> <file>...
 
 push_failed() { # <exit code> <log>: the ❌ for a failed push (push, push-update)
   [ "$1" -eq 124 ] && { bad "$REPO: the push took longer than $REPO_RUN_TIMEOUT s and was stopped" "Read local/logs/ship-$REPO.log; check on GitLab whether the branch arrived, then run this again."; return; }
-  if last_output "$2" | grep -q -E 'rejected|non-fast-forward|fetch first'; then
+  if last_output "$2" | grep -q -E 'remote rejected|hook declined'; then   # GitLab's own rules said no (D92)
+    bad "$REPO: GitLab declined the push (a protected branch, a push rule or a server hook)" "Read GitLab's reason below; ask the user, or a maintainer if it's a rule. Nothing was pushed."
+  elif last_output "$2" | grep -q -E 'rejected|non-fast-forward|fetch first'; then
     bad "$REPO: GitLab refused the push: the branch there has commits this Mac doesn't have" "Ask the user: someone else pushed to $BRANCH. Look with git -C \"$PATH_\" log HEAD..origin/$BRANCH; closio-agent never forces a push."
   else
     bad "$REPO: the push failed (the pre-push hook, the VPN or GitLab)" "Read the end below (full: local/logs/ship-$REPO.log), fix it, then run this again."
