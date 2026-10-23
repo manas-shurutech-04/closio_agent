@@ -6,6 +6,7 @@
 # Jira
 JIRA_SITE="${JIRA_SITE:-productclosio.atlassian.net}"
 JIRA_PROJECT_KEY="${JIRA_PROJECT_KEY:-SCRUM}"
+JIRA_API_TIMEOUT="${JIRA_API_TIMEOUT:-30}"   # seconds for one call of the Jira API backup (scripts/jira-api.sh, D88)
 
 # GitLab (only reachable over the VPN)
 GITLAB_HOST="${GITLAB_HOST:-jcvs.japfacomfeed.co.id}"
@@ -26,6 +27,7 @@ VPN_CONNECT_TIMEOUT="${VPN_CONNECT_TIMEOUT:-180}"   # seconds to finish the SSO 
 # macOS Keychain (D33): items are named <prefix>.<name>, account = your Mac username
 KEYCHAIN_PREFIX="${KEYCHAIN_PREFIX:-closio-agent}"
 KEYCHAIN_PERSONAL_ITEMS="${KEYCHAIN_PERSONAL_ITEMS:-gitlab-token fe-login-id fe-login-password ws1-login-userid ws1-login-password}"
+KEYCHAIN_OPTIONAL_ITEMS="${KEYCHAIN_OPTIONAL_ITEMS:-jira-api-token}"   # optional: the Jira API backup (D88)
 
 # Node (D41)
 NODE_MAJOR="${NODE_MAJOR:-22}"
