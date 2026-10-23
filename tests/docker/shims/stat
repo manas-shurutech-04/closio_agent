@@ -1,0 +1,8 @@
+#!/usr/local/bin/bash
+# macOS stat -f <format> is GNU stat -c <format> (D93): %m modified time (%Y), %Su owner (%U), %Lp permissions (%a).
+if [ "${1:-}" = "-f" ] && [ $# -ge 3 ]; then
+  fmt="$2"; shift 2
+  fmt="${fmt//%m/%Y}"; fmt="${fmt//%Su/%U}"; fmt="${fmt//%Lp/%a}"
+  exec /bin/coreutils --coreutils-prog=stat -c "$fmt" "$@"
+fi
+exec /bin/coreutils --coreutils-prog=stat "$@"

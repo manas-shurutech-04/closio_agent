@@ -1,0 +1,53 @@
+#!/usr/bin/python3 -I
+# macOS fold in Linux (D93): GNU fold counts bytes, macOS fold counts columns (an emoji such as ⚠️ is one column, not
+# six bytes). The same steps as macOS (FreeBSD) fold: -w <width> (default 80), -s breaks after the last blank.
+import os, sys, unicodedata
+
+def width(ch):
+    if ch == "​" or unicodedata.category(ch) in ("Mn", "Me", "Cf") or 0xFE00 <= ord(ch) <= 0xFE0F:
+        return 0
+    return 2 if unicodedata.east_asian_width(ch) in ("W", "F") else 1
+
+def newpos(col, ch):
+    if ch == "\b":
+        return col - 1 if col > 0 else 0
+    if ch == "\r":
+        return 0
+    if ch == "\t":
+        return (col + 8) & ~7
+    return col + width(ch)
+
+args, files, w, s = sys.argv[1:], [], 80, False
+while args:
+    a = args.pop(0)
+    if a == "-s": s = True
+    elif a == "-w": w = int(args.pop(0))
+    elif a.startswith("-w"): w = int(a[2:])
+    elif a in ("-sw", "-ws"): s = True; w = int(args.pop(0))
+    elif a.startswith("-") and a != "-": os.execv("/bin/coreutils", ["fold", "--coreutils-prog=fold"] + sys.argv[1:])
+    else: files.append(a)
+
+def fold(text, out):
+    buf, col = [], 0
+    for ch in text:
+        if ch == "\n":
+            out.write("".join(buf) + "\n"); buf, col = [], 0; continue
+        col = newpos(col, ch)
+        if col > w:
+            space = -1
+            if s:
+                for i in range(len(buf) - 1, -1, -1):
+                    if buf[i] in " \t": space = i; break
+            if s and space != -1:
+                out.write("".join(buf[:space + 1]) + "\n"); buf = buf[space + 1:]; col = 0
+                for c in buf: col = newpos(col, c)
+            else:
+                out.write("".join(buf) + "\n"); buf, col = [], 0
+            col = newpos(col, ch)
+        buf.append(ch)
+    if buf: out.write("".join(buf))
+
+sys.stdout.reconfigure(errors="surrogateescape")
+for f in files or ["-"]:
+    data = sys.stdin.buffer.read() if f == "-" else open(f, "rb").read()
+    fold(data.decode("utf-8", "surrogateescape"), sys.stdout)

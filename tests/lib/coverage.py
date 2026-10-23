@@ -161,10 +161,11 @@ def main():
     os.makedirs(report, exist_ok=True)
     with open(os.path.join(report, "missed.txt"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(missed_out) + "\n")
-    print("Lines not run, per script: %s" % os.path.join(report, "missed.txt"))
+    shown = os.path.relpath(os.path.join(report, "missed.txt"), root)  # the same inside the Docker container (D93)
+    print("Lines not run, per script: %s" % shown)
     if pct_total + 1e-9 < minimum:
         print("❌ Coverage %.1f%% is under %.0f%%" % (pct_total, minimum))
-        print("   Fix: add tests for the lines in %s, then run bash tests/run.sh --coverage again." % os.path.join(report, "missed.txt"))
+        print("   Fix: add tests for the lines in %s, then run bash tests/run.sh --coverage again." % shown)
         return 1
     print("✅ Coverage %.1f%% (at least %.0f%%)" % (pct_total, minimum))
     return 0

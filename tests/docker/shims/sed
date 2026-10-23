@@ -1,0 +1,8 @@
+#!/usr/local/bin/bash
+# macOS sed's "-i ''" (edit in place, no backup) is GNU sed's "-i" (D93).
+args=()
+while [ $# -gt 0 ]; do
+  if [ "$1" = "-i" ] && [ $# -ge 2 ] && [ -z "$2" ]; then args+=("-i"); shift 2; continue; fi
+  args+=("$1"); shift
+done
+exec /usr/local/closio-real/sed "${args[@]}"

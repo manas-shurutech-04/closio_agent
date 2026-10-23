@@ -11,6 +11,17 @@ test_every_script_has_valid_bash() {
   done
   assert_eq "$bad" "" "scripts with a bash syntax error"
 }
+# The test image's stand-ins for the Mac's sed, stat, date, script (bash) and fold (python) (D93)
+test_the_docker_stand_ins_parse() {
+  local f
+  for f in "$R"/tests/docker/shims/*; do
+    case "$(head -1 "$f")" in
+      *python3*) python3 -c 'import ast, sys; ast.parse(open(sys.argv[1]).read())' "$f" || fail "${f#$R/} doesn't parse" ;;
+      *bash*) bash -n "$f" || fail "${f#$R/} has a bash syntax error" ;;
+      *) fail "${f#$R/}: neither bash nor python3" ;;
+    esac
+  done
+}
 test_every_test_file_has_valid_bash() {
   local f bad=""
   for f in "$R"/tests/unit/*.test.sh "$R"/tests/static/*.test.sh "$R"/tests/flows/*.test.sh; do

@@ -1,0 +1,20 @@
+#!/usr/local/bin/bash
+# macOS date in GNU date (D93): -j -f <input format> <value> +<format> is -d <value> +<format>;
+# -v+400d / -v-2d (and y m w H M S) are -d "now +400 days".
+real() { exec /bin/coreutils --coreutils-prog=date "$@"; }
+if [ "${1:-}" = "-j" ] && [ "${2:-}" = "-f" ] && [ $# -ge 4 ]; then
+  value="$4"; shift 4
+  real -d "$value" "$@"
+fi
+rel=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -v[+-]*)
+      n="${1#-v}"; unit="${n: -1}"; num="${n:0:${#n}-1}"
+      case "$unit" in y) unit=years ;; m) unit=months ;; w) unit=weeks ;; d) unit=days ;; H) unit=hours ;; M) unit=minutes ;; S) unit=seconds ;; esac
+      rel="$rel $num $unit"; shift ;;
+    *) break ;;
+  esac
+done
+[ -n "$rel" ] && real -d "now$rel" "$@"
+real "$@"

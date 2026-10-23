@@ -1,0 +1,8 @@
+#!/usr/local/bin/bash
+# macOS script -q <file> <command…> (run a command in a terminal) is util-linux script -q -e -c "<command…>" <file> (D93).
+if [ "${1:-}" = "-q" ] && [ $# -ge 3 ]; then
+  file="$2"; shift 2
+  cmd=""; for a in "$@"; do cmd="$cmd $(printf '%q' "$a")"; done
+  exec /usr/local/closio-real/script -q -e -c "$cmd" "$file"
+fi
+exec /usr/local/closio-real/script "$@"
