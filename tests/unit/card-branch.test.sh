@@ -364,9 +364,8 @@ test_a_rebase_conflict_stops_and_says_which_files() {
   conflicting_rebase work
   assert_eq "$OUT" "⚠️ fake-repo: a conflict in the rebase (the branch's own commits against the newer develop); resolve these files (keep the right code, remove the <<<<<<< ======= >>>>>>> lines):
    app.js
-   Tip: when they're resolved, run: bash scripts/card-branch.sh rebase-continue fake-repo SCRUM-1/add-filter"
-  # Today's behaviour (a bug): stop_conflict prints the "To undo the rebase instead" line only when its first argument
-  # is exactly "rebase", so this first stop of a rebase doesn't show it; only rebase-continue's stop does.
+   Tip: when they're resolved, run: bash scripts/card-branch.sh rebase-continue fake-repo SCRUM-1/add-filter
+   To undo the rebase instead: git -C \"$R\" rebase --abort, then the same rebase-continue (it puts your changes back)."
   assert_match "$(rebase_state)" "^branch=SCRUM-1/add-filter
 stash=[0-9a-f]{40}
 stage=rebase
@@ -407,6 +406,7 @@ test_rebase_continue_when_the_next_commit_conflicts_too() {
   run card-branch.sh rebase-continue fake-repo SCRUM-1/add-filter
   assert_rc 4
   assert_contains "$OUT" "⚠️ fake-repo: a conflict in the rebase (the next commit); resolve these files"
+  assert_contains "$OUT" "   To undo the rebase instead: git -C \"$R\" rebase --abort" "the undo tip at the next commit's conflict too"
   assert_contains "$OUT" "   app.js"
 }
 test_rebase_continue_when_git_stops_again_without_a_conflict() {

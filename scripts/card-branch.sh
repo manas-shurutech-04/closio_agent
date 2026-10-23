@@ -164,7 +164,9 @@ stop_conflict() { # <what> <files, one per line>
   echo "⚠️ $REPO: a conflict in the $1; resolve these files (keep the right code, remove the <<<<<<< ======= >>>>>>> lines):"
   printf '%s\n' "$2" | sed '/^$/d; s/^/   /'
   echo "   Tip: when they're resolved, run: bash scripts/card-branch.sh rebase-continue $REPO $NAME"
-  [ "$1" = "rebase" ] && echo "   To undo the rebase instead: git -C \"$PATH_\" rebase --abort, then the same rebase-continue (it puts your changes back)."
+  case "$1" in   # every stop inside a rebase (its first one too, D92); not a stash pop, where the rebase is done
+    rebase*) echo "   To undo the rebase instead: git -C \"$PATH_\" rebase --abort, then the same rebase-continue (it puts your changes back)." ;;
+  esac
   return 4
 }
 on_latest() { g merge-base --is-ancestor "origin/$BASE" HEAD 2>/dev/null; }
