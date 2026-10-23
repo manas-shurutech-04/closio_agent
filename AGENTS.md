@@ -41,10 +41,13 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     Only Claude Code can reach the artifact: a change made in Codex is finished in Claude Code. `bash scripts/help.sh check`
     (also run by flow-doctor) fails until all of this is done.
 12. In the card phases (flow-status, flow-start, flow-develop, flow-verify, flow-ac-check, flow-push, flow-review, flow-finish, flow-qa; rule A17,
-    D62): before every step, re-read this file and `docs/agent-rules.md`, and read the user-created memory (the entries the
-    user made with flow-memory, in `local/memory/`): `bash scripts/memory.sh for <phase> <repos>`. Apply both, and write in
-    the card's `runs/<CARD-KEY>/history.md` which rules and entries you applied; flow-status only reads, so it writes
-    nothing. Skip nothing.
+    D62, D91): read this file and `docs/agent-rules.md` in full when the command starts (also when it continues a card),
+    then `bash scripts/run.sh rules <KEY> read`. After every step, one call: `bash scripts/run.sh step <KEY> …`: it writes
+    in the card's `runs/<CARD-KEY>/history.md` which rules and user-memory entries you applied, moves to the next step,
+    checks whether either rules file changed since you read it, and prints the user-created memory (the entries the user
+    made with flow-memory, in `local/memory/`) for the next step. When it says the rules changed or the conversation was
+    summarized, say so in one line, read them again in full, run `rules <KEY> read` and go on. Apply both before every
+    step; flow-status only reads, so it writes nothing. Skip nothing.
 13. Planning a card (rule A18, D63): first pull the base branches and read the current code of every repo involved (routes,
     controllers, services, utils, constants, middlewares, migrations, locale files); never plan from the card alone. List every
     difference between the card and the code (error codes, statuses, messages, fields, anything the card names that isn't in the
@@ -108,7 +111,8 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     and let the user decide. Error codes and messages still come from the code (rule 10).
 25. The card rules (rule A29, D86): `rulesets/card-rules.md` holds the rules to apply at every prompt about a card. The
     card-rules hook (`scripts/card-rules-hook.sh`, set in `.claude/settings.json` and `.codex/hooks.json`) adds it to every
-    card command, every prompt that names a card key and every later prompt in that session. Follow it every time; its
+    card command, every prompt that names a card key and every later prompt in that session, and again after the
+    conversation was summarized (it then flags the rules for a full read, D91). Follow it every time; its
     rule 1: every decision on the card goes into `runs/<CARD-KEY>/decisions.md` the moment it's confirmed (rule 23); its
     rule 2: read code with the tool's own read tools, a repo's git with `bash scripts/repo-git.sh`, its tests and servers
     with `bash scripts/repo-run.sh` (no prompts), and never a `.env` file (D90).
