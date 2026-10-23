@@ -109,7 +109,7 @@ done
 for f in $(printf '%s\n' "$changed" | grep -E '^scripts/(lib/)?[A-Za-z0-9_-]+\.sh$'); do
   t="tests/unit/$(basename "$f" .sh).test.sh"
   has "^$(printf '%s' "$t" | sed 's/\./\\./g')\$" ||
-    miss "$f changed, $t didn't: add or change its tests for what changed, then run bash tests/run.sh (rule R20)."
+    miss "$f changed, $t didn't: add or change its tests for what changed, then run bash tests/run.sh --docker (rule R20)."
 done
 
 RULE_FILES='^(rulesets/|AGENTS\.md$|docs/agent-rules\.md$|build-memory/project-context\.md$|build-memory/rules\.md$|\.claude/settings\.json$|\.codex/rules/closio-agent\.rules$)'

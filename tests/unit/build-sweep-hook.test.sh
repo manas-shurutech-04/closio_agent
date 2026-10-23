@@ -78,7 +78,7 @@ test_a_script_changed_alone_holds_back_with_the_changelog_history_and_rule_files
   assert_eq "$(reason)" "$INTRO
 - docs/changelog.md: no entry for this change yet.
 - build-memory/history.md: no row for this step yet (rule R10).
-- scripts/run.sh changed, tests/unit/run.test.sh didn't: add or change its tests for what changed, then run bash tests/run.sh (rule R20).
+- scripts/run.sh changed, tests/unit/run.test.sh didn't: add or change its tests for what changed, then run bash tests/run.sh --docker (rule R20).
 - No rule file changed: go through rulesets/, AGENTS.md, docs/agent-rules.md, build-memory/project-context.md, build-memory/rules.md and the two pre-approval files, and say in your reply which you checked (rule R15, step 6)."
 }
 test_the_same_list_is_said_once_per_session() {
@@ -155,8 +155,8 @@ test_new_scripts_need_the_helper_table_the_pre_approvals_and_the_hook_files() {
 - New script new-thing.sh: not pre-approved in both .claude/settings.json and .codex/rules/closio-agent.rules (if a command runs it).
 - New script other-hook.sh: not in docs/commands.md's helper scripts.
 - New hook other-hook.sh: not set in both .claude/settings.json and .codex/hooks.json.
-- scripts/new-thing.sh changed, tests/unit/new-thing.test.sh didn't: add or change its tests for what changed, then run bash tests/run.sh (rule R20).
-- scripts/other-hook.sh changed, tests/unit/other-hook.test.sh didn't: add or change its tests for what changed, then run bash tests/run.sh (rule R20)."
+- scripts/new-thing.sh changed, tests/unit/new-thing.test.sh didn't: add or change its tests for what changed, then run bash tests/run.sh --docker (rule R20).
+- scripts/other-hook.sh changed, tests/unit/other-hook.test.sh didn't: add or change its tests for what changed, then run bash tests/run.sh --docker (rule R20)."
 }
 test_new_scripts_listed_everywhere_need_nothing() {
   setup_builder; usual_updates
