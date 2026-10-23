@@ -2,6 +2,14 @@
 
 Dated list of what changed in closio-agent. Newest first.
 
+## 2026-10-24
+
+- **Four fixes the new tests found** ([D92](design-decisions.md#d92)):
+  - `ship.sh`: a push GitLab's own rules decline (a protected branch, a push rule, a server hook) now says so, with GitLab's reason, instead of "someone else pushed".
+  - `card-branch.sh`: the "to undo the rebase" tip now shows at every rebase conflict, the first one too.
+  - `gitlab-mr.sh comments`: an answer that isn't a list (e.g. a proxy's error page) now stops at once with one ❌ and its fix, instead of asking for 20 pages and printing about 40 error lines.
+  - `setup-repo.sh run all`: a BullMQ repo after a repo that set up Redis now still gets its Redis memory-setting check (once per run).
+
 ## 2026-10-23
 
 - **closio-agent's own tests** ([D92](design-decisions.md#d92), build rule R20, new rule 29 in `AGENTS.md`): 671 tests, covering 99.7% of the scripts' lines. `bash tests/run.sh` checks closio-agent's scripts, commands and rules against fakes: no AI, no real Jira, GitLab, VPN or Keychain, nothing to install. `bash tests/run.sh --coverage` also shows the share of the scripts' lines the tests ran, and fails under 90%. Every script change now comes with its tests. How to run them: [setup guide](setup-guide.md#test-closio-agent-itself).
