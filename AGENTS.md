@@ -137,8 +137,9 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     the guide's mirrored date, a new script's docs and pre-approvals, a changed script's tests, the rule files), make each
     one in the same reply, or say why it isn't needed, and say which files you updated. Never run it, wire it into a
     command or use it in a card session, and never make `local/builder` on another Mac.
-29. closio-agent's own tests (build rule R20, D92): a change to a script in `scripts/` comes with its tests in
-    `tests/unit/<script>.test.sh` (what changed, its error paths too; a new script gets its own file), and `bash tests/run.sh`
-    passes before anything is committed; `bash tests/run.sh --coverage` keeps all scripts together at 90% line coverage or
-    more. Tests run only against the fakes in `tests/fakes/`: never the real Jira, GitLab, VPN, Keychain, home folder, or
-    this folder's `local/` and `runs/`.
+29. closio-agent's own tests (build rule R20, D92, D93): a change to a script in `scripts/` comes with its tests in
+    `tests/unit/<script>.test.sh` (what changed, its error paths too; a new script gets its own file), and
+    `bash tests/run.sh --docker --coverage` passes before anything is committed (about 25 seconds, in a Linux container with
+    the Mac's bash 3.2; Docker Desktop running), with all scripts together at 90% line coverage or more. Without Docker
+    Desktop, `bash tests/run.sh --coverage` runs the same tests on the Mac itself (about 11 minutes). Tests run only against
+    the fakes in `tests/fakes/`: never the real Jira, GitLab, VPN, Keychain, home folder, or this folder's `local/` and `runs/`.
