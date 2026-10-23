@@ -69,6 +69,8 @@
 
 ### Plan format (the one `flow-start` shows):
 
+A **small card** (a Bug or a Task with one repo, at most 4 ACs and no migration or seeder; [D90](../docs/design-decisions.md#d90)) gets a shorter plan with the same approval: `Size: small card (<type>, 1 repo, <n> ACs, no migrations or seeders)` under the `Ruleset:` line, then `## Summary`, `## Decided before planning`, `## Changes`, `## AC → Implementation Mapping`, `## Validation, reuse and response fields`, `## Error codes` and `## Tests`, each kept to what it needs (the ACs stay in `card.md`; migrations "none"; out of scope one line). Every other card gets the full format below, with `Size: full plan (<why>)` under the `Ruleset:` line.
+
 ```
 Ruleset: rulesets/frontend-story-workflow.md · Memory applied: M2 (changes: …) or none
 

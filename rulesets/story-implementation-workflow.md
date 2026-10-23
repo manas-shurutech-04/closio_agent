@@ -114,6 +114,8 @@ The file names below are **examples from `nodejs-ws2targetsalesincentive` and `n
 
 ### Plan format (the one `flow-start` shows):
 
+A **small card** (a Bug or a Task with one repo, at most 4 ACs and no migration or seeder; [D90](../docs/design-decisions.md#d90)) gets a shorter plan with the same approval: `Size: small card (<type>, 1 repo, <n> ACs, no migrations or seeders)` under the `Ruleset:` line, then `## Summary`, `## Decided before planning`, `## Changes`, `## AC → Implementation Mapping`, `## Validation, reuse and response fields`, `## Error codes` and `## Tests`, each kept to what it needs (the ACs stay in `card.md`; migrations "none"; out of scope one line). Every other card gets the full format below, with `Size: full plan (<why>)` under the `Ruleset:` line.
+
 ```
 Ruleset: rulesets/story-implementation-workflow.md · Memory applied: M2 (changes: …) or none
 
@@ -373,7 +375,8 @@ In ws2notification, ws2pricingengine and ws2targetsalesincentive, husky also run
 ### Prerequisites
 - WS2 (nodejs-ws2targetsalesincentive) running on its configured port
 - WS1 (nodejs-ws1closio) running on its configured port
-  (`flow-verify` starts and stops them itself: `bash scripts/repo-run.sh <repo> start` / `stop`)
+  (`flow-verify` starts them itself, in the background, and leaves them running for a re-run: one closio-agent started is reused while the code is the same and restarted when it changed; `/flow-push` stops them: `bash scripts/repo-run.sh <repo> start` / `all stop`; [D90](../docs/design-decisions.md#d90))
+- **A one-repo card's quick check** skips the live call for a scenario that a committed API test already checks (the same request, status, error code and message, without stubbing what the result depends on); every API's structure check, every call that writes and every card with more than one repo still go live ([D90](../docs/design-decisions.md#d90)).
 - **Migrations and seeders:** started from this Mac with the repo's own `npm run migrate` and `npm run seed` (closio-agent: `bash scripts/repo-run.sh <repo> migrate confirmed`), against the database the repo's `.env` names (today the dev database). **First the user reviews the files (rule A23):** the full migration or seeder (its up and its down), what it changes (tables, columns, rows), the repo, and that it runs against the database the repo's `.env` names. **Then a separate yes in chat, for every run.** The same review comes before the user is asked to run a migration on a server (the deployment doc). No wrong migration reaches a database. They also go into the card's deployment doc ([D12](../docs/design-decisions.md#d12)).
 - **Keys and cookies are never pasted into chat** (rule A6). closio-agent runs these checks itself and adds the keys and the session: `flow-verify` on this Mac (`scripts/api-call.sh` for the quick check, `scripts/api-check.sh` for the full check's saved test cases) and `flow-finish` on dev ([D67](../docs/design-decisions.md#d67), [D68](../docs/design-decisions.md#d68), [D72](../docs/design-decisions.md#d72)). The curls below are for running a check by hand.
 - **A direct WS2 call sends the caller's client ID and secret** ([D37](../docs/design-decisions.md#d37)): a WS2 checks the pair of whoever calls it, usually WS1's own pair (the values of `WS1_AUTH_CLIENT_ID` and `WS1_AUTH_SECRET_KEY` in WS1's `.env`), saved once under WS1 with `/flow-configure-repo nodejs-ws1closio key ws1-client-id` and `… key ws1-client-secret`. The pricing engine gets another pair from WS1; save that one under the pricing engine repo (`ws2-client-id`, `ws2-client-secret`).

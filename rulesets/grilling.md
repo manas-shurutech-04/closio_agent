@@ -51,6 +51,8 @@ After each round, work out what the answers opened up and ask only that in the n
 
 Sum up in a few lines what was agreed (each decision with its answer), and wait for the user to confirm. Nothing is changed before that (no code, file, branch, Jira or GitLab change).
 
+**At planning, the draft plan is this summary** ([D90](../docs/design-decisions.md#d90)): in `flow-start`, the answers of step 8 are listed under `## Decided before planning` in the draft plan, and the user's approval of the plan is the confirmation. There's no separate summary round there; nothing is saved before the approval anyway.
+
 ## 5. Safety stops stay plain yes/no
 
 Grilling settles the decisions; it never replaces a safety stop. After the grilling, these are still their own plain yes/no, exactly as each command asks them today: running a migration or seeder (after its review), adding test data or sending calls that write, making the commits and pushing, posting on Jira or GitLab, moving the Jira card, approving the plan.
