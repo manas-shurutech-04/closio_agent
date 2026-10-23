@@ -11,7 +11,7 @@ Memory for **building** `closio-agent` (JIRA card → … → MR review → depl
 | File | What it holds | When to read |
 |------|---------------|--------------|
 | `README.md` | This index | **Every step** |
-| `rules.md` | Strict working rules for building (R1–R18), followed at every step; points to the agent's own rules (G1–G4, A1–A29) in `project-context.md` (team copy: `docs/agent-rules.md`) | **Every step** |
+| `rules.md` | Strict working rules for building (R1–R18), followed at every step; points to the agent's own rules (G1–G4, A1–A30) in `project-context.md` (team copy: `docs/agent-rules.md`) | **Every step** |
 | `project-context.md` | Goal, users, scope, pipeline stages, docs to maintain | When the step touches scope, stages or docs |
 | `environment.md` | Tools, connectors and hosts that have been checked | When the step uses a tool, connector or external system |
 | `decisions.md` | One-line index of decisions, each linking to its full record | Before proposing anything that might overlap with an earlier decision |
