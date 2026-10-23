@@ -90,7 +90,8 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     ask and decide the way `rulesets/grilling.md` says: look up every fact first and show it as found (never ask what the
     code or the files answer); ask only real decisions, in numbered rounds, each with a recommended answer that "yes"
     accepts; follow-up rounds until nothing is open; sum up what was agreed and wait for the confirmation before changing
-    anything; record the decisions as rule 23 says. Short answers, approvals and the user's questions go straight
+    anything (at planning, the draft plan is that summary and its approval the confirmation, D90); record the decisions as
+    rule 23 says. Short answers, approvals and the user's questions go straight
     through. Safety stops (migrations, test data, commits and push, Jira and GitLab changes) stay their own plain yes/no.
     The user's memory can't soften this rule.
 23. Every decision on a card is recorded in full, in one place (rule A27, D77): `runs/<CARD-KEY>/decisions.md`, one numbered
@@ -108,7 +109,9 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
 25. The card rules (rule A29, D86): `rulesets/card-rules.md` holds the rules to apply at every prompt about a card. The
     card-rules hook (`scripts/card-rules-hook.sh`, set in `.claude/settings.json` and `.codex/hooks.json`) adds it to every
     card command, every prompt that names a card key and every later prompt in that session. Follow it every time; its
-    rule 1: every decision on the card goes into `runs/<CARD-KEY>/decisions.md` the moment it's confirmed (rule 23).
+    rule 1: every decision on the card goes into `runs/<CARD-KEY>/decisions.md` the moment it's confirmed (rule 23); its
+    rule 2: read code with the tool's own read tools, a repo's git with `bash scripts/repo-git.sh`, its tests and servers
+    with `bash scripts/repo-run.sh` (no prompts), and never a `.env` file (D90).
     Codex runs the hook only after the user has trusted it once.
 26. The card's folder is pushed to GitHub automatically after every reply (rule A30, D87): the auto-save hook
     (`scripts/card-autosave-hook.sh`, set as an end-of-turn hook in `.claude/settings.json` and `.codex/hooks.json`) commits
