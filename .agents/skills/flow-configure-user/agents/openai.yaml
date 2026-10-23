@@ -3,4 +3,4 @@ policy:
   allow_implicit_invocation: false
 # What Codex's $ menu shows: the options and a one-line summary (D74); made with: bash scripts/help.sh codex-line flow-configure-user
 interface:
-  short_description: "$flow-configure-user [jira-account-id|gitlab-username|workspace-dir|ai-tools|vpn-username|git-name|git-email|gitlab-token|fe-login-id|fe-login-password|ws1-login-userid|ws1-login-password|playwright] · Sets up your personal closio-agent settings and your 5 secrets in the macOS Keychain."
+  short_description: "$flow-configure-user [jira-account-id|gitlab-username|workspace-dir|ai-tools|vpn-username|git-name|git-email|jira-email|gitlab-token|fe-login-id|fe-login-password|ws1-login-userid|ws1-login-password|jira-api-token|playwright] · Sets up your personal closio-agent settings and your 5 secrets in the macOS Keychain, plus the optional Jira API token."

@@ -643,6 +643,11 @@ for item in $KEYCHAIN_PERSONAL_ITEMS; do
   fi
 done
 
+# ---------------------------------------------------------------- Jira API backup (D88)
+# Optional: the commands switch to it by themselves when the Jira connector isn't there. So ✅ or ⚠️, never ❌.
+section "Jira API backup" "optional, used only when the Jira connector isn't there"
+relay "$(bash "$AGENT_ROOT/scripts/jira-api.sh" check 2>&1 | sed 's/^❌ /⚠️ /; s/^   Fix: /   Tip: /')"
+
 # ---------------------------------------------------------------- Result
 result
 [ "$to_fix" -eq 0 ] || exit 1

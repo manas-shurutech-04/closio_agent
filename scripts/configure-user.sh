@@ -5,7 +5,9 @@
 #   check-folder                     Is this session in the closio-agent folder? (strict rule, D42)
 #   show                             What's set and what's missing (secrets: names only, never values)
 #   set <item> <value>               jira-account-id | gitlab-username | workspace-dir | ai-tools | vpn-username | git-name | git-email
-#   secrets                          Asks every missing secret in one run (one approval in the AI tool)
+#                                    | jira-email (optional: the Jira API backup, D88)
+#   secrets                          Asks every missing secret in one run (one approval in the AI tool); the optional
+#                                    jira-api-token only when it's named (secret jira-api-token, D88)
 #   secret <item>                    Heads-up dialog, then a hidden dialog; the value goes straight into the Keychain
 #   gitlab-username-from-token       Reads your GitLab username with the stored token (VPN needed)
 #   store-secret-from-stdin <item>   Stores the value read from stdin (used by 'secret' and by tests)
@@ -44,6 +46,7 @@ GITLAB_USERNAME=""
 WORKSPACE_DIR=""
 AI_TOOLS=""
 VPN_USERNAME=""
+JIRA_EMAIL=""            # optional: the Jira API backup (D88)
 LOCAL_REDIS_FROM=""      # set by flow-setup-repo (F6, D54)
 LOCAL_RABBITMQ_FROM=""
 [ -f "$USER_SETTINGS_FILE" ] && . "$USER_SETTINGS_FILE"
@@ -65,6 +68,7 @@ write_settings() {
     printf 'WORKSPACE_DIR="%s"\n' "$WORKSPACE_DIR"
     printf 'AI_TOOLS="%s"\n' "$AI_TOOLS"
     printf 'VPN_USERNAME="%s"   # optional, not needed today (kept for later use, D15)\n' "$VPN_USERNAME"
+    printf 'JIRA_EMAIL="%s"   # optional: your Atlassian email, for the Jira API backup (D88)\n' "$JIRA_EMAIL"
     if [ -n "$LOCAL_REDIS_FROM" ]; then printf 'LOCAL_REDIS_FROM="%s"   # homebrew or docker; set by flow-setup-repo (D54)\n' "$LOCAL_REDIS_FROM"; fi
     if [ -n "$LOCAL_RABBITMQ_FROM" ]; then printf 'LOCAL_RABBITMQ_FROM="%s"   # homebrew or docker; set by flow-setup-repo (D54)\n' "$LOCAL_RABBITMQ_FROM"; fi
   } > "$USER_SETTINGS_FILE.tmp" && mv "$USER_SETTINGS_FILE.tmp" "$USER_SETTINGS_FILE"
@@ -79,6 +83,7 @@ secret_description() {
     fe-login-password) echo "your password for the Closio web app" ;;
     ws1-login-userid) echo "your userid for the dev WS1 login (every check logs in on dev)" ;;
     ws1-login-password) echo "your password for the dev WS1 login" ;;
+    jira-api-token) echo "your Atlassian API token, for the Jira API backup (optional; make it at id.atlassian.com with \"Create API token\", setup guide, section 3)" ;;
     *) return 1 ;;
   esac
 }
@@ -90,12 +95,13 @@ secret_label() {
     fe-login-password) echo "$KEYCHAIN_PREFIX: Closio web app password" ;;
     ws1-login-userid) echo "$KEYCHAIN_PREFIX: WS1 login API userid" ;;
     ws1-login-password) echo "$KEYCHAIN_PREFIX: WS1 login API password" ;;
+    jira-api-token) echo "$KEYCHAIN_PREFIX: Atlassian API token (Jira API backup)" ;;
   esac
 }
 
 valid_secret_item() {
   local i
-  for i in $KEYCHAIN_PERSONAL_ITEMS; do [ "$i" = "$1" ] && return 0; done
+  for i in $KEYCHAIN_PERSONAL_ITEMS $KEYCHAIN_OPTIONAL_ITEMS; do [ "$i" = "$1" ] && return 0; done
   return 1
 }
 
@@ -143,12 +149,15 @@ gitlab_username_from_token() {
 
 ask_secret() {
   local item="$1" desc rc
-  desc="$(secret_description "$item")" || { bad "Unknown secret: $item" "Use one of: $KEYCHAIN_PERSONAL_ITEMS"; return 1; }
+  desc="$(secret_description "$item")" || { bad "Unknown secret: $item" "Use one of: $KEYCHAIN_PERSONAL_ITEMS $KEYCHAIN_OPTIONAL_ITEMS"; return 1; }
   ask_secret_dialog "$KEYCHAIN_PREFIX.$item" "$(secret_label "$item")" "$desc" "$CMD $item"
   rc=$?
   [ "$rc" -eq 0 ] || return "$rc"
   if [ "$item" = "gitlab-token" ]; then
     gitlab_username_from_token
+  fi
+  if [ "$item" = "jira-api-token" ]; then
+    bash "$AGENT_ROOT/scripts/jira-api.sh" check
   fi
   return 0
 }
@@ -219,8 +228,12 @@ set_item() {
       printf '%s' "$value" | grep -q -E '^[^@ ]+@[^@ ]+\.[^@ ]+$' ||
         { bad "That doesn't look like an email address" "Run $CMD git-email again."; return 1; }
       git config --global user.email "$value" && ok "git email set: $value" ;;
+    jira-email)
+      printf '%s' "$value" | grep -q -E '^[^@ ]+@[^@ ]+\.[^@ ]+$' && plain_value "$value" ||
+        { bad "That doesn't look like an email address" "Use the email you log in to Jira with. Run $CMD jira-email again."; return 1; }
+      JIRA_EMAIL="$value"; write_settings; ok "Jira email saved: $value (optional: the Jira API backup)" ;;
     *)
-      bad "Unknown item: $item" "Use one of: jira-account-id, gitlab-username, workspace-dir, ai-tools, vpn-username, git-name, git-email"
+      bad "Unknown item: $item" "Use one of: jira-account-id, gitlab-username, workspace-dir, ai-tools, vpn-username, git-name, git-email, jira-email"
       return 1 ;;
   esac
 }
@@ -262,6 +275,13 @@ show() {
   done
 
   echo
+  echo "Jira API backup (optional: the commands switch to it by themselves when the Jira connector isn't there, D88)"
+  if [ -n "$JIRA_EMAIL" ]; then ok "Jira email: $JIRA_EMAIL"; else look "Jira email: not set (optional)" "Run $CMD jira-email, then $CMD jira-api-token (setup guide, section 3)."; fi
+  for item in $KEYCHAIN_OPTIONAL_ITEMS; do
+    if secret_stored "$item"; then ok "$KEYCHAIN_PREFIX.$item stored"; else look "$KEYCHAIN_PREFIX.$item: not stored (optional)" "Run $CMD $item (Codex: $CMD_CODEX $item)."; fi
+  done
+
+  echo
   echo "Playwright (for checking web cards)"
   if [ -f "$AGENT_ROOT/e2e/node_modules/@playwright/test/package.json" ] && ls -d "${PLAYWRIGHT_BROWSERS_PATH:-$HOME/Library/Caches/ms-playwright}"/chromium-* >/dev/null 2>&1; then
     ok "Playwright is set up (e2e/ packages and the Chromium browser)"
@@ -290,10 +310,10 @@ case "${1:-}" in
   set) [ $# -ge 2 ] || { echo "Usage: bash scripts/configure-user.sh set <item> <value>"; exit 1; }; set_item "$2" "${3:-}" ;;
   secrets) ask_missing_secrets ;;
   secret)
-    [ $# -eq 2 ] && valid_secret_item "$2" || { bad "Unknown secret: ${2:-none}" "Use one of: $KEYCHAIN_PERSONAL_ITEMS"; exit 1; }
+    [ $# -eq 2 ] && valid_secret_item "$2" || { bad "Unknown secret: ${2:-none}" "Use one of: $KEYCHAIN_PERSONAL_ITEMS $KEYCHAIN_OPTIONAL_ITEMS"; exit 1; }
     ask_secret "$2" ;;
   store-secret-from-stdin)
-    [ $# -eq 2 ] && valid_secret_item "$2" || { bad "Unknown secret: ${2:-none}" "Use one of: $KEYCHAIN_PERSONAL_ITEMS"; exit 1; }
+    [ $# -eq 2 ] && valid_secret_item "$2" || { bad "Unknown secret: ${2:-none}" "Use one of: $KEYCHAIN_PERSONAL_ITEMS $KEYCHAIN_OPTIONAL_ITEMS"; exit 1; }
     store_secret_from_stdin_item "$2" ;;
   gitlab-username-from-token) gitlab_username_from_token ;;
   playwright) bash "$AGENT_ROOT/scripts/e2e.sh" setup ;;

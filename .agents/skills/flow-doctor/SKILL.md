@@ -12,7 +12,7 @@ Symbols: ✅ fine, ⚠️ worth a look (doesn't fail), ❌ must fix. Every ⚠�
 
 ## Usage
 
-- `/flow-doctor`: check this Mac's setup (project, tools, VPN and GitLab, personal settings, user memory, commands documented, cards in progress, repos, repo setup, Keychain names, Jira) and show how to fix each problem.
+- `/flow-doctor`: check this Mac's setup (project, tools, VPN and GitLab, personal settings, user memory, commands documented, cards in progress, repos, repo setup, Keychain names, the Jira API backup, Jira) and show how to fix each problem.
 - Codex: `$flow-doctor` (approve running it with network access, so the GitLab checks can run).
 
 ## Steps
@@ -29,7 +29,8 @@ Symbols: ✅ fine, ⚠️ worth a look (doesn't fail), ❌ must fix. Every ⚠�
 5. **Jira check (only you can do this; the script can't):** read one thing from Jira project `SCRUM` on `productclosio.atlassian.net` with your Jira (Atlassian) tools, e.g. the project itself or one issue. Read only; never change anything in Jira. Then add a `### Jira` section, in the same style, with one line:
    - **The Jira tools can take a while to load** at the start of a session. If you can't find them, or the tool says the Atlassian connector is still connecting: run `bash scripts/wait-seconds.sh 10`, then look for them again. Try **up to 3 times** (about 30 seconds) before reporting ❌.
    - It works: `- ✅ Jira works: project SCRUM can be read`
-   - You have no Jira tools, or the read fails: `- ❌ **Jira isn't connected in <Claude Code or Codex>**`, and under it, indented by two spaces, the fix as `  - **Fix:** …`:
+   - You have no Jira tools, or the read fails, **and the script's "Jira API backup" line is ✅**: the commands switch to the backup by themselves (D88), so `- ⚠️ **Jira connector isn't connected in <Claude Code or Codex>: the commands use the Jira API backup until it is**`, with the fix below as `  - **Tip:** …`.
+   - You have no Jira tools, or the read fails, and the backup line is ⚠️: `- ❌ **Jira isn't connected in <Claude Code or Codex>**`, and under it, indented by two spaces, the fix as `  - **Fix:** …`:
      - Claude Code: the Jira connector may still be loading or timed out. Type `/mcp`, choose "claude.ai Atlassian MCP", then Reconnect, and run `/flow-doctor` again. If it's not connected at all, connect Claude's Atlassian connector to your Atlassian account (setup guide, section 3), then start a new session.
      - Codex: connect the Atlassian app to the ChatGPT account you use for Codex, then start Codex again. Other way: in a terminal run `codex mcp add atlassian --url https://mcp.atlassian.com/v2/mcp` and `codex mcp login atlassian` (setup guide, section 3).
 6. End with one line: `**Result: <N> to fix, <M> to look at.** · Checked in <the tool you are running in: Claude Code or Codex>` (the script's counts plus the Jira line).
