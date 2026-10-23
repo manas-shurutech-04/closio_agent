@@ -114,7 +114,8 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     (`scripts/card-autosave-hook.sh`, set as an end-of-turn hook in `.claude/settings.json` and `.codex/hooks.json`) commits
     the card's folder (`runs/<CARD-KEY>/`) to its own branch `runs/<CARD-KEY>` and pushes it to GitHub at the end of every
     reply in a session working on a card, when it changed: "<KEY>: auto-saved after /flow-<command>" (or "after a reply").
-    Only that branch: never `main`, never a code repo, never forced. The commands' own `run.sh save` steps stay. A failed push shows one warning with its fix; tell the user.
+    Only that branch: never `main`, never a code repo, never forced. The commands' own `run.sh save` steps stay. A failed
+    push shows one warning with its fix; tell the user.
 27. The Jira API backup (rule A31, D88): Jira is used through its connector first. When the connector's tools still aren't
     there after 3 tries, or a Jira tool fails or can't do an action, switch by yourself (no question) to
     `bash scripts/jira-api.sh`, say so in one line, and do the same there for the rest of the command: reading a card or its
