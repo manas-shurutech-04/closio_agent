@@ -334,11 +334,9 @@ test_comments_when_a_threads_page_is_not_json() {
   route_first '{"method": "GET", "path": "/discussions$", "text": "<html>proxy error</html>"}'
   run gitlab-mr.sh fake-be comments SCRUM-1/x
   assert_rc 1
-  assert_contains "$OUT" "❌ Couldn't read the threads GitLab sent"
-  # Today's behaviour (a bug, reported, not fixed here): the page count can't be read, so the loop doesn't stop at
-  # page 1; it asks for all 20 pages and prints a jq and a "[: integer expression expected" error for each first.
-  assert_eq "$(requests | jq -r 'select(.p | endswith("/discussions")) | .q' | grep -c .)" "20"
-  assert_contains "$OUT" "integer expression expected"
+  assert_eq "$OUT" "❌ GitLab's answer for the threads of MR !12 isn't a list (page 1)
+   Fix: Check GitLab is reachable and the token is valid, then run this again."
+  assert_eq "$(requests | jq -r 'select(.p | endswith("/discussions")) | .q' | grep -c .)" "1" "no more pages are asked for"
 }
 
 test_reply_posts_the_file_as_a_note_in_the_thread() {

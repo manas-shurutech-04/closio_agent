@@ -141,7 +141,11 @@ do_comments() { # <branch> [--since <note id>]
   else approved="couldn't read ($CODE)"; fi
   while :; do   # the threads, 100 a page (at most 20 pages)
     api GET "/projects/$(project)/merge_requests/$IID/discussions?per_page=100&page=$page" || { api_problem "the threads of MR !$IID"; rm -rf "$tmp"; return 1; }
-    printf '%s' "$BODY" > "$tmp/page-$page.json"; n="$(printf '%s' "$BODY" | jq 'length')"
+    printf '%s' "$BODY" > "$tmp/page-$page.json"; n="$(printf '%s' "$BODY" | jq 'if type == "array" then length else empty end' 2>/dev/null)"
+    if [ -z "$n" ]; then   # not a list (e.g. a proxy's HTML error page): one ❌, no more pages (D92)
+      bad "GitLab's answer for the threads of MR !$IID isn't a list (page $page)" "Check GitLab is reachable and the token is valid, then run this again."
+      rm -rf "$tmp"; return 1
+    fi
     [ "$n" -lt 100 ] || [ "$page" -ge 20 ] && break
     page=$((page + 1))
   done
