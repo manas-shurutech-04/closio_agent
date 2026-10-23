@@ -15,6 +15,15 @@
 #   set <KEY> <field> <value...>     Changes one field (and 'updated')
 #   log <KEY> <step> "<what>" ["<rules and memory applied>"]
 #                                    Appends one history line (rule A1; the last column is rule A17)
+#   step <KEY> <step> "<what>" "<rules and memory applied>" [--next <n>] [--memory <phase> <repos…>]
+#                                    After each step of a card command, in one call (D91): the history line (as log), the
+#                                    next step (as set <KEY> step <n>), whether AGENTS.md or docs/agent-rules.md changed
+#                                    since the command read them (⚠️: read again, then "rules <KEY> read"), and the user
+#                                    memory for the next step (memory.sh for <phase> <repos>)
+#   rules <KEY> read                 The command has just read AGENTS.md and docs/agent-rules.md in full (at its start, after
+#                                    a change, after a summary): keeps their fingerprints in local/rules-read/<KEY> (this Mac
+#                                    only). When they differ from the ones kept before, adds a history line: the rules
+#                                    changed, read again from here (D91)
 #   decide <KEY> <step> "<question>" "<decided>" "<who / why>"
 #                                    Appends one decision to runs/<KEY>/decisions.md, numbered, with the time (rule A27,
 #                                    D77): an answer, an approval or a refusal at a stop, a memory entry that answered.
@@ -46,6 +55,8 @@ AGENT_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 . "$AGENT_ROOT/config/project-settings.sh"
 RUNS_DIR="${RUNS_DIR:-$AGENT_ROOT/runs}"
 QUICK_DIR="${QUICK_DIR:-$AGENT_ROOT/local/quick-checks}"
+RULES_READ_DIR="${RULES_READ_DIR:-$AGENT_ROOT/local/rules-read}"   # the rules files' fingerprints per card (D91)
+RULE_FILES="AGENTS.md docs/agent-rules.md"
 CMD="/flow-start"
 FIELDS="card title type size phase step jira_status jira_comment repos branch run_branch next updated"
 
@@ -61,6 +72,7 @@ bad() {
 usage() {
   echo "Usage: bash scripts/run.sh check-folder | branch <KEY> | create <KEY> \"<title>\" | state <KEY> | status <KEY> | get <KEY> <field>"
   echo "       | set <KEY> <field> <value> | log <KEY> <step> \"<what>\" [\"<rules and memory>\"]"
+  echo "       | step <KEY> <step> \"<what>\" \"<rules and memory>\" [--next <n>] [--memory <phase> <repos…>] | rules <KEY> read"
   echo "       | decide <KEY> <step> \"<question>\" \"<decided>\" \"<who / why>\" | save <KEY> \"<message>\" | unsaved <KEY> | list | quick-clean <KEY> | count | problems"
 }
 now() { date '+%Y-%m-%d %H:%M'; }
@@ -282,6 +294,60 @@ do_log() { # <key> <step> <what> [<rules and memory>]
   ok "$key: history: $step: $what"
 }
 
+# ---------------------------------------------------------------- the rules and the one call per step (D91)
+rule_print() { shasum -a 256 "$AGENT_ROOT/$1" 2>/dev/null | cut -c1-12; }
+rules_changed() { # <key>: the rules files that differ from the card's last read (a space-separated list, "" for none)
+  local f was
+  for f in $RULE_FILES; do
+    was="$(grep -m1 "^$f " "$RULES_READ_DIR/$1" 2>/dev/null | cut -d' ' -f2)"
+    [ "$was" = "$(rule_print "$f")" ] || printf '%s ' "$f"
+  done
+}
+do_rules() { # <key> read
+  local key="$1" changed="" mark="$RULES_READ_DIR/$1" f
+  [ -f "$mark" ] && changed="$(rules_changed "$key")"
+  mkdir -p "$RULES_READ_DIR" || { bad "Couldn't create $RULES_READ_DIR" "Check the folder's permissions."; return 1; }
+  for f in $RULE_FILES; do printf '%s %s\n' "$f" "$(rule_print "$f")"; done > "$mark"
+  if [ -n "$changed" ] && [ -f "$(history_file "$key")" ]; then
+    do_log "$key" "rules" "the rules changed (${changed% }): read again from here" "rules: read again" >/dev/null
+    ok "$key: rules read again; they changed (${changed% }): noted in the card's history"
+  else
+    ok "$key: rules read (AGENTS.md, docs/agent-rules.md)"
+  fi
+}
+do_step() { # <key> <step> <what> <applied> [--next <n>] [--memory <phase> <repos…>]
+  local key="$1" step="$2" what="$3" applied="$4" next="" phase="" changed=""
+  shift 4
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --next) [ $# -ge 2 ] && printf '%s' "$2" | grep -q -E '^[0-9]+$' || { usage; return 2; }; next="$2"; shift 2 ;;
+      --memory) [ $# -ge 2 ] || { usage; return 2; }; phase="$2"; shift 2; break ;;
+      *) usage; return 2 ;;
+    esac
+  done
+  do_log "$key" "$step" "$what" "$applied" >/dev/null || return 1
+  if [ -n "$next" ]; then
+    set_field "$(state_file "$key")" step "$next"
+    ok "$key: history: $step: $(one_cell "$what") · next step $next"
+  else
+    ok "$key: history: $step: $(one_cell "$what")"
+  fi
+  if [ ! -f "$RULES_READ_DIR/$key" ]; then
+    echo "⚠️ Rules: not read in this command yet. Read AGENTS.md and docs/agent-rules.md in full now, then: bash scripts/run.sh rules $key read"
+  elif grep -q -x 'summarized' "$RULES_READ_DIR/$key" 2>/dev/null; then
+    echo "⚠️ Rules: the conversation was summarized since you read them. Read AGENTS.md and docs/agent-rules.md in full again now, then: bash scripts/run.sh rules $key read"
+  else
+    changed="$(rules_changed "$key")"
+    if [ -n "$changed" ]; then
+      echo "⚠️ Rules changed since you read them: ${changed% }. Read it again before the next step, then: bash scripts/run.sh rules $key read"
+    else
+      ok "Rules: unchanged since you read them"
+    fi
+  fi
+  if [ -n "$phase" ]; then bash "$AGENT_ROOT/scripts/memory.sh" for "$phase" "$@"; fi
+  return 0
+}
+
 do_decide() { # <key> <step> <question> <decided> <who / why>: one numbered row in decisions.md (rule A27, D77)
   local key="$1" step="$2" question="$3" decided="$4" who="$5" f n
   [ -f "$(history_file "$key")" ] || { bad "No card folder for $key on this Mac" "Run: bash scripts/run.sh branch $key (then create it if it's new)."; return 1; }
@@ -408,6 +474,8 @@ case "$action" in
   get) need_key "${2:-}"; [ -n "${3:-}" ] || { usage; exit 2; }; do_get "$2" "$3" ;;
   set) need_key "${2:-}"; [ -n "${3:-}" ] && [ $# -ge 4 ] || { usage; exit 2; }; k="$2"; f="$3"; shift 3; do_set "$k" "$f" "$@" ;;
   log) need_key "${2:-}"; [ -n "${3:-}" ] && [ -n "${4:-}" ] || { usage; exit 2; }; do_log "$2" "$3" "$4" "${5:-}" ;;
+  step) need_key "${2:-}"; [ -n "${3:-}" ] && [ -n "${4:-}" ] && [ $# -ge 5 ] || { usage; exit 2; }; k="$2"; shift 1; do_step "$k" "${2}" "${3}" "${4}" "${@:5}" ;;
+  rules) need_key "${2:-}"; [ "${3:-}" = "read" ] && [ $# -eq 3 ] || { usage; exit 2; }; do_rules "$2" ;;
   decide) need_key "${2:-}"; [ -n "${3:-}" ] && [ -n "${4:-}" ] && [ -n "${5:-}" ] && [ -n "${6:-}" ] || { usage; exit 2; }; do_decide "$2" "$3" "$4" "$5" "$6" ;;
   save) need_key "${2:-}"; do_save "$2" "${3:-}" ;;
   unsaved) need_key "${2:-}"; do_unsaved "$2" ;;
