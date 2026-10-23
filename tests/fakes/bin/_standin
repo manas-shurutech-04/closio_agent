@@ -1,0 +1,25 @@
+#!/bin/bash
+# The stand-in for a tool that would touch the real Mac, network or Keychain in a test (D92). Every call is logged in
+# $FAKE_LOG ("<tool> <arguments>"). A test sets what a tool does with fake_cmd (an executable $FAKE_CMDS/<tool>);
+# otherwise the default below: nothing happens, except the fake Keychain for security, "not running / not
+# listening" for pgrep and nc, sudo running its command, and node running the real node.
+name="$1"; shift
+printf '%s %s\n' "$name" "$*" >> "${FAKE_LOG:-/dev/null}"
+if [ -n "${FAKE_CMDS:-}" ] && [ -x "$FAKE_CMDS/$name" ]; then exec "$FAKE_CMDS/$name" "$@"; fi
+here="$(cd "$(dirname "$0")" && pwd -P)"
+case "$name" in
+  security) exec bash "$here/../keychain.sh" "$@" ;;
+  pgrep|nc) exit 1 ;;
+  sudo)
+    while [ $# -gt 0 ]; do
+      case "$1" in --) shift; break ;; -u|-g|-p|-C) shift 2 ;; -*) shift ;; *) break ;; esac
+    done
+    [ $# -gt 0 ] && exec "$@"
+    exit 0 ;;
+  xcode-select) [ "${1:-}" = "-p" ] && echo "/Library/Developer/CommandLineTools"; exit 0 ;;
+  node)
+    real="$(PATH="$(printf '%s' "$PATH" | tr ':' '\n' | grep -v -x "$here" | paste -s -d: -)" command -v node)"
+    [ -n "$real" ] && exec "$real" "$@"
+    echo "node: not found" >&2; exit 127 ;;
+  *) exit 0 ;;
+esac
