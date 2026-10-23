@@ -10,9 +10,12 @@
 #   <repo> migrate confirmed   npm run migrate (the repo's own script), against the database its .env names. Only after the
 #                              user's yes in chat, every run (D21, D64); without the word "confirmed" it refuses.
 #   <repo> seed confirmed      npm run seed, the same way.
-#   <repo> start               Starts the repo's server on this Mac in the background (its dev_command, on its Node version),
-#                              and waits until its health URL answers (SERVER_START_TIMEOUT). A server already answering is
-#                              left as it is. Log: local/logs/server-<repo>.log (C4, flow-verify; D67).
+#   <repo> start [--no-wait]   Starts the repo's server on this Mac in the background (its dev_command, on its Node version),
+#                              and waits until its health URL answers (SERVER_START_TIMEOUT). Log: local/logs/server-<repo>.log
+#                              (C4, flow-verify; D67). A server closio-agent started is reused while the repo's code is the
+#                              same as when it started (its commit, its changes, its new files, the change time of its env
+#                              file), and restarted when the code changed (D90). One started outside closio-agent is left as
+#                              it is. --no-wait: starts it and returns at once; a later "start" waits for it (D90).
 #   <repo> stop | all stop     Stops the server(s) this script started (never one it didn't start).
 #   <repo> status              Whether the repo's server answers, and whether this script started it.
 #   <repo> review              Codex only (flow-review, D78): Codex's own reviewer on the card's changes, run in the repo's
@@ -43,7 +46,7 @@ bad() {
   failed=1
 }
 info() { echo "   $1"; }
-usage() { echo "Usage: bash scripts/repo-run.sh <repo> check | test | migrate confirmed | seed confirmed | start | stop | status | review  (or: all stop)"; }
+usage() { echo "Usage: bash scripts/repo-run.sh <repo> check | test | migrate confirmed | seed confirmed | start [--no-wait] | stop | status | review  (or: all stop)"; }
 
 list_items() { printf '%s' "$1" | tr ',' '\n' | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' | grep -v -x 'none' | grep -v '^$'; }
 
@@ -142,32 +145,25 @@ started_here() { # <repo>: the server this script started is still running
   local f; f="$(pid_file "$1")"
   [ -f "$f" ] && kill -0 "$(cat "$f")" 2>/dev/null
 }
-do_start() {
-  local cmd pid waited=0 log
-  cmd="$(yaml_get "$FILE" dev_command)"; [ -n "$cmd" ] && [ "$cmd" != "none" ] || cmd="$(yaml_get "$FILE" start_command)"
-  if [ -z "$cmd" ] || [ "$cmd" = "none" ]; then
-    bad "$REPO has no dev_command or start_command in config/repos/$REPO.yaml" "Add one (e.g. dev_command: npm run dev) with /flow-configure-repo $REPO, then run this again."; return 0
-  fi
-  if ! repo_port "$REPO" >/dev/null || [ -z "$(repo_port "$REPO")" ]; then
-    bad "$REPO: its port isn't set in its $(env_file_of "$REPO") ($(port_var "$REPO"))" "Set $(port_var "$REPO") in $PATH_/$(env_file_of "$REPO") (the value isn't shown here), then run this again."; return 0
-  fi
-  if repo_answers "$REPO"; then
-    if started_here "$REPO"; then ok "$REPO is already running (started by closio-agent)"; else ok "$REPO is already running (started outside closio-agent; it's left as it is)"; fi
-    return 0
-  fi
-  mkdir -p "$SERVERS_DIR" "$LOGS_DIR"
-  log="$LOGS_DIR/server-$REPO.log"
-  printf '\n$ %s   (in %s, %s)\n' "$cmd" "$PATH_" "$(date '+%Y-%m-%d %H:%M:%S')" >> "$log"
-  /usr/bin/perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV' -- /bin/bash -c '
-    cd "$1" || exit 96
-    if [ -n "$2" ]; then . "$3" >/dev/null 2>&1 || exit 97; nvm use "$2" >/dev/null 2>&1 || exit 98; fi
-    exec /bin/bash -c "$4"' _ "$PATH_" "$NV" "$(nvm_sh)" "$cmd" >> "$log" 2>&1 < /dev/null &
-  pid=$!
-  echo "$pid" > "$(pid_file "$REPO")"
-  info "$REPO: starting ($cmd), waiting up to $SERVER_START_TIMEOUT s for $(repo_health_path "$REPO")..."
+# The code a server runs: the repo's commit, its uncommitted changes and new files (never a .env file's content), and
+# the change time of its env file. A server closio-agent started is reused only while this is the same (D90).
+print_file() { echo "$SERVERS_DIR/$1.code"; }
+code_print() {
+  {
+    git -C "$PATH_" rev-parse HEAD 2>/dev/null
+    git -C "$PATH_" diff HEAD -- . ':(exclude,glob)**/.env' ':(exclude,glob)**/.env.*' 2>/dev/null
+    git -C "$PATH_" ls-files -o --exclude-standard 2>/dev/null | grep -v -E '(^|/)\.env' | sort | while IFS= read -r f; do
+      printf '%s ' "$f"; shasum < "$PATH_/$f" 2>/dev/null
+    done
+    stat -f %m "$PATH_/$(env_file_of "$REPO")" 2>/dev/null
+  } | shasum | cut -d' ' -f1
+}
+wait_ready() { # <pid> <log>: waits until the server answers on its health URL
+  local pid="$1" log="$2" waited=0
+  info "$REPO: waiting up to $SERVER_START_TIMEOUT s for $(repo_health_path "$REPO")..."
   while [ "$waited" -lt "$SERVER_START_TIMEOUT" ]; do
     if ! kill -0 "$pid" 2>/dev/null; then
-      rm -f "$(pid_file "$REPO")"
+      rm -f "$(pid_file "$REPO")" "$(print_file "$REPO")"
       bad "$REPO stopped while starting" "Read the end of local/logs/server-$REPO.log (below), fix the cause, then run this again."
       tail -12 "$log" | sed 's/^/        /'; return 0
     fi
@@ -176,6 +172,44 @@ do_start() {
   done
   bad "$REPO didn't answer on $(repo_health_path "$REPO") within $SERVER_START_TIMEOUT s" "Read local/logs/server-$REPO.log (end below). The server is left running; stop it with: bash scripts/repo-run.sh $REPO stop"
   tail -12 "$log" | sed 's/^/        /'
+}
+do_start() { # [--no-wait]
+  local nowait="${1:-}" cmd pid log print
+  cmd="$(yaml_get "$FILE" dev_command)"; [ -n "$cmd" ] && [ "$cmd" != "none" ] || cmd="$(yaml_get "$FILE" start_command)"
+  if [ -z "$cmd" ] || [ "$cmd" = "none" ]; then
+    bad "$REPO has no dev_command or start_command in config/repos/$REPO.yaml" "Add one (e.g. dev_command: npm run dev) with /flow-configure-repo $REPO, then run this again."; return 0
+  fi
+  if ! repo_port "$REPO" >/dev/null || [ -z "$(repo_port "$REPO")" ]; then
+    bad "$REPO: its port isn't set in its $(env_file_of "$REPO") ($(port_var "$REPO"))" "Set $(port_var "$REPO") in $PATH_/$(env_file_of "$REPO") (the value isn't shown here), then run this again."; return 0
+  fi
+  log="$LOGS_DIR/server-$REPO.log"
+  print="$(code_print)"
+  if started_here "$REPO"; then
+    pid="$(cat "$(pid_file "$REPO")")"
+    if [ "$(cat "$(print_file "$REPO")" 2>/dev/null)" = "$print" ]; then
+      if repo_answers "$REPO"; then ok "$REPO is already running (started by closio-agent, on the same code): reused"; return 0; fi
+      if [ "$nowait" = "--no-wait" ]; then ok "$REPO is still starting in the background"; return 0; fi
+      wait_ready "$pid" "$log"; return 0
+    fi
+    info "$REPO: the code changed since closio-agent started its server: restarting it"
+    do_stop "$REPO" >/dev/null
+  elif repo_answers "$REPO"; then
+    ok "$REPO is already running (started outside closio-agent; it's left as it is)"; return 0
+  fi
+  mkdir -p "$SERVERS_DIR" "$LOGS_DIR"
+  printf '\n$ %s   (in %s, %s)\n' "$cmd" "$PATH_" "$(date '+%Y-%m-%d %H:%M:%S')" >> "$log"
+  /usr/bin/perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV' -- /bin/bash -c '
+    cd "$1" || exit 96
+    if [ -n "$2" ]; then . "$3" >/dev/null 2>&1 || exit 97; nvm use "$2" >/dev/null 2>&1 || exit 98; fi
+    exec /bin/bash -c "$4"' _ "$PATH_" "$NV" "$(nvm_sh)" "$cmd" >> "$log" 2>&1 < /dev/null &
+  pid=$!
+  echo "$pid" > "$(pid_file "$REPO")"
+  echo "$print" > "$(print_file "$REPO")"
+  info "$REPO: starting ($cmd)"
+  if [ "$nowait" = "--no-wait" ]; then
+    ok "$REPO: starting in the background; \"bash scripts/repo-run.sh $REPO start\" waits until it answers"; return 0
+  fi
+  wait_ready "$pid" "$log"
 }
 do_stop() { # <repo>
   local f pid; f="$(pid_file "$1")"
@@ -189,7 +223,7 @@ do_stop() { # <repo>
   else
     ok "$1: the server had already stopped"
   fi
-  rm -f "$f"
+  rm -f "$f" "$(print_file "$1")"
 }
 
 # "all stop": every server this script started
@@ -246,7 +280,7 @@ EOF_CMDS
     fi
     run_one "npm run $action" "npm run $action"
     [ "$failed" -eq 0 ] && info "Write this run in the card's develop.md (for the deployment doc)." ;;
-  start) [ $# -eq 2 ] || { usage; exit 2; }; do_start ;;
+  start) { [ $# -eq 2 ] || { [ $# -eq 3 ] && [ "$3" = "--no-wait" ]; }; } || { usage; exit 2; }; do_start "${3:-}" ;;
   status) [ $# -eq 2 ] || { usage; exit 2; }
     if repo_answers "$REPO"; then
       if started_here "$REPO"; then ok "$REPO is running (started by closio-agent)"; else ok "$REPO is running (started outside closio-agent)"; fi

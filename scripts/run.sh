@@ -32,7 +32,8 @@
 #
 # runs/<KEY>/ folders are git-ignored on main (/runs/*/ in .gitignore); they're committed only to their card's branch.
 # Files (plain markdown, never a secret):
-#   runs/<KEY>/state.md     key: value lines (card, title, type, phase, step, jira_status, jira_comment, repos, branch, run_branch, next, updated)
+#   runs/<KEY>/state.md     key: value lines (card, title, type, size, phase, step, jira_status, jira_comment, repos, branch, run_branch, next, updated);
+#                           size: small (the small-card lane, D90) or full, set when the plan is approved
 #   runs/<KEY>/history.md   a table: when · step · what happened · rules and memory applied
 #   runs/<KEY>/card.md      the card as read from Jira (+ what the user explained)   } written by the command
 #   runs/<KEY>/plan.md      the approved plan                                         }
@@ -46,7 +47,7 @@ AGENT_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 RUNS_DIR="${RUNS_DIR:-$AGENT_ROOT/runs}"
 QUICK_DIR="${QUICK_DIR:-$AGENT_ROOT/local/quick-checks}"
 CMD="/flow-start"
-FIELDS="card title type phase step jira_status jira_comment repos branch run_branch next updated"
+FIELDS="card title type size phase step jira_status jira_comment repos branch run_branch next updated"
 
 ok() { echo "✅ $1"; }
 look() {
@@ -207,6 +208,7 @@ do_create() { # <key> <title>
     echo "card: $key"
     echo "title: $title"
     echo "type: "
+    echo "size: "
     echo "phase: pick-up"
     echo "step: 1"
     echo "jira_status: "
