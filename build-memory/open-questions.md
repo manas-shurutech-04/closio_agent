@@ -31,6 +31,14 @@
 - **Waiting on the user (D88, 2026-10-23):** make an Atlassian API token, run `/flow-configure-user jira-email` and `/flow-configure-user jira-api-token`, then `/flow-doctor` ("The Jira API backup works") and one read, e.g. `bash scripts/jira-api.sh get SCRUM-567`: the backup is tested only against a stand-in Jira so far.
 - **Waiting on the user (D89, 2026-10-23):** approve the new hook once in Codex (`/hooks`, "Right before Codex ends its turn", `bash scripts/build-sweep-hook.sh`) on the builder's Mac, and see one hold-back in a Codex build session. On a teammate's Mac Codex lists it too: it does nothing there; `/flow-doctor` asks everyone to approve the hooks again once, because `.codex/hooks.json` changed.
 - **Waiting on the user (D90, D91, 2026-10-23):** not tried yet in a real session: Claude Code's new deny rules for `git … .env`, a small card through `flow-start` and `flow-verify`, the one call per step on a real card, and a real summary in either tool (the hook flagging the rules).
+- **For the user (D92, 2026-10-24): bugs the new tests found, left as they are** (each test expects today's behaviour, with a comment):
+  - `card-branch.sh`: the "to undo the rebase: … rebase --abort" tip never shows at the first conflict (`stop_conflict` matches its first argument exactly).
+  - `ship.sh` `push_failed`: a push GitLab's own hook declines ("remote rejected … pre-receive hook declined") is reported as "someone else pushed".
+  - `run.sh step` on a card with no folder: exits 1 with no ❌ and no fix (its `do_log` output goes to /dev/null), against rule A11.
+  - `gitlab-mr.sh comments`: a page that isn't JSON makes the loop ask for all 20 pages and print about 40 error lines before its ❌.
+  - `setup-repo.sh run all`: a BullMQ repo after a Redis repo skips the BullMQ memory-setting check.
+  - Service lists need ", " (`local_services: redis,rabbitmq` drops rabbitmq) in `setup-repo.sh` and `doctor.sh`; every repo file uses ", " today.
+  - Cosmetic: `api-check.sh` an extra blank line; `repo-run.sh` doesn't read a one-line package.json; git's own error lines before some ❌; `memory.sh` "These 1 entry"; `help.sh` and doctor's terminal/plain wrapping; stray spaces in `configure-repo.sh detect`; `card-check.sh` defines `in_qa` and never calls it.
 
 ## Resolved
 
