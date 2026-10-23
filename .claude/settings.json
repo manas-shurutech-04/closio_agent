@@ -66,6 +66,11 @@
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/card-autosave-hook.sh\"",
             "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/build-sweep-hook.sh\"",
+            "timeout": 60
           }
         ]
       }

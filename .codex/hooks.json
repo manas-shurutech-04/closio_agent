@@ -18,6 +18,11 @@
             "type": "command",
             "command": "bash scripts/card-autosave-hook.sh",
             "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/build-sweep-hook.sh",
+            "timeout": 60
           }
         ]
       }
