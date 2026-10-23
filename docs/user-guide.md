@@ -1,6 +1,6 @@
 # closio-agent, step by step
 
-**Claude artifact:** https://claude.ai/code/artifact/a83b1e2a-0e5a-4378-b791-26b9f34e8b7a · mirrored on 2026-10-21 · commands: flow-ac-check, flow-check-card, flow-configure-repo, flow-configure-user, flow-develop, flow-doctor, flow-finish, flow-grill, flow-help, flow-memory, flow-ping, flow-push, flow-qa, flow-review, flow-setup-repo, flow-start, flow-status, flow-verify, flow-vpn
+**Claude artifact:** https://claude.ai/code/artifact/a83b1e2a-0e5a-4378-b791-26b9f34e8b7a · mirrored on 2026-10-23 · commands: flow-ac-check, flow-check-card, flow-configure-repo, flow-configure-user, flow-develop, flow-doctor, flow-finish, flow-grill, flow-help, flow-memory, flow-ping, flow-push, flow-qa, flow-review, flow-setup-repo, flow-start, flow-status, flow-verify, flow-vpn
 
 **Presentation:** [closio-agent at a glance](https://claude.ai/artifact/TvNhSGz3gP8YdxkqHXJPaZ): 21 slides for the whole team, with flowcharts and the reasons behind each decision. It's private until it's shared from its Share menu.
 
@@ -167,14 +167,15 @@ Two rules that never change: **start in the closio-agent folder** (never inside 
 - **When:** now, and again after every fix. Also any time something feels wrong.
 - **What it does:** checks your whole setup and tells you how to fix each problem. It only reads.
 - **Options:** `/flow-doctor` on its own. In Codex, approve running it with network access.
-- **You see:** a heading per section (Project, Tools, VPN and GitLab, Personal settings, User memory, Commands documented, Card hooks, Cards in progress, Checking web cards, Repos, Repo setup, Keychain, Jira), one ✅/⚠️/❌ line per check, each problem in bold with its **Fix:** or **Tip:** under it, commands in color, and at the end **Result: N to fix, M to look at.** `bash scripts/doctor.sh` in a terminal shows the same, in color (without the Jira check).
+- **You see:** a heading per section (Project, Tools, VPN and GitLab, Personal settings, User memory, Commands documented, Card hooks, Cards in progress, Checking web cards, Repos, Repo setup, Keychain, Jira API backup, Jira), one ✅/⚠️/❌ line per check, each problem in bold with its **Fix:** or **Tip:** under it, commands in color, and at the end **Result: N to fix, M to look at.** `bash scripts/doctor.sh` in a terminal shows the same, in color (without the Jira check).
 - **If ❌:** do what the "Fix:" line says, then run `/flow-doctor` again. The first time, expect ❌ for the personal settings, the Keychain items and the repos: the next steps fill them in.
 
 ### Step 6: `/flow-configure-user`
 
 - **When:** once, after the first `/flow-doctor`. Again whenever something personal changes (e.g. a new GitLab token).
-- **What it does:** sets up everything that's yours: your Jira account (found automatically), GitLab username, workspace folder, which AI tools you use, git name and email, your 5 secrets, and Playwright for checking web cards (it asks before that download: about 150 MB, about 430 MB on disk). It asks only for what's missing.
-- **Options:** `/flow-configure-user` (everything that's missing), or `/flow-configure-user <item>` for one item: `jira-account-id`, `gitlab-username`, `workspace-dir`, `ai-tools`, `vpn-username` (optional, not needed), `git-name`, `git-email`, `gitlab-token`, `fe-login-id`, `fe-login-password`, `ws1-login-userid`, `ws1-login-password`, `playwright`.
+- **What it does:** sets up everything that's yours: your Jira account (found automatically), GitLab username, workspace folder, which AI tools you use, git name and email, your 5 secrets, and Playwright for checking web cards (it asks before that download: about 150 MB, about 430 MB on disk). It asks only for what's missing. Optional, only when you name them: your Jira email and Atlassian API token, for the Jira API backup.
+- **Options:** `/flow-configure-user` (everything that's missing), or `/flow-configure-user <item>` for one item: `jira-account-id`, `gitlab-username`, `workspace-dir`, `ai-tools`, `vpn-username` (optional, not needed), `git-name`, `git-email`, `gitlab-token`, `fe-login-id`, `fe-login-password`, `ws1-login-userid`, `ws1-login-password`, `playwright`; optional: `jira-email`, `jira-api-token`.
+- **Optional, the Jira API backup ([D88](design-decisions.md#d88)):** when the Jira connector isn't there, the commands switch by themselves to Jira's API and say so in one line. To set it up: make an Atlassian API token ([setup guide, section 3.1](setup-guide.md#31-the-jira-api-backup-optional)), then `/flow-configure-user jira-email` and `/flow-configure-user jira-api-token` (the token goes in the hidden box, like the other secrets). Without it, a missing connector stops the command with both fixes.
 - **How the secrets are asked:** never in the chat. A macOS message says which secret is next ("Copy it now, then click Continue"), then a hidden box opens: paste it there. It goes straight into your Mac's Keychain. Have your GitLab token ready ([setup guide, section 4](setup-guide.md#4-gitlab)) and your two test logins.
 - **You see:** your settings with ✅/❌, and "✅ stored" for each secret. Values are never shown.
 - **If ❌:** the line says which item to redo, e.g. `/flow-configure-user gitlab-token`.
@@ -240,6 +241,7 @@ Every step is built: picking a card up, planning it, developing it with you, che
 
 - **The card's folder** (`runs/SCRUM-567/`): where closio-agent keeps a card's notes: the card, the plan, what was built and checked, and its history.
 - **The card's saved copy** (the branch `runs/SCRUM-567`): that folder saved on GitHub, so you or a teammate can carry on from another Mac. It never goes into `main`. It's saved automatically at the end of every reply while you work on the card, whenever the folder changed ("SCRUM-567: auto-saved after /flow-develop"), so nobody has to push it by hand ([D87](design-decisions.md#d87)).
+- **The Jira API backup:** when the Jira connector isn't there, the commands use Jira's API instead, by themselves, and say "Jira connector not available: using the Jira API backup." Everything else stays the same, your yes stops too ([D88](design-decisions.md#d88)).
 - **Where a card stands:** being picked up · planning · in development · being checked · ready to push · waiting for the merge · finished.
 - **Full or quick check:** the two ways `/flow-verify` checks a card: full saves test cases and runs them; quick checks each AC directly against the running code.
 - **MR:** a merge request on GitLab.
@@ -380,7 +382,7 @@ Every flow command that exists is in this table. That's a rule: a new command is
 |---|---|---|
 | [`flow-ping`](commands.md#flow-ping) | Are the flow commands loaded in this tool? | `/flow-ping` · `/flow-ping <any text>` |
 | [`flow-doctor`](commands.md#flow-doctor) | Checks your setup and shows how to fix each problem | `/flow-doctor` |
-| [`flow-configure-user`](commands.md#flow-configure-user) | Your personal settings and your 5 secrets | `/flow-configure-user` · `/flow-configure-user <item>` |
+| [`flow-configure-user`](commands.md#flow-configure-user) | Your personal settings and your 5 secrets (optional: the Jira API backup) | `/flow-configure-user` · `/flow-configure-user <item>` |
 | [`flow-configure-repo`](commands.md#flow-configure-repo) | Registers a repo, or sets it up on your Mac | `/flow-configure-repo` · `/flow-configure-repo <repo-name>` · `/flow-configure-repo <path of a clone>` · `/flow-configure-repo <repo-name> key <name>` · `/flow-configure-repo <repo-name> path <full path \| not-cloned>` |
 | [`flow-setup-repo`](commands.md#flow-setup-repo) | Gets a repo ready to work on, or sets its dev address | `/flow-setup-repo` · `/flow-setup-repo <repo-name>` · `/flow-setup-repo all` · add `install` or `services` · `/flow-setup-repo <repo-name> dev-address [<url>]` · `/flow-setup-repo all dev-address` |
 | [`flow-vpn`](commands.md#flow-vpn) | The Japfa VPN | `/flow-vpn connect` · `/flow-vpn status` · `/flow-vpn disconnect` |

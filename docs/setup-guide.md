@@ -108,7 +108,7 @@ The first time you start Claude Code in this folder, it asks whether you trust i
 2. Start Claude Code or Codex the right way (above).
 3. `/flow-ping`: are the commands loaded?
 4. `/flow-doctor`: what's missing?
-5. `/flow-configure-user`: your personal settings and secrets.
+5. `/flow-configure-user`: your personal settings and secrets. Optional: the Jira API backup (section 3.1).
 6. `/flow-configure-repo`: for each repo you work on, where your clone is and its dev keys.
 7. `/flow-setup-repo all`: gets every repo you've cloned ready (Node version, packages, local Redis and RabbitMQ, `.env` check, tests, folder access).
 8. `/flow-vpn connect`, then `/flow-doctor` again: everything should be ✅ or ⚠️.
@@ -219,6 +219,16 @@ sudo rm -f /etc/resolver/japfacomfeed.co.id
 > **If Jira shows ❌ right after starting Claude Code:** the Atlassian connector can take a while to load, or time out (seen on 2026-10-13: "tools fetch failed — Request timed out"). The flow commands wait and retry for about 30 seconds. If it's still ❌: type `/mcp`, choose "claude.ai Atlassian MCP", then **Reconnect**, and run the command again.
 | Codex | **The Atlassian app connected to the ChatGPT account you use for Codex.** Codex then has Jira tools by itself (it shows them as `codex_apps`). How to connect the app in ChatGPT isn't written up here yet. **Other way:** Atlassian's MCP server: `codex mcp add atlassian --url https://mcp.atlassian.com/v2/mcp`, then `codex mcp login atlassian` (approve in the browser), start Codex again, check with `codex mcp list` (steps from Atlassian's docs) | ✅ the ChatGPT app way verified on 2026-10-11 (`$flow-doctor` read project SCRUM). 🛠 The MCP server way is not tested |
 
+### 3.1 The Jira API backup (optional)
+
+When the Jira connector isn't there (it didn't load after the 3 tries, it isn't connected in the account you use, or a Jira tool fails), the commands **switch by themselves** to Jira's REST API and say so in one line: "Jira connector not available: using the Jira API backup." They then do the same things there: read the card and its comments, move it, set its sprint and assignee, post or edit a comment, create a card. Every yes stop stays ([D88](design-decisions.md#d88), rule A31). It needs two things, both optional, set once:
+
+1. **An Atlassian API token.** Open https://id.atlassian.com/manage-profile/security/api-tokens, signed in with the email you use for Jira. Click **Create API token** (not "Create API token with scopes"), name it `closio-agent`, choose its expiry date (at most a year), and copy it.
+2. **`/flow-configure-user jira-email`:** type that email (it's not a secret; saved in `local/user-settings.sh`).
+3. **`/flow-configure-user jira-api-token`:** a heads-up message, then a hidden macOS box: paste the token there, never in the chat. It goes to the Keychain as `closio-agent.jira-api-token` and is then checked: "✅ The Jira API backup works: signed in as …".
+
+`/flow-doctor` shows it in its "Jira API backup" section: ✅ when Jira accepts it, ⚠️ when it isn't set up (never ❌: it's optional). When the token expires, make a new one and run `/flow-configure-user jira-api-token` again.
+
 ---
 
 ## 4. GitLab
@@ -273,13 +283,14 @@ security add-generic-password -U -a "$USER" -s "closio-agent.gitlab-token" -l "c
 | `closio-agent.fe-login-password` | Your password for the Closio web app | Same |
 | `closio-agent.ws1-login-userid` | Your `userid` for the **dev** WS1 login API | Fetching the WS1 session cookie for backend tests: always on the dev WS1, then used on the WS1 on this Mac ([D20](design-decisions.md#d20), [D71](design-decisions.md#d71)) |
 | `closio-agent.ws1-login-password` | Your password for the **dev** WS1 login API | Same |
+| `closio-agent.jira-api-token` | **Optional:** your Atlassian API token (section 3.1) | The Jira API backup, when the Jira connector isn't there ([D88](design-decisions.md#d88)) |
 | `closio-agent.nodejs-ws1closio.ws1-client-id.dev` | WS1's own client ID, which WS1 sends to the WS2s (the value of `WS1_AUTH_CLIENT_ID` in WS1's `.env`) | Every direct WS2 call in the checks sends it, as WS1 does ([D37](design-decisions.md#d37)) |
 | `closio-agent.nodejs-ws1closio.ws1-client-secret.dev` | WS1's own client secret (`WS1_AUTH_SECRET_KEY`) | Same |
 | `closio-agent.<repo>.ws2-client-id.dev`, `…ws2-client-secret.dev` | **Optional:** only for a WS2 to which WS1 sends another pair (the pricing engine: WS1's `PRICING_ENGINE_CLIENT_ID` / `PRICING_ENGINE_SECRET_KEY`); used instead of WS1's pair for that WS2 | Same |
 | `closio-agent.<repo>.db-user.dev`, `closio-agent.<repo>.db-password.dev` | **Optional:** your dev database user and password for that repo | Checking migrations on dev, writing QA steps ([D51](design-decisions.md#d51)) |
 | `closio-agent.<repo>.<name>.dev` | Any extra key a repo needs (e.g. a partner API key) | As registered for the repo |
 
-The per-repo keys above are asked by `/flow-configure-repo <repo>` (heads-up, then hidden box); the 5 personal ones by `/flow-configure-user`.
+The per-repo keys above are asked by `/flow-configure-repo <repo>` (heads-up, then hidden box); the 5 personal ones by `/flow-configure-user` (the optional `jira-api-token` only when you name it: `/flow-configure-user jira-api-token`).
 
 **Which pair does a WS2 check?** The **caller's**, never a key of the WS2 itself. Each repo that calls a WS2 sends its own client ID and secret in `x-client-id` / `x-client-secret`, and the WS2 checks them against the callers listed in its `SERVICE_CREDENTIALS`. closio-agent's direct WS2 calls act as WS1, so you save **WS1's** pair once, under WS1: what WS1 sends (from its `src/utils/axiosInstances.js`):
 
