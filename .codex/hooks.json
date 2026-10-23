@@ -10,6 +10,17 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/card-autosave-hook.sh",
+            "timeout": 60
+          }
+        ]
+      }
     ]
   }
 }

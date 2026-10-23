@@ -8,9 +8,11 @@
 #     /flow-finish, /flow-qa, or /flow-grill with a card key ($flow-… in Codex); /flow-status alone only reads;
 #   - it names a card key (SCRUM-567, any case);
 #   - an earlier prompt in the same session was about a card (decisions are made in replies like "yes"):
-#     the session is remembered in local/card-sessions/ (git-ignored; entries older than 7 days are removed).
-# When Codex runs it (only Codex sends a turn_id), it leaves local/card-sessions/codex-ran: flow-doctor's sign that the
-# user has trusted the hook in Codex (D86).
+#     the session is remembered in local/card-sessions/<session> (git-ignored; entries older than 7 days are removed),
+#     with the card keys it named ("key SCRUM-567") and its last command ("last /flow-develop", or "last a reply"):
+#     what the auto-save hook (scripts/card-autosave-hook.sh, D87) saves at the end of each reply, and its message.
+# When Codex runs it (only Codex sends a turn_id), it leaves local/card-sessions/codex-ran with the hash of
+# .codex/hooks.json: flow-doctor's sign that the user has trusted that hook file in Codex (D86).
 # Otherwise it prints nothing. It never blocks a prompt and never reads .env values or secrets (A6): on any problem
 # it prints nothing and exits 0, so the prompt goes on as typed.
 #
@@ -34,7 +36,8 @@ session="$(field session_id | tr -cd 'A-Za-z0-9._-')"
 event="$(field hook_event_name)"; event="${event:-UserPromptSubmit}"
 CODEX_RAN="$SESSIONS_DIR/codex-ran"
 if [ -n "$(field turn_id)" ]; then   # Codex runs it, so the user has trusted it there
-  mkdir -p "$SESSIONS_DIR" 2>/dev/null && : > "$CODEX_RAN" 2>/dev/null
+  mkdir -p "$SESSIONS_DIR" 2>/dev/null &&
+    shasum -a 256 "$AGENT_ROOT/.codex/hooks.json" 2>/dev/null | cut -d' ' -f1 > "$CODEX_RAN" 2>/dev/null
 fi
 
 KEY_RE="${JIRA_PROJECT_KEY:-SCRUM}-[0-9]+"
@@ -51,15 +54,19 @@ fi
 
 marker=""
 [ -n "$session" ] && marker="$SESSIONS_DIR/$session"
-if [ "$about_card" = yes ]; then
-  if [ -n "$marker" ]; then
-    mkdir -p "$SESSIONS_DIR" 2>/dev/null && : > "$marker" 2>/dev/null
-    find "$SESSIONS_DIR" -type f -mtime +7 ! -name codex-ran -delete 2>/dev/null
-  fi
-elif [ -n "$marker" ] && [ -f "$marker" ]; then
-  about_card=yes   # a later prompt in a session that's working on a card
-fi
+[ "$about_card" = no ] && [ -n "$marker" ] && [ -f "$marker" ] && about_card=yes   # a later prompt in a card session
 [ "$about_card" = yes ] || exit 0
+
+# Remember the session's cards and this prompt's command, for the auto-save at the end of the reply (D87).
+if [ -n "$marker" ] && mkdir -p "$SESSIONS_DIR" 2>/dev/null; then
+  command_typed="$(printf '%s' "$prompt" | grep -o -E '^[[:space:]]*[/$]flow-[a-z-]+' | head -n 1 | tr -d '[:space:]' | sed 's/^\$/\//')"
+  { { grep '^key ' "$marker" 2>/dev/null | cut -c5-
+      printf '%s\n' "$prompt" | grep -o -i -E "$KEY_RE" | tr '[:lower:]' '[:upper:]'
+    } | grep -E "^$KEY_RE\$" | sort -u | sed 's/^/key /'
+    echo "last ${command_typed:-a reply}"
+  } > "$marker.tmp" 2>/dev/null && mv "$marker.tmp" "$marker" 2>/dev/null
+  find "$SESSIONS_DIR" -type f -mtime +7 ! -name codex-ran -delete 2>/dev/null
+fi
 
 context="closio-agent's card rules (rulesets/card-rules.md, added by the card-rules hook): follow them in this turn.
 

@@ -46,6 +46,17 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/card-autosave-hook.sh\"",
+            "timeout": 60
+          }
+        ]
+      }
     ]
   }
 }
