@@ -134,6 +134,11 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     `.claude/settings.json` and `.codex/hooks.json`, runs only on the builder's Mac (the git-ignored marker `local/builder`),
     only when closio-agent's own files have uncommitted changes, and never in a card session. When it holds you back with a
     list of missing updates (changelog, history, decision index, rule copies and counts, a command's docs, `help.sh check`,
-    the guide's mirrored date, a new script's docs and pre-approvals, the rule files), make each one in the same reply, or say
-    why it isn't needed, and say which files you updated. Never run it, wire it into a command or use it in a card session,
-    and never make `local/builder` on another Mac.
+    the guide's mirrored date, a new script's docs and pre-approvals, a changed script's tests, the rule files), make each
+    one in the same reply, or say why it isn't needed, and say which files you updated. Never run it, wire it into a
+    command or use it in a card session, and never make `local/builder` on another Mac.
+29. closio-agent's own tests (build rule R20, D92): a change to a script in `scripts/` comes with its tests in
+    `tests/unit/<script>.test.sh` (what changed, its error paths too; a new script gets its own file), and `bash tests/run.sh`
+    passes before anything is committed; `bash tests/run.sh --coverage` keeps all scripts together at 90% line coverage or
+    more. Tests run only against the fakes in `tests/fakes/`: never the real Jira, GitLab, VPN, Keychain, home folder, or
+    this folder's `local/` and `runs/`.

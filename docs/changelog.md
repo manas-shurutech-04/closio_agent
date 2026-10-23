@@ -4,6 +4,7 @@ Dated list of what changed in closio-agent. Newest first.
 
 ## 2026-10-23
 
+- **closio-agent's own tests** ([D92](design-decisions.md#d92), build rule R20, new rule 29 in `AGENTS.md`): 671 tests, covering 99.7% of the scripts' lines. `bash tests/run.sh` checks closio-agent's scripts, commands and rules against fakes: no AI, no real Jira, GitLab, VPN or Keychain, nothing to install. `bash tests/run.sh --coverage` also shows the share of the scripts' lines the tests ran, and fails under 90%. Every script change now comes with its tests. How to run them: [setup guide](setup-guide.md#test-closio-agent-itself).
 - **One call after every step of a card command** ([D91](design-decisions.md#d91), rule A17 / `AGENTS.md` rule 12 reworded). The AI reads `AGENTS.md` and `docs/agent-rules.md` in full when a card command starts, and again only when one of them changed or the conversation was summarized. After every step, one call (`bash scripts/run.sh step …`) writes the history line, moves to the next step, checks the rules files and prints your memory for the next step. When a rules file changed, the AI says so in one line, reads it again and goes on, and the card's history gets one line saying from where. Old history lines are never rewritten.
   - **Codex:** the hook file changed, so approve the hooks again in `/hooks`, including the new one under "After context compaction".
 - **Faster card work, with the same checks** ([D90](design-decisions.md#d90)), from a testing agent's suggestions and your answers:

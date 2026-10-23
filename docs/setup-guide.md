@@ -131,6 +131,20 @@ If something is wrong:
 
 ---
 
+### Test closio-agent itself
+
+Changing a script, a command or a rule of closio-agent? Run its own tests before you commit ([D92](design-decisions.md#d92), build rule R20). From the closio-agent folder, in a terminal or in the AI tool:
+
+```bash
+bash tests/run.sh
+```
+
+- **Nothing to install**, nothing real is touched: the tests use the Mac's own bash, git, jq, python3 and curl, and run against fakes (a fake Jira, a fake GitLab, fake remotes, a fake Keychain, stand-ins for `sudo`, `osascript`, `openfortivpn`, `brew`, `docker`…). No AI, no VPN, no real Jira or GitLab, never your `local/`, `runs/`, Keychain or home folder.
+- **What you see:** one line per test (✅ or ❌, a failure with what was expected and what came back), then `passed N, failed M`. Exit code 0 when everything passed.
+- **Only some tests:** `bash tests/run.sh run.sh jira` runs the test files whose name has one of the words.
+- **Coverage:** `bash tests/run.sh --coverage` also shows, per script and in total, the share of its lines the tests ran, and fails under 90% (the lines not run: `local/test-coverage/missed.txt`).
+- **Where they are:** `tests/unit/<script>.test.sh` (one file per script), `tests/static/` (the commands and the rules: every command documented and pre-approved, rules numbered, decision links), `tests/flows/` (a card's journey through the scripts), `tests/fakes/`, `tests/lib/` (the runner's helpers).
+
 ## 2. VPN ✅ verified
 
 GitLab, the dev API and the dev database are **only reachable over the Japfa VPN**. `closio-agent` uses **openfortivpn**, a command-line client, instead of the FortiClient app, so it can connect by itself ([D14](design-decisions.md#d14)).

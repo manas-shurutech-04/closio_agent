@@ -33,7 +33,7 @@ People across the organisation, both existing and new team members. That's why e
 
 ## Agent Behaviour Rules (from user)
 
-These are the rules for the **agent** (closio-agent when it runs). The team copy, with each rule's decision and where it's applied, is `docs/agent-rules.md` (G1–G4 too); the ones the AI must follow in every session are also in `AGENTS.md`. Update all three together. The rules for **building** the agent are R1–R19 in `rules.md`.
+These are the rules for the **agent** (closio-agent when it runs). The team copy, with each rule's decision and where it's applied, is `docs/agent-rules.md` (G1–G4 too); the ones the AI must follow in every session are also in `AGENTS.md`. Update all three together. The rules for **building** the agent are R1–R20 in `rules.md`.
 
 - A1: For every Jira card, **each step creates a history entry**. If the run is paused midway, the context must be saved in files so it can resume from there.
 - A2: Any GitLab operation (pull, fetch, push, MR) connects to the VPN **automatically** if it isn't connected. The user never connects manually. They only type the `sudo` password, plus the SSO login if the browser session has expired.
