@@ -4,6 +4,7 @@ Dated list of what changed in closio-agent. Newest first.
 
 ## 2026-10-24
 
+- **closio-agent's tests in about 25 seconds** ([D93](design-decisions.md#d93), build rule R20 and rule 29 in `AGENTS.md`): `bash tests/run.sh --docker --coverage` runs every test in a Linux container with the Mac's bash 3.2, instead of about 11 minutes on the Mac (its security software checks every program the tests start). It's now the check before a commit. Start Docker Desktop first; the first run builds the test image (about 90 MB, once). Without Docker Desktop, `bash tests/run.sh --coverage` still runs the same tests on the Mac. Every test now runs as a job of its own, so a file with slow tests no longer holds up the end.
 - **Four fixes the new tests found** ([D92](design-decisions.md#d92)):
   - `ship.sh`: a push GitLab's own rules decline (a protected branch, a push rule, a server hook) now says so, with GitLab's reason, instead of "someone else pushed".
   - `card-branch.sh`: the "to undo the rebase" tip now shows at every rebase conflict, the first one too.

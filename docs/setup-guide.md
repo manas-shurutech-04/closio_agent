@@ -133,17 +133,19 @@ If something is wrong:
 
 ### Test closio-agent itself
 
-Changing a script, a command or a rule of closio-agent? Run its own tests before you commit ([D92](design-decisions.md#d92), build rule R20). From the closio-agent folder, in a terminal or in the AI tool:
+Changing a script, a command or a rule of closio-agent? Run its own tests before you commit ([D92](design-decisions.md#d92), [D93](design-decisions.md#d93), build rule R20). Start Docker Desktop, then from the closio-agent folder, in a terminal or in the AI tool:
 
 ```bash
-bash tests/run.sh
+bash tests/run.sh --docker --coverage
 ```
 
-- **Nothing to install**, nothing real is touched: the tests use the Mac's own bash, git, jq, python3 and curl, and run against fakes (a fake Jira, a fake GitLab, fake remotes, a fake Keychain, stand-ins for `sudo`, `osascript`, `openfortivpn`, `brew`, `docker`…). No AI, no VPN, no real Jira or GitLab, never your `local/`, `runs/`, Keychain or home folder.
+- **About 25 seconds**, in a Linux container with the Mac's own bash 3.2. The first run builds the test image (it downloads about 90 MB, once); it's built again by itself only when `tests/docker/` changes. A few tools work differently on Linux (`sed`, `stat`, `date`, `fold`, `script`): the image has small stand-ins that take the Mac's form, so the scripts and tests stay the same.
+- **Without Docker Desktop:** `bash tests/run.sh --coverage` runs the same tests on the Mac itself. It takes about 11 minutes on a Mac with security software (every program it starts is checked).
+- **Nothing to install** besides Docker Desktop, nothing real is touched: the tests use bash, git, jq, python3 and curl, and run against fakes (a fake Jira, a fake GitLab, fake remotes, a fake Keychain, stand-ins for `sudo`, `osascript`, `openfortivpn`, `brew`, `docker`…). No AI, no VPN, no real Jira or GitLab, never your `local/`, `runs/`, Keychain or home folder.
 - **What you see:** one line per test (✅ or ❌, a failure with what was expected and what came back), then `passed N, failed M`. Exit code 0 when everything passed.
-- **Only some tests:** `bash tests/run.sh run.sh jira` runs the test files whose name has one of the words.
-- **Coverage:** `bash tests/run.sh --coverage` also shows, per script and in total, the share of its lines the tests ran, and fails under 90% (the lines not run: `local/test-coverage/missed.txt`).
-- **Where they are:** `tests/unit/<script>.test.sh` (one file per script), `tests/static/` (the commands and the rules: every command documented and pre-approved, rules numbered, decision links), `tests/flows/` (a card's journey through the scripts), `tests/fakes/`, `tests/lib/` (the runner's helpers).
+- **Only some tests:** `bash tests/run.sh --docker run.sh jira` runs the test files whose name has one of the words.
+- **Coverage:** `--coverage` also shows, per script and in total, the share of its lines the tests ran, and fails under 90% (the lines not run: `local/test-coverage/missed.txt`).
+- **Where they are:** `tests/unit/<script>.test.sh` (one file per script), `tests/static/` (the commands and the rules: every command documented and pre-approved, rules numbered, decision links), `tests/flows/` (a card's journey through the scripts), `tests/fakes/`, `tests/lib/` (the runner's helpers), `tests/docker/` (the test image and its stand-ins).
 
 ## 2. VPN ✅ verified
 
