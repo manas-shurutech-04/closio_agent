@@ -21,6 +21,9 @@
 #                                    Prints its number, which the other files of the folder point to ("decision 3")
 #   save <KEY> "<message>"           Commits runs/<KEY>/ to the card's branch and pushes it (D61), without switching
 #                                    this folder: a temporary git index, so the working tree and its changes are untouched
+#   unsaved <KEY>                    For the auto-save hook (D87): exit 0 when runs/<KEY>/ has changes to save or a save not
+#                                    pushed yet; 1 when GitHub already has it all (or a teammate's newer save is there); 3 when
+#                                    the card's branch isn't on this Mac. Prints nothing.
 #   list                             Every card in progress, from the run branches on this Mac and on origin; then the
 #                                    finished ones (phase done, after flow-finish; their run branch stays as the record, D72)
 #   quick-clean <KEY>                Removes local/quick-checks/<KEY>/: the scratch files of flow-verify's quick check
@@ -57,7 +60,7 @@ bad() {
 usage() {
   echo "Usage: bash scripts/run.sh check-folder | branch <KEY> | create <KEY> \"<title>\" | state <KEY> | status <KEY> | get <KEY> <field>"
   echo "       | set <KEY> <field> <value> | log <KEY> <step> \"<what>\" [\"<rules and memory>\"]"
-  echo "       | decide <KEY> <step> \"<question>\" \"<decided>\" \"<who / why>\" | save <KEY> \"<message>\" | list | quick-clean <KEY> | count | problems"
+  echo "       | decide <KEY> <step> \"<question>\" \"<decided>\" \"<who / why>\" | save <KEY> \"<message>\" | unsaved <KEY> | list | quick-clean <KEY> | count | problems"
 }
 now() { date '+%Y-%m-%d %H:%M'; }
 valid_key() { printf '%s' "$1" | grep -q -E "^$JIRA_PROJECT_KEY-[0-9]+$"; }
@@ -292,6 +295,18 @@ do_decide() { # <key> <step> <question> <decided> <who / why>: one numbered row 
   ok "$key: decision $n: $(printf '%s' "$question" | tr '\n' ' ') → $(printf '%s' "$decided" | tr '\n' ' ')"
 }
 
+# Is there anything of runs/<KEY>/ to save or push? (the auto-save hook, D87)
+do_unsaved() { # <key>
+  local key="$1" br
+  br="$(run_branch "$key")"
+  [ -d "$(run_dir "$key")" ] || return 1
+  git_here show-ref --verify --quiet "refs/heads/$br" || return 3
+  [ "$(disk_tree "$key")" != "$(branch_tree "refs/heads/$br" "$key")" ] && return 0
+  git_here show-ref --verify --quiet "refs/remotes/$GIT_REMOTE/$br" || return 0   # saved here, never pushed
+  git_here merge-base --is-ancestor "refs/heads/$br" "refs/remotes/$GIT_REMOTE/$br" 2>/dev/null && return 1
+  return 0
+}
+
 do_save() { # <key> <message>
   local key="$1" msg="${2:-update}" br rel tmp tree parent commit root
   br="$(run_branch "$key")"; rel="$(rel_runs)/$key"; root="$(git_root)"
@@ -393,6 +408,7 @@ case "$action" in
   log) need_key "${2:-}"; [ -n "${3:-}" ] && [ -n "${4:-}" ] || { usage; exit 2; }; do_log "$2" "$3" "$4" "${5:-}" ;;
   decide) need_key "${2:-}"; [ -n "${3:-}" ] && [ -n "${4:-}" ] && [ -n "${5:-}" ] && [ -n "${6:-}" ] || { usage; exit 2; }; do_decide "$2" "$3" "$4" "$5" "$6" ;;
   save) need_key "${2:-}"; do_save "$2" "${3:-}" ;;
+  unsaved) need_key "${2:-}"; do_unsaved "$2" ;;
   list) do_list ;;
   quick-clean) need_key "${2:-}"
     if [ -d "$QUICK_DIR/$2" ]; then rm -rf "${QUICK_DIR:?}/$2" && ok "Removed local/quick-checks/$2/ (the quick check's scratch files)"; else ok "Nothing to remove: no local/quick-checks/$2/"; fi ;;
