@@ -11,3 +11,8 @@
 - Before you end your reply: if a decision was confirmed in this turn and isn't in `runs/<KEY>/decisions.md` yet, write it first.
 - The card's other files (`card.md`, `plan.md`, `develop.md`, `verify.md`, `ship.md`, `review.md`, `qa.md`) only point to it in one line, e.g. `- Error code for a bad status: VALIDATION_ERROR (decision 3)`.
 - A card that isn't picked up yet has no folder: say what was decided in the chat; it's recorded when the card is picked up.
+
+## 2. Use the ways that don't ask, and never a `.env` file
+
+- Read a repo's code with your tool's own read and search tools. Its git history and changes: `bash scripts/repo-git.sh <repo> log | diff | status | show …` (read-only, never shows a `.env` file). Its tests, checks and servers: `bash scripts/repo-run.sh <repo> …`. These are pre-approved, so they don't stop for a prompt ([D90](../docs/design-decisions.md#d90)).
+- Not `cat`, `grep` or `git -C …` on a repo folder through the shell: they ask each time, and `cat` or `grep` could print a `.env` file. Never read or print a `.env` file's values (`AGENTS.md` rule 3).

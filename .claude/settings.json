@@ -14,6 +14,7 @@
       "Bash(bash scripts/run.sh *)",
       "Bash(bash scripts/card-branch.sh *)",
       "Bash(bash scripts/repo-run.sh *)",
+      "Bash(bash scripts/repo-git.sh *)",
       "Bash(bash scripts/api-call.sh *)",
       "Bash(bash scripts/api-check.sh *)",
       "Bash(bash scripts/response-shape.sh *)",
@@ -33,6 +34,13 @@
       "Bash(bash scripts/jira-api.sh sprint *)",
       "Bash(bash scripts/jira-api.sh comment *)",
       "Bash(bash scripts/jira-api.sh edit-comment *)",
+      "Bash(git log)",
+      "Bash(git log *)",
+      "Bash(git diff)",
+      "Bash(git diff *)",
+      "Bash(git status)",
+      "Bash(git status *)",
+      "Bash(git show *)",
       "Edit(/config/repos/**)",
       "Edit(/local/cards/**)",
       "Edit(/local/jira/**)",
@@ -45,6 +53,13 @@
       "mcp__claude_ai_Atlassian_MCP__transitionJiraIssue",
       "mcp__claude_ai_Atlassian_MCP__editJiraIssue",
       "mcp__claude_ai_Atlassian_MCP__addOrEditJiraIssueComment"
+    ],
+    "deny": [
+      "Bash(git log *.env*)",
+      "Bash(git diff *.env*)",
+      "Bash(git show *.env*)",
+      "Bash(git * --output*)",
+      "Bash(git * --ext-diff*)"
     ]
   },
   "hooks": {

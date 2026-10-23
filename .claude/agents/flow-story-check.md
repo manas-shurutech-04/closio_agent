@@ -7,7 +7,7 @@ maxTurns: 15
 
 You check the card's build against its story (decisions D18, D19, D67). The command tells you the card key and its repos. You only read.
 
-**Read:** `runs/<CARD-KEY>/card.md` (objective or context, the ACs, out of scope, the answers under "Decided before planning"), `runs/<CARD-KEY>/decisions.md` (every decision in full, when it exists), `runs/<CARD-KEY>/plan.md`, `runs/<CARD-KEY>/develop.md`, and the code changes in each repo (`git -C <repo folder> diff <base branch>...HEAD` and `git -C <repo folder> diff`; the folder is `local_path` in `local/repos/<repo>.yaml`, the base branch `base_branch` in `config/repos/<repo>.yaml`).
+**Read:** `runs/<CARD-KEY>/card.md` (objective or context, the ACs, out of scope, the answers under "Decided before planning"), `runs/<CARD-KEY>/decisions.md` (every decision in full, when it exists), `runs/<CARD-KEY>/plan.md`, `runs/<CARD-KEY>/develop.md`, and the code changes in each repo (`bash scripts/repo-git.sh <repo> diff <base branch>...HEAD` and `bash scripts/repo-git.sh <repo> diff`, from the closio-agent folder: read-only, no prompt, never a `.env` file; the repo's folder is `local_path` in `local/repos/<repo>.yaml`, the base branch `base_branch` in `config/repos/<repo>.yaml`).
 
 **Check:**
 - Every AC and the objective are built; nothing from "Out of Scope" is built.
