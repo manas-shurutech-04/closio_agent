@@ -18,6 +18,7 @@
 #     and bash scripts/help.sh check has no ❌;
 #   - docs/user-guide.md changed → its "mirrored on" date is today (the Claude artifact was updated too);
 #   - a new script → in docs/commands.md's helper scripts and pre-approved in both tools (a hook: set in both hook files);
+#   - a script changed or new → its tests changed or new too, tests/unit/<script>.test.sh (rule R20, D92);
 #   - a build change and no rule file changed → a reminder to check each rule file (R15 step 6).
 # Something missing: it holds the AI back once ({"decision":"block","reason":…}), so the AI updates it in the same reply.
 # Never twice in one reply (stop_hook_active), and the same list is never repeated in a session (local/build-sweep/).
@@ -102,6 +103,13 @@ for f in $(printf '%s\n' "$added" | grep -E '^scripts/[^/]+\.sh$' | grep -v -x '
       grep -q -F "scripts/$name" .claude/settings.json 2>/dev/null && grep -q -F "scripts/$name" .codex/rules/closio-agent.rules 2>/dev/null ||
         miss "New script $name: not pre-approved in both .claude/settings.json and .codex/rules/closio-agent.rules (if a command runs it)." ;;
   esac
+done
+
+# A script changed without its tests (rule R20, D92): tests/unit/<script>.test.sh changed or new too.
+for f in $(printf '%s\n' "$changed" | grep -E '^scripts/(lib/)?[A-Za-z0-9_-]+\.sh$'); do
+  t="tests/unit/$(basename "$f" .sh).test.sh"
+  has "^$(printf '%s' "$t" | sed 's/\./\\./g')\$" ||
+    miss "$f changed, $t didn't: add or change its tests for what changed, then run bash tests/run.sh (rule R20)."
 done
 
 RULE_FILES='^(rulesets/|AGENTS\.md$|docs/agent-rules\.md$|build-memory/project-context\.md$|build-memory/rules\.md$|\.claude/settings\.json$|\.codex/rules/closio-agent\.rules$)'
