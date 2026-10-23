@@ -32,15 +32,13 @@
 - **Waiting on the user (D89, 2026-10-23):** approve the new hook once in Codex (`/hooks`, "Right before Codex ends its turn", `bash scripts/build-sweep-hook.sh`) on the builder's Mac, and see one hold-back in a Codex build session. On a teammate's Mac Codex lists it too: it does nothing there; `/flow-doctor` asks everyone to approve the hooks again once, because `.codex/hooks.json` changed.
 - **Waiting on the user (D90, D91, 2026-10-23):** not tried yet in a real session: Claude Code's new deny rules for `git … .env`, a small card through `flow-start` and `flow-verify`, the one call per step on a real card, and a real summary in either tool (the hook flagging the rules).
 - **For the user (D92, 2026-10-24): bugs the new tests found, left as they are** (each test expects today's behaviour, with a comment):
-  - `card-branch.sh`: the "to undo the rebase: … rebase --abort" tip never shows at the first conflict (`stop_conflict` matches its first argument exactly).
-  - `ship.sh` `push_failed`: a push GitLab's own hook declines ("remote rejected … pre-receive hook declined") is reported as "someone else pushed".
-  - `run.sh step` on a card with no folder: exits 1 with no ❌ and no fix (its `do_log` output goes to /dev/null), against rule A11.
-  - `gitlab-mr.sh comments`: a page that isn't JSON makes the loop ask for all 20 pages and print about 40 error lines before its ❌.
-  - `setup-repo.sh run all`: a BullMQ repo after a Redis repo skips the BullMQ memory-setting check.
-  - Service lists need ", " (`local_services: redis,rabbitmq` drops rabbitmq) in `setup-repo.sh` and `doctor.sh`; every repo file uses ", " today.
+  - `run.sh step` on a card with no folder: exits 1 with no ❌ and no fix (its `do_log` output goes to /dev/null), against rule A11. **The user: fix it only after their go-ahead** (2026-10-24).
+  - Service lists need ", " (`local_services: redis,rabbitmq` drops rabbitmq) in `setup-repo.sh` and `doctor.sh`; every repo file uses ", " today. The user: "can skip this".
   - Cosmetic: `api-check.sh` an extra blank line; `repo-run.sh` doesn't read a one-line package.json; git's own error lines before some ❌; `memory.sh` "These 1 entry"; `help.sh` and doctor's terminal/plain wrapping; stray spaces in `configure-repo.sh detect`; `card-check.sh` defines `in_qa` and never calls it.
 
 ## Resolved
+
+- Bugs the tests found, fixed 2026-10-24 with their tests (D92): `ship.sh` a push GitLab declines; `card-branch.sh` the undo tip at every rebase conflict; `gitlab-mr.sh` a threads page that isn't a list; `setup-repo.sh` the BullMQ check after a Redis repo.
 
 - QA's questions after Ready for Test (2026-10-19, D81): built as `/flow-qa` (QA's Jira comments checked against the card, decisions, merged code and dev; one reply per round; real bugs as separate Bug cards; story moves Blocked → In Development and back to Ready for Test, also from `/flow-finish` on the last Bug card; each after a yes). User tests pending; creating a Jira issue and linking it ("relates to") not tried yet with the connector's tools.
 - Vitest threshold (2026-10-19, D80): `thresholds.global` in closio-web-v2's `vitest.config.js` isn't read by Vitest 3 (a helper checked the installed 3.2.4 source), so a run never fails below 70%. Listed as a known problem in `rulesets/frontend-story-workflow.md`; the user: "dont fix this" (no closio-agent check), and no card for it now ("leave it right now").
