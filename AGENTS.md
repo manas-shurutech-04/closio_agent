@@ -110,11 +110,11 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     card command, every prompt that names a card key and every later prompt in that session. Follow it every time; its
     rule 1: every decision on the card goes into `runs/<CARD-KEY>/decisions.md` the moment it's confirmed (rule 23).
     Codex runs the hook only after the user has trusted it once.
-26. The card's folder is saved after every reply (rule A30, D87): the auto-save hook (`scripts/card-autosave-hook.sh`, set
-    as an end-of-turn hook in `.claude/settings.json` and `.codex/hooks.json`) commits and pushes the card's folder
-    (`runs/<CARD-KEY>/`) to its own branch `runs/<CARD-KEY>` at the end of every reply in a session working on a card, when it
-    changed: "<KEY>: auto-saved after /flow-<command>" (or "after a reply"). Only that branch: never `main`, never a code repo,
-    never forced. The commands' own `run.sh save` steps stay. A failed push shows one warning with its fix; tell the user.
+26. The card's folder is pushed to GitHub automatically after every reply (rule A30, D87): the auto-save hook
+    (`scripts/card-autosave-hook.sh`, set as an end-of-turn hook in `.claude/settings.json` and `.codex/hooks.json`) commits
+    the card's folder (`runs/<CARD-KEY>/`) to its own branch `runs/<CARD-KEY>` and pushes it to GitHub at the end of every
+    reply in a session working on a card, when it changed: "<KEY>: auto-saved after /flow-<command>" (or "after a reply").
+    Only that branch: never `main`, never a code repo, never forced. The commands' own `run.sh save` steps stay. A failed push shows one warning with its fix; tell the user.
 27. The Jira API backup (rule A31, D88): Jira is used through its connector first. When the connector's tools still aren't
     there after 3 tries, or a Jira tool fails or can't do an action, switch by yourself (no question) to
     `bash scripts/jira-api.sh`, say so in one line, and do the same there for the rest of the command: reading a card or its

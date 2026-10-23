@@ -240,7 +240,7 @@ Every step is built: picking a card up, planning it, developing it with you, che
 **Words you'll see**
 
 - **The card's folder** (`runs/SCRUM-567/`): where closio-agent keeps a card's notes: the card, the plan, what was built and checked, and its history.
-- **The card's saved copy** (the branch `runs/SCRUM-567`): that folder saved on GitHub, so you or a teammate can carry on from another Mac. It never goes into `main`. It's saved automatically at the end of every reply while you work on the card, whenever the folder changed ("SCRUM-567: auto-saved after /flow-develop"), so nobody has to push it by hand ([D87](design-decisions.md#d87)).
+- **The card's saved copy** (the branch `runs/SCRUM-567`): that folder saved on GitHub, so you or a teammate can carry on from another Mac. It never goes into `main`. It's **committed and pushed to GitHub automatically** at the end of every reply while you work on the card, whenever the folder changed ("SCRUM-567: auto-saved after /flow-develop"), so nobody has to push it by hand ([D87](design-decisions.md#d87)).
 - **The Jira API backup:** when the Jira connector isn't there, the commands use Jira's API instead, by themselves, and say "Jira connector not available: using the Jira API backup." Everything else stays the same, your yes stops too ([D88](design-decisions.md#d88)).
 - **Where a card stands:** being picked up · planning · in development · being checked · ready to push · waiting for the merge · finished.
 - **Full or quick check:** the two ways `/flow-verify` checks a card: full saves test cases and runs them; quick checks each AC directly against the running code.
