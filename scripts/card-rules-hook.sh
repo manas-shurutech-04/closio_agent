@@ -11,6 +11,10 @@
 #     the session is remembered in local/card-sessions/<session> (git-ignored; entries older than 7 days are removed),
 #     with the card keys it named ("key SCRUM-567") and its last command ("last /flow-develop", or "last a reply"):
 #     what the auto-save hook (scripts/card-autosave-hook.sh, D87) saves at the end of each reply, and its message.
+# After a summary of the conversation (D91): Claude Code runs it as a SessionStart hook (source "compact"), Codex as a
+# PostCompact hook ("After context compaction"). In a card session it flags the rules the card command read
+# (local/rules-read/<KEY> gets a "summarized" line), so the next "run.sh step" asks for AGENTS.md and docs/agent-rules.md
+# to be read in full again; Claude Code also gets that note and the card rules at once (Codex's PostCompact adds no text).
 # When Codex runs it (only Codex sends a turn_id), it leaves local/card-sessions/codex-ran with the hash of
 # .codex/hooks.json: flow-doctor's sign that the user has trusted that hook file in Codex (D86).
 # Otherwise it prints nothing. It never blocks a prompt and never reads .env values or secrets (A6): on any problem
@@ -38,6 +42,23 @@ CODEX_RAN="$SESSIONS_DIR/codex-ran"
 if [ -n "$(field turn_id)" ]; then   # Codex runs it, so the user has trusted it there
   mkdir -p "$SESSIONS_DIR" 2>/dev/null &&
     shasum -a 256 "$AGENT_ROOT/.codex/hooks.json" 2>/dev/null | cut -d' ' -f1 > "$CODEX_RAN" 2>/dev/null
+fi
+
+# After a summary (D91): flag the rules of this session's cards; nothing else happens on these two events.
+if [ "$event" = "SessionStart" ] || [ "$event" = "PostCompact" ]; then
+  [ "$event" = "PostCompact" ] || [ "$(field source)" = "compact" ] || exit 0
+  [ -n "$session" ] && [ -f "$SESSIONS_DIR/$session" ] || exit 0
+  RULES_READ_DIR="${RULES_READ_DIR:-$AGENT_ROOT/local/rules-read}"
+  flag() { [ -f "$1" ] && { grep -q -x 'summarized' "$1" || echo 'summarized' >> "$1"; }; }
+  keys="$(grep '^key ' "$SESSIONS_DIR/$session" 2>/dev/null | cut -c5-)"
+  if [ -n "$keys" ]; then for k in $keys; do flag "$RULES_READ_DIR/$k"; done
+  else for f in "$RULES_READ_DIR"/*; do flag "$f"; done; fi
+  [ "$event" = "SessionStart" ] || exit 0
+  context="The conversation was just summarized (closio-agent's card hook). Before the next step of the card command, read AGENTS.md and docs/agent-rules.md in full again, then run: bash scripts/run.sh rules <KEY> read. The card rules still apply (rulesets/card-rules.md):
+
+$(cat "$RULES_FILE")"
+  jq -n --arg context "$context" '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $context}}' 2>/dev/null
+  exit 0
 fi
 
 KEY_RE="${JIRA_PROJECT_KEY:-SCRUM}-[0-9]+"

@@ -468,7 +468,7 @@ section "Commands documented" "\`/flow-help\`, user guide, Claude artifact"
 relay "$(bash "$AGENT_ROOT/scripts/help.sh" check 2>/dev/null)"
 
 # ---------------------------------------------------------------- Card hooks (D86, D87; rules A29, A30)
-section "Card hooks" "the card rules on every prompt about a card, the card's folder saved after every reply"
+section "Card hooks" "the card rules on every prompt about a card and after a summary, the card's folder saved after every reply"
 rules_hook="card-rules-hook.sh"; save_hook="card-autosave-hook.sh"
 if ! command -v jq >/dev/null 2>&1; then
   fail "jq isn't installed, so the card hooks can't run" "Install it: \`brew install jq\`, then run \`/flow-doctor\` again."
@@ -479,14 +479,16 @@ else
   fail "The card-rules hook doesn't add the card rules" "Check that \`rulesets/card-rules.md\` and \`scripts/$rules_hook\` exist (\`git status\`; restore them with \`git checkout -- rulesets/card-rules.md scripts/$rules_hook\`), then run \`/flow-doctor\` again."
 fi
 [ -f "$AGENT_ROOT/scripts/$save_hook" ] || fail "The auto-save hook is missing" "Restore it: \`git checkout -- scripts/$save_hook\`, then run \`/flow-doctor\` again."
-if grep -q "$rules_hook" "$AGENT_ROOT/.claude/settings.json" 2>/dev/null && grep -q "$save_hook" "$AGENT_ROOT/.claude/settings.json" 2>/dev/null; then
-  pass "Claude Code: both hooks are set in \`.claude/settings.json\` (the card rules on each prompt, the auto-save after each reply)"
+if grep -q "$rules_hook" "$AGENT_ROOT/.claude/settings.json" 2>/dev/null && grep -q "$save_hook" "$AGENT_ROOT/.claude/settings.json" 2>/dev/null &&
+   jq -e '[.hooks.SessionStart[]?.hooks[]?.command] | any(test("card-rules-hook"))' "$AGENT_ROOT/.claude/settings.json" >/dev/null 2>&1; then
+  pass "Claude Code: the card hooks are set in \`.claude/settings.json\` (the card rules on each prompt and after a summary, the auto-save after each reply)"
 else
-  fail "Claude Code: the card hooks aren't both set in \`.claude/settings.json\`" "Restore the file's \`hooks\` block: \`git checkout -- .claude/settings.json\`, then start Claude Code again in this folder."
+  fail "Claude Code: the card hooks aren't all set in \`.claude/settings.json\`" "Restore the file's \`hooks\` block: \`git checkout -- .claude/settings.json\`, then start Claude Code again in this folder."
 fi
-if grep -q "$rules_hook" "$AGENT_ROOT/.codex/hooks.json" 2>/dev/null && grep -q "$save_hook" "$AGENT_ROOT/.codex/hooks.json" 2>/dev/null; then
-  pass "Codex: both hooks are set in \`.codex/hooks.json\`"
-  trust_steps="(1) Start Codex in the closio-agent folder (after \`nvm use v22\`); it says \"… hooks need review before they can run\". (2) Type \`/hooks\`. (3) In the list, select the hooks under \"When the user submits a prompt\" (\`bash scripts/$rules_hook\`) and \"Right before Codex ends its turn\" (\`bash scripts/$save_hook\`) and approve them. (4) Send any prompt that names a card (e.g. \"Is SCRUM-567 picked up?\"), then \`\$flow-doctor\` again: this line turns ✅. If the hook file changes later, Codex asks again."
+if grep -q "$rules_hook" "$AGENT_ROOT/.codex/hooks.json" 2>/dev/null && grep -q "$save_hook" "$AGENT_ROOT/.codex/hooks.json" 2>/dev/null &&
+   jq -e '[.hooks.PostCompact[]?.hooks[]?.command] | any(test("card-rules-hook"))' "$AGENT_ROOT/.codex/hooks.json" >/dev/null 2>&1; then
+  pass "Codex: the card hooks are set in \`.codex/hooks.json\`"
+  trust_steps="(1) Start Codex in the closio-agent folder (after \`nvm use v22\`); it says \"… hooks need review before they can run\". (2) Type \`/hooks\`. (3) In the list, select the hooks under \"When the user submits a prompt\" and \"After context compaction\" (\`bash scripts/$rules_hook\`) and \"Right before Codex ends its turn\" (\`bash scripts/$save_hook\`) and approve them. (4) Send any prompt that names a card (e.g. \"Is SCRUM-567 picked up?\"), then \`\$flow-doctor\` again: this line turns ✅. If the hook file changes later, Codex asks again."
   case " ${AI_TOOLS:-} " in
     *" codex "*)
       codex_ran="$AGENT_ROOT/local/card-sessions/codex-ran"
@@ -499,7 +501,7 @@ if grep -q "$rules_hook" "$AGENT_ROOT/.codex/hooks.json" 2>/dev/null && grep -q 
       fi ;;
   esac
 else
-  fail "Codex: the card hooks aren't both set in \`.codex/hooks.json\`" "Restore it: \`git checkout -- .codex/hooks.json\`, start Codex again in this folder and approve the hooks when it asks."
+  fail "Codex: the card hooks aren't all set in \`.codex/hooks.json\`" "Restore it: \`git checkout -- .codex/hooks.json\`, start Codex again in this folder and approve the hooks when it asks."
 fi
 
 # ---------------------------------------------------------------- Cards in progress (C1, D61)
