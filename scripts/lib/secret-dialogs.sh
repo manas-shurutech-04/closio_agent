@@ -5,6 +5,8 @@
 #
 # Secrets are typed into a hidden macOS box and go straight into the Keychain (D15, D33).
 # A value never appears in the AI chat, a file, or on a command line.
+# OSASCRIPT_BIN can be a stand-in for the build tests only (like setup-repo.sh); normally the macOS osascript.
+OSASCRIPT_BIN="${OSASCRIPT_BIN:-/usr/bin/osascript}"
 
 # Is this Keychain item stored? (checks the name only, never reads the value)
 keychain_has() { security find-generic-password -a "$USER" -s "$1" >/dev/null 2>&1; }
@@ -34,14 +36,14 @@ store_secret_from_stdin() { # <service> <label> <hint for redoing it>
 # Returns 0 stored, 3 skipped or cancelled, 1 failed.
 ask_secret_dialog() { # <service> <label> <description> <hint for redoing it>
   local service="$1" label="$2" desc="$3" hint="$4" button value rc
-  button="$(/usr/bin/osascript \
+  button="$("$OSASCRIPT_BIN" \
     -e "display dialog \"Next: $desc.\" & return & return & \"Copy it now, then click Continue.\" with title \"closio-agent setup\" buttons {\"Skip\", \"Continue\"} default button \"Continue\"" \
     -e 'button returned of result' 2>/dev/null)"
   if [ "$button" != "Continue" ]; then
     look "Skipped $service" "Add it later with: $hint"
     return 3
   fi
-  value="$(/usr/bin/osascript \
+  value="$("$OSASCRIPT_BIN" \
     -e "display dialog \"Paste $desc here:\" with title \"closio-agent setup\" default answer \"\" with hidden answer buttons {\"Cancel\", \"Save\"} default button \"Save\"" \
     -e 'text returned of result' 2>/dev/null)"
   if [ $? -ne 0 ]; then
