@@ -37,7 +37,8 @@ openfortivpn_up() { ifconfig "$VPN_INTERFACE" >/dev/null 2>&1; }
 openfortivpn_running() { pgrep -x openfortivpn >/dev/null 2>&1; }
 find_openfortivpn() {
   local p
-  for p in /opt/homebrew/bin/openfortivpn /usr/local/bin/openfortivpn; do
+  # OPENFORTIVPN_BIN / OPENFORTIVPN_BIN_INTEL can be stand-ins for the build tests only; normally Homebrew's two places.
+  for p in "${OPENFORTIVPN_BIN:-/opt/homebrew/bin/openfortivpn}" "${OPENFORTIVPN_BIN_INTEL:-/usr/local/bin/openfortivpn}"; do
     [ -x "$p" ] && { echo "$p"; return 0; }
   done
   return 1
