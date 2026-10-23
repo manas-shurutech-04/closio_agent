@@ -122,3 +122,10 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     failed through the connector, read the card again, so nothing is done twice. Every yes stop stays; never a move to
     Blocked. Its login is the user's Atlassian email (`jira-email`) and API token (`jira-api-token`, in the Keychain), both
     optional, set with `flow-configure-user`. When it isn't set up either, show both fixes and stop.
+28. The builder's doc check, only for the builder (build rule R19, D89): `scripts/build-sweep-hook.sh`, an end-of-reply hook in
+    `.claude/settings.json` and `.codex/hooks.json`, runs only on the builder's Mac (the git-ignored marker `local/builder`),
+    only when closio-agent's own files have uncommitted changes, and never in a card session. When it holds you back with a
+    list of missing updates (changelog, history, decision index, rule copies and counts, a command's docs, `help.sh check`,
+    the guide's mirrored date, a new script's docs and pre-approvals, the rule files), make each one in the same reply, or say
+    why it isn't needed, and say which files you updated. Never run it, wire it into a command or use it in a card session,
+    and never make `local/builder` on another Mac.
