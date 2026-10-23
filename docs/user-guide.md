@@ -152,7 +152,7 @@ nvm use v22
 claude        # or: codex
 ```
 
-Two rules that never change: **start in the closio-agent folder** (never inside a code repo), and **run `nvm use v22` first**. The first time, the tool asks whether you trust the folder: say yes. That lets our own scripts run without asking you for permission each time, and turns on Claude Code's suggestions while you type a flow command and its card-rules hook. **In Codex, also trust closio-agent's hook once** (`.codex/hooks.json`), or Codex skips it ([D86](design-decisions.md#d86)): (1) start Codex in the closio-agent folder (after `nvm use v22`); it says "… hooks need review before they can run"; (2) type `/hooks`; (3) in the list, select the hook under "When the user submits a prompt" (`bash scripts/card-rules-hook.sh`) and approve it; (4) send any prompt that names a card (e.g. "Is SCRUM-567 picked up?"), then `$flow-doctor`: "Codex: the hook is trusted and has run" shows ✅. `/flow-doctor` shows these steps until it's done.
+Two rules that never change: **start in the closio-agent folder** (never inside a code repo), and **run `nvm use v22` first**. The first time, the tool asks whether you trust the folder: say yes. That lets our own scripts run without asking you for permission each time, and turns on Claude Code's suggestions while you type a flow command and its card-rules hook. **In Codex, also approve closio-agent's two hooks once** (`.codex/hooks.json`), or Codex skips them ([D86](design-decisions.md#d86), [D87](design-decisions.md#d87)): (1) start Codex in the closio-agent folder (after `nvm use v22`); it says "… hooks need review before they can run"; (2) type `/hooks`; (3) in the list, select the hooks under "When the user submits a prompt" (`bash scripts/card-rules-hook.sh`) and "Right before Codex ends its turn" (`bash scripts/card-autosave-hook.sh`) and approve them; (4) send any prompt that names a card (e.g. "Is SCRUM-567 picked up?"), then `$flow-doctor`: "Codex: the hooks are trusted and have run" shows ✅. `/flow-doctor` shows these steps until it's done, and again whenever the hook file changes.
 
 ### Step 4: `/flow-ping`
 
@@ -167,7 +167,7 @@ Two rules that never change: **start in the closio-agent folder** (never inside 
 - **When:** now, and again after every fix. Also any time something feels wrong.
 - **What it does:** checks your whole setup and tells you how to fix each problem. It only reads.
 - **Options:** `/flow-doctor` on its own. In Codex, approve running it with network access.
-- **You see:** a heading per section (Project, Tools, VPN and GitLab, Personal settings, User memory, Commands documented, Card rules hook, Cards in progress, Checking web cards, Repos, Repo setup, Keychain, Jira), one ✅/⚠️/❌ line per check, each problem in bold with its **Fix:** or **Tip:** under it, commands in color, and at the end **Result: N to fix, M to look at.** `bash scripts/doctor.sh` in a terminal shows the same, in color (without the Jira check).
+- **You see:** a heading per section (Project, Tools, VPN and GitLab, Personal settings, User memory, Commands documented, Card hooks, Cards in progress, Checking web cards, Repos, Repo setup, Keychain, Jira), one ✅/⚠️/❌ line per check, each problem in bold with its **Fix:** or **Tip:** under it, commands in color, and at the end **Result: N to fix, M to look at.** `bash scripts/doctor.sh` in a terminal shows the same, in color (without the Jira check).
 - **If ❌:** do what the "Fix:" line says, then run `/flow-doctor` again. The first time, expect ❌ for the personal settings, the Keychain items and the repos: the next steps fill them in.
 
 ### Step 6: `/flow-configure-user`
@@ -239,7 +239,7 @@ Every step is built: picking a card up, planning it, developing it with you, che
 **Words you'll see**
 
 - **The card's folder** (`runs/SCRUM-567/`): where closio-agent keeps a card's notes: the card, the plan, what was built and checked, and its history.
-- **The card's saved copy** (the branch `runs/SCRUM-567`): that folder saved on GitHub, so you or a teammate can carry on from another Mac. It never goes into `main`.
+- **The card's saved copy** (the branch `runs/SCRUM-567`): that folder saved on GitHub, so you or a teammate can carry on from another Mac. It never goes into `main`. It's saved automatically at the end of every reply while you work on the card, whenever the folder changed ("SCRUM-567: auto-saved after /flow-develop"), so nobody has to push it by hand ([D87](design-decisions.md#d87)).
 - **Where a card stands:** being picked up · planning · in development · being checked · ready to push · waiting for the merge · finished.
 - **Full or quick check:** the two ways `/flow-verify` checks a card: full saves test cases and runs them; quick checks each AC directly against the running code.
 - **MR:** a merge request on GitLab.
