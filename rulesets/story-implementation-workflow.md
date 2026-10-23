@@ -30,7 +30,7 @@
 
 **Goal:** Understand what to build.
 
-Read the card with your AI tool's Jira tools (Claude Code: the Atlassian connector; Codex: the Atlassian app; [setup guide, section 3](../docs/setup-guide.md)). `flow-start` does this and checks the card against the card template ([D58](../docs/design-decisions.md#d58)).
+Read the card with your AI tool's Jira tools (Claude Code: the Atlassian connector; Codex: the Atlassian app; [setup guide, section 3](../docs/setup-guide.md)); when the connector isn't there, `flow-start` switches by itself to the Jira API backup (`bash scripts/jira-api.sh get <KEY>`, [D88](../docs/design-decisions.md#d88)). `flow-start` does this and checks the card against the card template ([D58](../docs/design-decisions.md#d58)).
 
 **Output a summary with:**
 - Endpoint path and HTTP method
@@ -538,5 +538,5 @@ Read: WS1 routes/incentives/index.js   → route registered?
 
 ## Setup
 
-- **Jira:** your AI tool reads cards through Claude's Atlassian connector (Claude Code) or the Atlassian app (Codex); see the [setup guide, section 3](../docs/setup-guide.md).
+- **Jira:** your AI tool reads cards through Claude's Atlassian connector (Claude Code) or the Atlassian app (Codex); when the connector isn't there, the commands switch by themselves to the Jira API backup (`scripts/jira-api.sh`, your Atlassian email and API token; [D88](../docs/design-decisions.md#d88)); see the [setup guide, section 3](../docs/setup-guide.md).
 - **GitLab:** closio-agent creates the MRs with git push options in the one push and sets their description through the GitLab API with your token from the Keychain ([D31](../docs/design-decisions.md#d31), [D32](../docs/design-decisions.md#d32)). Nothing else to set up here.

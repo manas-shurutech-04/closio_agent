@@ -115,3 +115,10 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     (`runs/<CARD-KEY>/`) to its own branch `runs/<CARD-KEY>` at the end of every reply in a session working on a card, when it
     changed: "<KEY>: auto-saved after /flow-<command>" (or "after a reply"). Only that branch: never `main`, never a code repo,
     never forced. The commands' own `run.sh save` steps stay. A failed push shows one warning with its fix; tell the user.
+27. The Jira API backup (rule A31, D88): Jira is used through its connector first. When the connector's tools still aren't
+    there after 3 tries, or a Jira tool fails or can't do an action, switch by yourself (no question) to
+    `bash scripts/jira-api.sh`, say so in one line, and do the same there for the rest of the command: reading a card or its
+    comments, moving it, its sprint and assignee, posting or editing a comment, creating a card. Before redoing a change that
+    failed through the connector, read the card again, so nothing is done twice. Every yes stop stays; never a move to
+    Blocked. Its login is the user's Atlassian email (`jira-email`) and API token (`jira-api-token`, in the Keychain), both
+    optional, set with `flow-configure-user`. When it isn't set up either, show both fixes and stop.
