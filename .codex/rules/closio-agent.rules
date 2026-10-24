@@ -25,3 +25,22 @@ prefix_rule(pattern = ["bash", "scripts/qmetry-import.sh"], decision = "allow", 
 prefix_rule(pattern = ["bash", "scripts/ship.sh"], decision = "allow", justification = "closio-agent: a card's commits, its one push with the MR, and review fixes into that MR (flow-push, flow-review)")
 prefix_rule(pattern = ["bash", "scripts/gitlab-mr.sh"], decision = "allow", justification = "closio-agent: a card's MR through the GitLab API (description, reviewers, merge state, comments and replies, pipeline), token from the Keychain (flow-push, flow-review, flow-finish)")
 prefix_rule(pattern = ["bash", "scripts/jira-api.sh", ["check", "me", "get", "status", "comments", "transitions", "move", "assign", "sprint", "comment", "edit-comment"]], decision = "allow", justification = "closio-agent: the Jira API backup when the Jira connector isn't there, token from the Keychain (D88; creating a card isn't pre-approved)")
+# A plain git push: closio-agent's own commits, without a prompt (the user, 2026-10-24: "for this repo you can push dont ask").
+# The command guard (scripts/command-guard-hook.sh, a PreToolUse hook in .codex/hooks.json) stops one in a code repo.
+prefix_rule(pattern = ["git", "push"], decision = "allow", justification = "closio-agent: this folder's own commits; a card's code goes out only through scripts/ship.sh (D94)")
+# Never, for the AI (D94, rule A32): when several rules match a command, the strictest wins, so these beat the allows above.
+# They match the start of a command only; the command guard also stops them after cd, git -C or bash -c.
+prefix_rule(pattern = ["git", "push", ["--force", "-f", "--force-with-lease", "--delete", "--mirror"]], decision = "forbidden", justification = "closio-agent: never a forced or deleting push")
+prefix_rule(pattern = ["git", "reset", "--hard"], decision = "forbidden", justification = "closio-agent: never throws work away; ask the user")
+prefix_rule(pattern = ["git", ["clean", "restore"]], decision = "forbidden", justification = "closio-agent: never throws work away; ask the user")
+prefix_rule(pattern = ["git", "checkout", ["--", "."]], decision = "forbidden", justification = "closio-agent: never throws changes away; ask the user")
+prefix_rule(pattern = ["git", "branch", "-D"], decision = "forbidden", justification = "closio-agent: never deletes a branch with its commits; ask the user")
+prefix_rule(pattern = ["git", "stash", ["drop", "clear"]], decision = "forbidden", justification = "closio-agent: never throws saved changes away; ask the user")
+prefix_rule(pattern = ["git", "remote", ["add", "set-url", "remove", "rm", "rename"]], decision = "forbidden", justification = "closio-agent: never changes a repo's remotes")
+prefix_rule(pattern = ["npm", "run", ["migrate", "migrate:undo", "migrate:undo:all", "seed", "seed:all", "seed:undo", "seed:undo:all"]], decision = "forbidden", justification = "closio-agent: migrations and seeders only through scripts/repo-run.sh")
+prefix_rule(pattern = ["npx", ["sequelize", "sequelize-cli"]], decision = "forbidden", justification = "closio-agent: migrations and seeders only through scripts/repo-run.sh")
+prefix_rule(pattern = [["sequelize", "sequelize-cli", "dropdb", "psql", "sudo"]], decision = "forbidden", justification = "closio-agent: never for the AI; ask the user")
+prefix_rule(pattern = ["rm", ["-rf", "-fr", "-r", "-R", "--recursive"]], decision = "forbidden", justification = "closio-agent: never a recursive rm; ask the user")
+prefix_rule(pattern = [["chmod", "chown"], "-R"], decision = "forbidden", justification = "closio-agent: never a recursive chmod or chown; ask the user")
+prefix_rule(pattern = ["docker", ["system", "image", "container"], "prune"], decision = "forbidden", justification = "closio-agent: never deletes Docker's data; ask the user")
+prefix_rule(pattern = ["docker", "volume", ["rm", "prune"]], decision = "forbidden", justification = "closio-agent: never deletes Docker's data; ask the user")

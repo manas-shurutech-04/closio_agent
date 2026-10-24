@@ -52,14 +52,62 @@
       "mcp__claude_ai_Atlassian_MCP__executeRead",
       "mcp__claude_ai_Atlassian_MCP__transitionJiraIssue",
       "mcp__claude_ai_Atlassian_MCP__editJiraIssue",
-      "mcp__claude_ai_Atlassian_MCP__addOrEditJiraIssueComment"
+      "mcp__claude_ai_Atlassian_MCP__addOrEditJiraIssueComment",
+      "Bash(git push)",
+      "Bash(git push *)"
     ],
     "deny": [
       "Bash(git log *.env*)",
       "Bash(git diff *.env*)",
       "Bash(git show *.env*)",
       "Bash(git * --output*)",
-      "Bash(git * --ext-diff*)"
+      "Bash(git * --ext-diff*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f)",
+      "Bash(git push * -f *)",
+      "Bash(git push --delete*)",
+      "Bash(git push * --delete*)",
+      "Bash(git push * +*)",
+      "Bash(git push * :*)",
+      "Bash(git reset --hard*)",
+      "Bash(git -C * reset --hard*)",
+      "Bash(git clean*)",
+      "Bash(git -C * clean*)",
+      "Bash(git checkout -- *)",
+      "Bash(git checkout .)",
+      "Bash(git -C * checkout -- *)",
+      "Bash(git restore*)",
+      "Bash(git -C * restore*)",
+      "Bash(git branch -D*)",
+      "Bash(git -C * branch -D*)",
+      "Bash(git stash drop*)",
+      "Bash(git stash clear*)",
+      "Bash(git remote add*)",
+      "Bash(git remote set-url*)",
+      "Bash(git remote remove*)",
+      "Bash(git remote rm*)",
+      "Bash(git remote rename*)",
+      "Bash(npm run migrate*)",
+      "Bash(npm run seed*)",
+      "Bash(npx sequelize*)",
+      "Bash(sequelize*)",
+      "Bash(rm -rf*)",
+      "Bash(rm -fr*)",
+      "Bash(rm -r *)",
+      "Bash(rm -R *)",
+      "Bash(sudo *)",
+      "Bash(chmod -R*)",
+      "Bash(chown -R*)",
+      "Bash(docker system prune*)",
+      "Bash(docker volume rm*)",
+      "Bash(docker volume prune*)",
+      "Bash(docker image prune*)",
+      "Bash(docker container prune*)",
+      "Bash(dropdb*)",
+      "Bash(psql*)",
+      "Edit(~/.closio-agent/**)"
     ]
   },
   "hooks": {
@@ -98,6 +146,52 @@
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/build-sweep-hook.sh\"",
             "timeout": 60
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/command-guard-hook.sh\" claude",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__claude_ai_Atlassian_MCP__(transitionJiraIssue|addOrEditJiraIssueComment|editJiraIssue)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/command-guard-hook.sh\" claude",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/command-guard-hook.sh\" claude",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/command-guard-hook.sh\" claude",
+            "timeout": 30
           }
         ]
       }

@@ -93,10 +93,45 @@ test_the_hook_files_are_valid_and_point_to_scripts_that_exist() {
       [ -f "$R/$cmd" ] || fail "${f#$R/} runs $cmd, which doesn't exist"
     done
   done
-  for s in card-rules-hook.sh card-autosave-hook.sh build-sweep-hook.sh; do
+  for s in card-rules-hook.sh card-autosave-hook.sh build-sweep-hook.sh command-guard-hook.sh; do
     grep -q "scripts/$s" "$R/.claude/settings.json" || fail ".claude/settings.json doesn't run $s"
     grep -q "scripts/$s" "$R/.codex/hooks.json" || fail ".codex/hooks.json doesn't run $s"
   done
+}
+# The command guard (D94): the AI's stops hold in both tools, whatever the model decides
+test_the_command_guard_and_its_block_list_are_in_both_tools() {
+  local c="$R/.claude/settings.json" x="$R/.codex/hooks.json" r="$R/.codex/rules/closio-agent.rules" e p
+  for e in PreToolUse PostToolUse PostToolUseFailure; do
+    jq -e --arg e "$e" '[.hooks[$e][]? | select(.matcher == "Bash") | .hooks[]?.command] | any(test("command-guard-hook.sh\" claude$"))' "$c" >/dev/null ||
+      fail ".claude/settings.json: no $e hook running command-guard-hook.sh claude for Bash"
+  done
+  jq -e '[.hooks.PreToolUse[]? | select(.matcher | test("transitionJiraIssue") and test("addOrEditJiraIssueComment") and test("editJiraIssue")) | .hooks[]?.command] | any(test("command-guard-hook.sh\" claude$"))' "$c" >/dev/null ||
+    fail ".claude/settings.json: the Jira connector's move, comment and edit tools don't get the guard's warning (D95)"
+  jq -e '[.hooks.PreToolUse[]? | select(.matcher == "Bash") | .hooks[]?.command] | any(. == "bash scripts/command-guard-hook.sh codex")' "$x" >/dev/null ||
+    fail ".codex/hooks.json: no PreToolUse hook running command-guard-hook.sh codex for Bash"
+  for p in "Bash(git push --force*)" "Bash(git reset --hard*)" "Bash(git clean*)" "Bash(git checkout -- *)" "Bash(git restore*)" \
+    "Bash(git branch -D*)" "Bash(git stash drop*)" "Bash(git remote add*)" "Bash(npm run migrate*)" "Bash(npm run seed*)" \
+    "Bash(npx sequelize*)" "Bash(rm -rf*)" "Bash(sudo *)" "Bash(chmod -R*)" "Bash(docker system prune*)" "Bash(dropdb*)" \
+    "Bash(psql*)" "Edit(~/.closio-agent/**)"; do
+    jq -e --arg p "$p" '.permissions.deny | index($p)' "$c" >/dev/null || fail ".claude/settings.json doesn't deny $p"
+  done
+  jq -e '.permissions.allow | index("Bash(git push *)")' "$c" >/dev/null || fail ".claude/settings.json: this folder's plain git push isn't allowed"
+  for p in '["git", "reset", "--hard"]' '["git", ["clean", "restore"]]' '["git", "checkout", ["--", "."]]' '["git", "branch", "-D"]' \
+    '["npx", ["sequelize", "sequelize-cli"]]' '["rm", ["-rf", "-fr", "-r", "-R", "--recursive"]]' '[["chmod", "chown"], "-R"]'; do
+    grep -q -F "prefix_rule(pattern = $p, decision = \"forbidden\"" "$r" || fail ".codex/rules/closio-agent.rules doesn't forbid $p"
+  done
+  grep -q -F 'prefix_rule(pattern = ["git", "push", ["--force", "-f"' "$r" || fail ".codex/rules: a forced push isn't forbidden"
+  grep -q -F 'prefix_rule(pattern = ["git", "push"], decision = "allow"' "$r" || fail ".codex/rules: this folder's plain git push isn't allowed"
+}
+test_the_helper_agents_that_only_read_or_write_files_have_no_shell() {
+  local a
+  for a in flow-story-check flow-ac-checker; do
+    sed -n 's/^tools: //p' "$R/.claude/agents/$a.md" | grep -q -w Bash && fail ".claude/agents/$a.md still has Bash (D94)"
+    grep -q 'local/diffs/<CARD-KEY>/<repo>.diff' "$R/.claude/agents/$a.md" || fail ".claude/agents/$a.md doesn't read the saved diff"
+    grep -q 'local/diffs/<CARD-KEY>/<repo>.diff' "$R/.codex/agents/$a.toml" || fail ".codex/agents/$a.toml doesn't read the saved diff"
+  done
+  grep -q '^sandbox_mode = "read-only"$' "$R/.codex/agents/flow-story-check.toml" || fail ".codex/agents/flow-story-check.toml isn't read-only"
+  return 0
 }
 
 test_agents_md_rules_are_numbered_with_no_gap() {
