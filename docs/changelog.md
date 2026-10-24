@@ -4,6 +4,14 @@ Dated list of what changed in closio-agent. Newest first.
 
 ## 2026-10-24
 
+- **A warning for every major step that runs without asking you** ([D95](design-decisions.md#d95)): the session's next push, migration, seeder or test-data run, closio-agent's own push, a Jira move or comment, a reply on a merge request, and the card's folder saved to GitHub each show a short **⚠️ closio-agent: …** line in the chat, from the tool's hooks themselves. In Codex, approve the hooks again in `/hooks` (as for D94).
+- **A guard the AI can't talk its way past, and fewer questions** ([D94](design-decisions.md#d94), new rule 30 in `AGENTS.md`, rule A32), from an evaluator's feedback on SCRUM-7005:
+  - **Never for the AI, in both tools:** git that throws work away or rewrites GitLab (a forced push, `reset --hard`, `clean`, `checkout --`, `restore`, deleting a branch or saved changes, changing remotes), migrations outside closio-agent's script, a recursive `rm`, `sudo`, Docker prunes, `psql`, and a plain `git push` in a code repo. closio-agent's own pushes need no yes.
+  - **Asked once per session:** the first push, migration, seeder and test-data run of a session ask you in the chat and in the tool itself (Claude Code's **Allow** box; Codex a macOS dialog); then they run without asking for the rest of the session, each named in one line.
+  - **Codex:** the hook file changed, so approve the hooks again in `/hooks`, including the new one under "Before a tool executes".
+  - **Fewer questions:** an answer you gave on a card is never asked again; a response that stays as it is today isn't asked for (it's compared with the real one before the change); `/flow-review` shows all its drafted replies at once, one yes; `/flow-finish` writes the special instructions without asking.
+  - **The deployment doc** now has a **Rollback** and a **Risks** part.
+  - The story check and the test-case writer no longer have a shell: they read the changes the command saves first.
 - **closio-agent's tests in about 25 seconds** ([D93](design-decisions.md#d93), build rule R20 and rule 29 in `AGENTS.md`): `bash tests/run.sh --docker --coverage` runs every test in a Linux container with the Mac's bash 3.2, instead of about 11 minutes on the Mac (its security software checks every program the tests start). It's now the check before a commit. Start Docker Desktop first; the first run builds the test image (about 90 MB, once). Without Docker Desktop, `bash tests/run.sh --coverage` still runs the same tests on the Mac. Every test now runs as a job of its own, so a file with slow tests no longer holds up the end.
 - **Four fixes the new tests found** ([D92](design-decisions.md#d92)):
   - `ship.sh`: a push GitLab's own rules decline (a protected branch, a push rule, a server hook) now says so, with GitLab's reason, instead of "someone else pushed".

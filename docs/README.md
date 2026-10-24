@@ -21,7 +21,7 @@
 | [setup-guide.md](setup-guide.md) | Access needed, installation, configuration, first run | Available: setup with the commands (`flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`), with the manual steps kept as a backup |
 | [commands.md](commands.md) | Every agent command: purpose, usage, inputs, outputs, example | Available: `flow-ping`, `flow-doctor`, `flow-vpn`, `flow-configure-user`, `flow-configure-repo`, `flow-setup-repo`, `flow-memory`, `flow-check-card`, `flow-help`, `flow-grill`, `flow-status`, `flow-start`, `flow-develop`, `flow-verify`, `flow-ac-check`, `flow-push`, `flow-review`, `flow-finish`, `flow-qa` |
 | [architecture.md](architecture.md) | How the pipeline stages connect and what each one takes in and produces | Available (phases approved; first commands built) |
-| [agent-rules.md](agent-rules.md) | Every rule the agent follows when it runs (G1–G4, A1–A31), each with its decision and where it's applied today | Available (added 2026-10-15) |
+| [agent-rules.md](agent-rules.md) | Every rule the agent follows when it runs (G1–G4, A1–A32), each with its decision and where it's applied today | Available (added 2026-10-15) |
 | [jira-card-template.md](jira-card-template.md) | What a Jira card looks like: the sections, the AC and QA rules, code alignment, how a card is drafted, the ready checklist | Available (added 2026-10-17, F7) |
 | [jira-card-examples.md](jira-card-examples.md) | Two real cards (SCRUM-559, SCRUM-567) in the template's shape | Available (added 2026-10-17, F7) |
 | [changelog.md](changelog.md) | Dated list of what changed in the agent | Available |
