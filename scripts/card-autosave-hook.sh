@@ -8,7 +8,9 @@
 #
 # Only the card's own branch: never main, never a code repo, never a forced push (a teammate's newer save is left for
 # the user, as run.sh save says). Never blocks: it always exits 0; a save that fails shows one warning line with its
-# fix (systemMessage), and the next reply tries again. Never reads .env values or secrets (A6).
+# fix (systemMessage), and the next reply tries again. A save that pushed shows one short line too, so the user always
+# knows a push happened (D95: "give a small warning in the chat box that this is being done"); nothing to save: nothing
+# shown. Never reads .env values or secrets (A6).
 #
 # Test it: echo '{"session_id":"test"}' | bash scripts/card-autosave-hook.sh
 # Works in the Mac's own bash 3.2.
@@ -34,7 +36,11 @@ keys="$(grep '^key ' "$marker" | cut -c5-)"
 warnings=""
 for key in $keys; do
   bash "$AGENT_ROOT/scripts/run.sh" unsaved "$key" >/dev/null 2>&1 || continue   # nothing new, or no branch here
-  out="$(bash "$AGENT_ROOT/scripts/run.sh" save "$key" "auto-saved after $last" 2>&1)" && continue
+  if out="$(bash "$AGENT_ROOT/scripts/run.sh" save "$key" "auto-saved after $last" 2>&1)"; then
+    warnings="${warnings:+$warnings
+}⚠️ closio-agent: $key's folder was saved to GitHub without asking (its branch runs/$key)."
+    continue
+  fi
   problem="$(printf '%s\n' "$out" | grep -m 1 '^❌ ' | sed 's/^❌ //')"
   fix="$(printf '%s\n' "$out" | grep -m 1 '^   Fix: ' | sed 's/^   Fix: //')"
   warnings="${warnings:+$warnings

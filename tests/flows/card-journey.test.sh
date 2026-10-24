@@ -117,7 +117,7 @@ test_after_every_reply_the_card_folder_is_pushed_by_the_hook() {
   printf '{"prompt":"/flow-develop %s","session_id":"s1"}' "$KEY" | bash "$A/scripts/card-rules-hook.sh" >/dev/null
   echo "| x | develop 1 | started | — |" >> "$A/runs/$KEY/history.md"
   OUT="$(printf '{"session_id":"s1"}' | bash "$A/scripts/card-autosave-hook.sh")"
-  assert_eq "$OUT" "" "the hook says nothing when the save works"
+  assert_contains "$OUT" "⚠️ closio-agent: SCRUM-1's folder was saved to GitHub without asking" "one short line when the save pushed (D95)"
   assert_eq "$(git -C "$T/origin.git" log -1 --format=%s "refs/heads/runs/$KEY")" "$KEY: auto-saved after /flow-develop"
 }
 

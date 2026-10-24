@@ -30,11 +30,12 @@ teammate_saves() {
   git -C "$A" fetch -q origin
 }
 
-test_a_changed_folder_is_saved_and_pushed_quietly() {
+test_a_changed_folder_is_saved_and_pushed_with_one_short_line() {
   setup_card; session s1 "key SCRUM-1" "last /flow-develop"
   change SCRUM-1
   autosave s1
-  assert_rc 0; assert_eq "$OUT" ""
+  assert_rc 0
+  assert_eq "$(printf '%s' "$OUT" | jq -r .systemMessage)" "⚠️ closio-agent: SCRUM-1's folder was saved to GitHub without asking (its branch runs/SCRUM-1)." "the line the user sees (D95)"
   assert_eq "$(remote_msg SCRUM-1)" "SCRUM-1: auto-saved after /flow-develop"
   assert_contains "$(git -C "$T/origin.git" show refs/heads/runs/SCRUM-1:runs/SCRUM-1/history.md)" "| x | develop 1 | something |"
   assert_eq "$(git -C "$A" rev-parse --abbrev-ref HEAD)" "main" "this folder stays on main"
@@ -69,7 +70,8 @@ test_a_session_that_named_no_key_saves_every_card_folder() {
   mkdir -p "$A/runs/not-a-card"
   change SCRUM-1; change SCRUM-2
   autosave s3
-  assert_rc 0; assert_eq "$OUT" ""
+  assert_rc 0
+  assert_eq "$(printf '%s' "$OUT" | jq -r .systemMessage | grep -c '^⚠️ closio-agent: SCRUM-[12].s folder was saved to GitHub')" "2" "one line per card"
   assert_eq "$(remote_msg SCRUM-1)" "SCRUM-1: auto-saved after /flow-develop"
   assert_eq "$(remote_msg SCRUM-2)" "SCRUM-2: auto-saved after /flow-develop"
   run run.sh unsaved SCRUM-1; assert_rc 1
@@ -96,7 +98,7 @@ test_a_save_not_pushed_yet_is_pushed() {
   run run.sh save SCRUM-1 "offline"; assert_rc 1
   git -C "$A" remote set-url origin "$T/origin.git"
   autosave s1
-  assert_rc 0; assert_eq "$OUT" ""
+  assert_rc 0; assert_contains "$OUT" "SCRUM-1's folder was saved to GitHub without asking"
   assert_eq "$(remote_msg SCRUM-1)" "SCRUM-1: offline"
 }
 test_a_teammate_newer_save_and_nothing_here_is_left_alone() {
