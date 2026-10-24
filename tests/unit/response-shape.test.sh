@@ -49,7 +49,7 @@ good_body='{"status": "success", "data": [{"id": "6f1c", "name": "A", "rate": 2.
 test_wrong_usage_shows_the_usage() {
   setup_shape
   run response-shape.sh "$T/card.md" "GET /api/v1/schemes"
-  assert_rc 2; assert_eq "$OUT" 'Usage: bash scripts/response-shape.sh <card file> "<METHOD> <path>" <response file>'
+  assert_rc 2; assert_eq "$OUT" 'Usage: bash scripts/response-shape.sh <card file> "<METHOD> <path>" <response file> · compare <before file> <after file>'
   run response-shape.sh "$T/card.md" "" "$T/r.json"
   assert_rc 2; assert_contains "$OUT" "Usage:"
 }
@@ -173,4 +173,60 @@ test_bad_json_in_the_card_or_the_response() {
   printf 'not json' > "$T/r.txt"
   run response-shape.sh "$T/card.md" "GET /api/v1/schemes" "$T/r.txt"
   assert_rc 2; assert_contains "$OUT" "❌ The response in $T/r.txt isn't JSON."
+}
+
+# A response the card says stays as it is today (D94): compared with the real response before the change
+write_unchanged_card() {
+  cat > "$T/card.md" <<'MD'
+# SCRUM-7 — Filter by status
+
+## API request and response
+
+### `GET /api/v1/schemes`
+
+**Request** (query)
+```json
+{ "status": "string" }
+```
+
+**Response (200)**: unchanged (AC 3: the response shape stays the same)
+MD
+}
+test_an_unchanged_response_points_to_the_comparison() {
+  sandbox; write_unchanged_card
+  printf 'status: 200\n{"data":[]}\n' > "$T/after.txt"
+  run_in "$A" bash scripts/response-shape.sh "$T/card.md" "GET /api/v1/schemes" "$T/after.txt"
+  assert_rc 3
+  assert_contains "$OUT" '❌ The card says the response of "GET /api/v1/schemes" stays as it is today (unchanged).'
+  assert_contains "$OUT" "bash scripts/response-shape.sh compare <before file> <after file>"
+}
+test_compare_finds_the_same_structure_before_and_after() {
+  sandbox
+  printf 'status: 200\n{"status":"success","data":[{"id":"a1","name":"Old","rate":1.5,"updated_at":null}],"total":1}\n' > "$T/before.txt"
+  printf 'status: 200\n{"status":"success","data":[{"id":"b2","name":"New","rate":2,"updated_at":"2026-10-24"}],"total":3}\n' > "$T/after.txt"
+  run_in "$A" bash scripts/response-shape.sh compare "$T/before.txt" "$T/after.txt"
+  assert_rc 0; assert_eq "$OUT" "✅ The response (HTTP 200): the same structure as before the change"
+}
+test_compare_lists_every_difference_from_before() {
+  sandbox
+  printf '{"status":"string","data":[{"id":"a1","rate":1}],"total":1}\n' > "$T/before.txt"
+  printf '{"status":"string","data":[{"id":7,"extra":true}],"count":1}\n' > "$T/after.txt"
+  run_in "$A" bash scripts/response-shape.sh compare "$T/before.txt" "$T/after.txt"
+  assert_rc 1
+  assert_contains "$OUT" "❌ The response: 5 difference(s) from the response before the change"
+  assert_contains "$OUT" "type differs at data[0].id: before string, response number"
+  assert_contains "$OUT" "missing in the response: data[0].rate"
+  assert_contains "$OUT" "not in the old response: data[0].extra"
+  assert_contains "$OUT" "missing in the response: total"
+  assert_contains "$OUT" "not in the old response: count"
+  assert_contains "$OUT" "The card says this response stays the same"
+}
+test_compare_needs_two_readable_json_responses() {
+  sandbox
+  printf '{}\n' > "$T/after.txt"
+  run_in "$A" bash scripts/response-shape.sh compare "$T/missing.txt" "$T/after.txt"
+  assert_rc 2; assert_contains "$OUT" "Can't read $T/missing.txt"
+  printf 'status: 502\n<html>bad gateway</html>\n' > "$T/before.txt"
+  run_in "$A" bash scripts/response-shape.sh compare "$T/before.txt" "$T/after.txt"
+  assert_rc 2; assert_contains "$OUT" "isn't JSON (HTTP 502)"
 }

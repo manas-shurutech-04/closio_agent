@@ -197,3 +197,18 @@ x
   assert_not_contains "$OUT" "API request and response:"
   assert_eq "$(count_of ❌)" "4"; assert_eq "$(count_of ⚠️)" "0" "out of scope inside its own section is fine"
 }
+test_a_response_that_stays_as_it_is_today_needs_no_json() {
+  sandbox
+  check "$(good_card | sed 's/^\*\*Response (200)\*\*$/**Response (200)**: unchanged (AC 1: the shape stays the same)/' | sed '/^\*\*Response (200)\*\*: unchanged/{n;N;N;d;}')"
+  assert_contains "$OUT" "✅ API request and response: 2 API(s), each with its structure"
+  assert_not_contains "$OUT" "No Response JSON"
+  check '## Context
+x
+## API request and response
+### GET /api/v1/x
+**Response (200)**
+## How QA can test this
+1. Call it. Expect 200 (AC 1).'
+  assert_contains "$OUT" "❌ No Response JSON for GET /api/v1/x (line 4)"
+  assert_contains "$OUT" 'or "**Response (200)**: unchanged (AC <n>)" when the card says it stays as it is today (rule A28, D94).'
+}

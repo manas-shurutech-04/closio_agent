@@ -222,7 +222,8 @@ fi
 
 # ---------------------------------------------------------------- 2b. API request and response (D84, rule A28)
 # A card that names an API (a method and a path) needs ## API request and response, with the user's structures:
-# one ### <METHOD> <path> block per API, a Response JSON in each, and a Request JSON for POST, PUT and PATCH.
+# one ### <METHOD> <path> block per API, a Response JSON in each (or "unchanged" next to its label when the response stays
+# as it is today, D94), and a Request JSON for POST, PUT and PATCH.
 api_line="$(grep -n -m 1 -E '(^|[^A-Za-z])(GET|POST|PUT|PATCH|DELETE)[[:space:]]+`?(/|\.\.\.|<)' "$FILE" | cut -d: -f1)"
 api_at=-1
 i=0
@@ -244,6 +245,7 @@ elif [ "$api_at" -ge 0 ]; then
       while [ "$j" -lt "$api_end" ]; do
         case "${lc[j]}" in "###"*) break ;; esac
         case "${lc[j]}" in *"**request"*) seen_req=1; seen_resp=0 ;; *"**response"*) seen_resp=1; seen_req=0 ;; *"**error response"*) seen_req=0; seen_resp=0 ;; esac
+        case "${lc[j]}" in *"**response"*unchanged*) resp=1 ;; esac   # the response stays as it is today (D94)
         case "${lc[j]}" in '```'*|*'```json'*)
           [ "$seen_req" -eq 1 ] && req=1
           [ "$seen_resp" -eq 1 ] && resp=1 ;;
@@ -251,7 +253,7 @@ elif [ "$api_at" -ge 0 ]; then
         j=$((j + 1))
       done
       if [ "$resp" -eq 0 ]; then
-        fail "No Response JSON for ${lines[i]#\#\#\# } (line $((i + 1)))" "Add **Response (200)** with the JSON the user gave for this API (rule A28)."; api_bad=$((api_bad + 1))
+        fail "No Response JSON for ${lines[i]#\#\#\# } (line $((i + 1)))" "Add **Response (200)** with the JSON the user gave for this API, or \"**Response (200)**: unchanged (AC <n>)\" when the card says it stays as it is today (rule A28, D94)."; api_bad=$((api_bad + 1))
       fi
       case "$method" in POST|PUT|PATCH)
         if [ "$req" -eq 0 ]; then
