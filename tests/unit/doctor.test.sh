@@ -107,7 +107,10 @@ test_everything_set_up_has_nothing_to_report() {
     "- ✅ Every command (19) has its \"## Usage\" block (what flow-help shows)" \
     "- ✅ The card-rules hook adds \`rulesets/card-rules.md\` to a card command (tested just now)" \
     "- ✅ Claude Code: the card hooks are set in \`.claude/settings.json\`" "- ✅ Codex: the card hooks are set in \`.codex/hooks.json\`" \
-    "- ✅ Codex: the hooks are trusted and have run" "- ✅ No card in progress (pick one up with \`/flow-start <CARD-KEY>\`)" \
+    "- ✅ Codex: the hooks are trusted and have run" "- ✅ The command guard stops a \`git reset --hard\` (tested just now)" \
+    "- ✅ Claude Code: the guard and the block list are set in \`.claude/settings.json\`" \
+    "- ✅ Codex: the guard and the block list are set in \`.codex/hooks.json\` and \`.codex/rules/closio-agent.rules\`" \
+    "- ✅ No card in progress (pick one up with \`/flow-start <CARD-KEY>\`)" \
     "- ✅ Playwright is set up (\`e2e/\` packages and the Chromium browser)" \
     "- ✅ Ruleset for backend cards: \`rulesets/story-implementation-workflow.md\`" \
     "- ✅ Ruleset for web-app cards: \`rulesets/frontend-story-workflow.md\`" "- ✅ demo-api: $T/work/demo-api" \
@@ -477,4 +480,18 @@ test_in_a_terminal_it_picks_the_terminal_format_by_itself() {
   assert_contains "$o" $'\033[1;36mflow-doctor — checking your setup\033[0m'
   assert_contains "$o" $'\033[1;36mPROJECT\033[0m'
   assert_contains "$o" $'  ❌ \033[1;31mNode.js not found\033[0m'
+}
+test_the_command_guard_missing_or_not_set_is_each_a_fix() {
+  all_good
+  rm -f "$A/scripts/command-guard-hook.sh"
+  jq 'del(.hooks.PreToolUse, .hooks.PostToolUse)' "$A/.claude/settings.json" > "$T/s.json" && mv "$T/s.json" "$A/.claude/settings.json"
+  jq 'del(.hooks.PreToolUse)' "$A/.codex/hooks.json" > "$T/h.json" && mv "$T/h.json" "$A/.codex/hooks.json"
+  run doctor.sh
+  assert_rc 1
+  assert_contains "$OUT" "### Command guard"
+  assert_contains "$OUT" "- ❌ **The command guard doesn't stop a \`git reset --hard\`**
+  - **Fix:** Check that \`scripts/command-guard-hook.sh\` exists and jq is installed"
+  assert_contains "$OUT" "- ❌ **Claude Code: the guard or the block list isn't set in \`.claude/settings.json\`**"
+  assert_contains "$OUT" "- ❌ **Codex: the guard or the block list isn't set**
+  - **Fix:** Restore them: \`git checkout -- .codex/hooks.json .codex/rules/closio-agent.rules\`"
 }

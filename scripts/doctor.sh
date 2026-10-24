@@ -488,7 +488,7 @@ fi
 if grep -q "$rules_hook" "$AGENT_ROOT/.codex/hooks.json" 2>/dev/null && grep -q "$save_hook" "$AGENT_ROOT/.codex/hooks.json" 2>/dev/null &&
    jq -e '[.hooks.PostCompact[]?.hooks[]?.command] | any(test("card-rules-hook"))' "$AGENT_ROOT/.codex/hooks.json" >/dev/null 2>&1; then
   pass "Codex: the card hooks are set in \`.codex/hooks.json\`"
-  trust_steps="(1) Start Codex in the closio-agent folder (after \`nvm use v22\`); it says \"… hooks need review before they can run\". (2) Type \`/hooks\`. (3) In the list, select the hooks under \"When the user submits a prompt\" and \"After context compaction\" (\`bash scripts/$rules_hook\`) and \"Right before Codex ends its turn\" (\`bash scripts/$save_hook\`) and approve them. (4) Send any prompt that names a card (e.g. \"Is SCRUM-567 picked up?\"), then \`\$flow-doctor\` again: this line turns ✅. If the hook file changes later, Codex asks again."
+  trust_steps="(1) Start Codex in the closio-agent folder (after \`nvm use v22\`); it says \"… hooks need review before they can run\". (2) Type \`/hooks\`. (3) In the list, select the hooks under \"When the user submits a prompt\" and \"After context compaction\" (\`bash scripts/$rules_hook\`) and \"Right before Codex ends its turn\" (\`bash scripts/$save_hook\`) and \"Before a tool executes\" (\`bash scripts/command-guard-hook.sh codex\`) and approve them. (4) Send any prompt that names a card (e.g. \"Is SCRUM-567 picked up?\"), then \`\$flow-doctor\` again: this line turns ✅. If the hook file changes later, Codex asks again."
   case " ${AI_TOOLS:-} " in
     *" codex "*)
       codex_ran="$AGENT_ROOT/local/card-sessions/codex-ran"
@@ -502,6 +502,28 @@ if grep -q "$rules_hook" "$AGENT_ROOT/.codex/hooks.json" 2>/dev/null && grep -q 
   esac
 else
   fail "Codex: the card hooks aren't all set in \`.codex/hooks.json\`" "Restore it: \`git checkout -- .codex/hooks.json\`, start Codex again in this folder and approve the hooks when it asks."
+fi
+
+# ---------------------------------------------------------------- Command guard (D94, rule A32)
+section "Command guard" "what the AI may never run; the session's first push, migration, seeder and test-data run asked in the tool"
+guard_hook="command-guard-hook.sh"
+if printf '{"hook_event_name":"PreToolUse","session_id":"doctor","cwd":"%s","tool_name":"Bash","tool_input":{"command":"git reset --hard"}}' "$AGENT_ROOT" |
+     bash "$AGENT_ROOT/scripts/$guard_hook" claude 2>/dev/null | jq -e '.hookSpecificOutput.permissionDecision == "deny"' >/dev/null 2>&1; then
+  pass "The command guard stops a \`git reset --hard\` (tested just now)"
+else
+  fail "The command guard doesn't stop a \`git reset --hard\`" "Check that \`scripts/$guard_hook\` exists and jq is installed (\`git status\`; restore it with \`git checkout -- scripts/$guard_hook\`), then run \`/flow-doctor\` again."
+fi
+if jq -e '([.hooks.PreToolUse[]?.hooks[]?.command] | any(test("command-guard-hook"))) and ([.hooks.PostToolUse[]?.hooks[]?.command] | any(test("command-guard-hook")))
+      and ([.permissions.deny[]?] | any(. == "Bash(git reset --hard*)"))' "$AGENT_ROOT/.claude/settings.json" >/dev/null 2>&1; then
+  pass "Claude Code: the guard and the block list are set in \`.claude/settings.json\`"
+else
+  fail "Claude Code: the guard or the block list isn't set in \`.claude/settings.json\`" "Restore the file: \`git checkout -- .claude/settings.json\`, then start Claude Code again in this folder."
+fi
+if jq -e '[.hooks.PreToolUse[]?.hooks[]?.command] | any(test("command-guard-hook"))' "$AGENT_ROOT/.codex/hooks.json" >/dev/null 2>&1 &&
+   grep -q 'decision = "forbidden"' "$AGENT_ROOT/.codex/rules/closio-agent.rules" 2>/dev/null; then
+  pass "Codex: the guard and the block list are set in \`.codex/hooks.json\` and \`.codex/rules/closio-agent.rules\`"
+else
+  fail "Codex: the guard or the block list isn't set" "Restore them: \`git checkout -- .codex/hooks.json .codex/rules/closio-agent.rules\`, start Codex again in this folder and approve the hooks when it asks."
 fi
 
 # ---------------------------------------------------------------- Cards in progress (C1, D61)
