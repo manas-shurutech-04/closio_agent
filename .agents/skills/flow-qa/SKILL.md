@@ -48,7 +48,7 @@ The first memory step runs here automatically:
 **3. The facts, for each comment.** Connect the VPN with the `flow-connectivity` agent first (rule A5): dev needs it. For each comment, show as "Found" lines, each with where it was found:
    - **Which AC it's about** and what that AC says (`runs/<KEY>/card.md`); what was decided on it (`decisions.md`, by number); what the deployment doc says (`deployment.md`).
    - **The merged code** for that behaviour: the repos from `state.md`, on their base branch as merged (read only; folder access first, rule A15).
-   - **What dev does today:** the exact scenario QA describes, checked the quick way on dev, as `/flow-finish` step 4 does (`bash scripts/api-call.sh … --env dev`; a web card: `bash scripts/e2e.sh quick … --env dev`). Calls that only read run straight away. **Test data or a call that writes:** shown first with its cleanup, run only after a clear yes (rule A23). Remove scratch files at the end with `bash scripts/run.sh quick-clean <KEY>`.
+   - **What dev does today:** the exact scenario QA describes, checked the quick way on dev, as `/flow-finish` step 4 does (`bash scripts/api-call.sh … --env dev`; a web card: `bash scripts/e2e.sh quick … --env dev`). Calls that only read run straight away. **Test data or a call that writes:** shown first with its cleanup, run only after a clear yes, the first time in this session; the session's next ones run without asking, each said in one line (rule A23, D94). Remove scratch files at the end with `bash scripts/run.sh quick-clean <KEY>`.
 
 **4. Sort each comment and draft.** One of:
    - **Works as the card says:** a drafted answer: what the AC says, what was decided (decision number), what dev shows today (with the date).

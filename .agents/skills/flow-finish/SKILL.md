@@ -42,9 +42,9 @@ The first memory step runs here automatically:
 
 **3. Deployed on dev?** Ask the user in the chat: "Is <KEY> deployed on the dev environment (every repo: <repos>)?" Wait for the answer; nothing checks it by itself. Not yet: stop; run `/flow-finish <KEY>` again once it is. Log the step; `set <KEY> step 4`.
 
-**4. The checks on dev (D22, B: the quick check, D72).** Every repo needs its dev address: `bash scripts/configure-repo.sh show <repo>` shows `Dev:`; if it's not set, ask the user for it and save it with `bash scripts/configure-repo.sh set-dev-url <repo> <url>` (a shared file: it should be committed). Then check every AC exactly as `/flow-verify`'s quick check does (its steps 4 to 6, B), but **on dev**: add `--env dev` to every `bash scripts/api-call.sh …` call (WS1 with the dev login, rule A24; a direct WS2 call with WS1's pair, D37) and to `bash scripts/e2e.sh probe|quick …` (the dev web app); a web card's APIs are asked about as there (D69). Test data and calls that write are shown first and run only after a clear yes, with their cleanup (rule A23); remove the scratch files at the end with `bash scripts/run.sh quick-clean <KEY>`. Record the run at the top of `verify.md`: `## Run <n> — <date and time> · dev check (B)`, every scenario with ✅ / ❌ (each failure: what was expected, what came back). **A failure:** list each one with what you suggest (a fix after a merge needs a new branch and MR: ask the user whether it's a new card or a follow-up on this one; a setup problem: the exact fix); the card stays in `after-merge`; the user decides; stop. Log the step; `set <KEY> step 5`.
+**4. The checks on dev (D22, B: the quick check, D72).** Every repo needs its dev address: `bash scripts/configure-repo.sh show <repo>` shows `Dev:`; if it's not set, ask the user for it and save it with `bash scripts/configure-repo.sh set-dev-url <repo> <url>` (a shared file: it should be committed). Then check every AC exactly as `/flow-verify`'s quick check does (its steps 4 to 6, B), but **on dev**: add `--env dev` to every `bash scripts/api-call.sh …` call (WS1 with the dev login, rule A24; a direct WS2 call with WS1's pair, D37) and to `bash scripts/e2e.sh probe|quick …` (the dev web app); a web card's APIs are asked about as there (D69). Test data and calls that write are shown first and run only after a clear yes, with their cleanup, the first time in this session; the session's next ones run without asking, each said in one line (rule A23, D94); remove the scratch files at the end with `bash scripts/run.sh quick-clean <KEY>`. Record the run at the top of `verify.md`: `## Run <n> — <date and time> · dev check (B)`, every scenario with ✅ / ❌ (each failure: what was expected, what came back). **A failure:** list each one with what you suggest (a fix after a merge needs a new branch and MR: ask the user whether it's a new card or a follow-up on this one; a setup problem: the exact fix); the card stays in `after-merge`; the user decides; stop. Log the step; `set <KEY> step 5`.
 
-**5. Special instructions.** If the user's memory holds standing instructions for the deployment doc (e.g. "Deployment doc: deploy WS2 repos one at a time"), put them in and say so in one line ("Using your memory M5"), then ask only: "Anything else special for this card?" (D74). Else ask the user once: "Anything special for the deployment doc (an order, a flag, a manual step)?" Their answer goes in as they wrote it ("none" is fine). Log the step; `set <KEY> step 6`.
+**5. Special instructions (not asked, D94).** Write them from what you found, without a question (the user, 2026-10-24): the user's memory entries for the deployment doc (e.g. "Deployment doc: deploy WS2 repos one at a time"; say so in one line, "Using your memory M5"), and anything this card needs beyond the usual order: a flag, a manual step, a setting changed by hand (from `develop.md`, the plan and the code changes). Nothing: "None: <what was checked, e.g. WS2 before WS1, no new settings, no database changes, no manual step>". Say in one line what you wrote; the user corrects it when they see the doc. Log the step; `set <KEY> step 6`.
 
 **6. The deployment doc (D12, D72): `runs/<KEY>/deployment.md`.** Written for two kinds of readers, in plain words: **QA** and **the person deploying**. From `ship.md`, `develop.md`, `card.md`, the code and the dev check:
 ```
@@ -79,12 +79,21 @@ Card: [<KEY>: <card title>](https://<JIRA_SITE>/browse/<KEY>)
 - **New settings:** each new `.env` setting's name (from the card's diff of `.env.example`) and one line on what it's for; never a value.   (or: none)
 - **After deploying:** <from develop.md>   (or: nothing)
 
+### Rollback
+<the reverse order of the deploy: the web app first, then WS1, then WS2>
+1. <the repo in words> (<repo>): put back the version from before MR [!<n>](<link>).
+Then, only if needed and once that code is back: undo each migration, newest first, in words (or: no database changes to undo); remove what each seeder added, in words (or: no default data to remove).
+
+### Risks
+- <what could go wrong after the deploy, and for whom: a changed default or behaviour, the other screens or services that call a changed API (searched in WS1 and the web app; name them), a setting that must be in place first, the data the change touches>   (or: None found: <what was checked>)
+
 ## Special instructions
-<the user's words from step 5>   (or: none)
+<step 5: the user's memory entries and what this card needs>   (or: None: <what was checked>)
 ```
    **Rules for the doc (D72, changed 2026-10-19):**
    - **Plain words, no code:** no migration or seeder code, no commands, no raw JSON (requests, responses, messages). The one exception: the API curls.
    - **The curls come from the calls that passed in the dev check (step 4):** the same paths, headers, filters and login fields that `scripts/api-call.sh` sent (header names and login fields from the code, rule A16). Every userid, password, cookie, key and secret is a placeholder like `<your session cookie>`; never a real value (A6).
+   - **Rollback and Risks are always there (D94):** the rollback in words, in the reverse order of the deploy; the risks from the code changes and a search for the other callers of every changed API in WS1 and the web app (`Grep` in their folders); "None found" says what was checked.
    - **MR number and link only**, no merge commit ID. Leave out a part that doesn't apply (e.g. "How to try it" for a card with no API, screen or consumer). The menu path comes from the web app's menu labels in its code (its router and menu files); the user may correct it. `JIRA_SITE` is in `config/project-settings.sh`.
 
    **Before the doc is handed over, show every migration and seeder it names for review (rule A23):** the full file (up and down), what it changes (tables, columns, rows), the repo; then a **separate yes** that it may go out (the doc asks someone to run them on a server). Log the step; `set <KEY> step 7`.
@@ -102,7 +111,7 @@ Before you start each step below, say its line in one sentence, so the user know
 
 ## Rules
 - Every step writes its history line with the rules and memory applied (A1, A17).
-- Nothing is assumed deployed: the user says so (D72). The dev checks are the quick check (B) with `--env dev`; test data, calls that write and the cleanup only after a clear yes (A23).
+- Nothing is assumed deployed: the user says so (D72). The dev checks are the quick check (B) with `--env dev`; test data, calls that write and the cleanup only after a clear yes, the first time in a session (A23, D94).
 - Migrations and seeders named in the deployment doc are shown for review first, then a separate yes (A23).
 - The deployment doc lives in the card's folder and on the Jira card as one comment, edited on a re-run (D12, D72). It's written in plain words for QA and the person deploying: no code, commands or raw JSON, except the API curls, whose logins, cookies and keys are placeholders. The card moves only to Ready for Test here (D11, A3); for a Bug card raised by `/flow-qa`, its story too, from In Development, after the user's yes (D81).
 - Keys, passwords, sessions and `.env` values are never shown (A6). Never read `.env` values.

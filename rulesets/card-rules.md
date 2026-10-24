@@ -16,3 +16,9 @@
 
 - Read a repo's code with your tool's own read and search tools. Its git history and changes: `bash scripts/repo-git.sh <repo> log | diff | status | show …` (read-only, never shows a `.env` file). Its tests, checks and servers: `bash scripts/repo-run.sh <repo> …`. These are pre-approved, so they don't stop for a prompt ([D90](../docs/design-decisions.md#d90)).
 - Not `cat`, `grep` or `git -C …` on a repo folder through the shell: they ask each time, and `cat` or `grep` could print a `.env` file. Never read or print a `.env` file's values (`AGENTS.md` rule 3).
+
+## 3. Never ask again what the user already answered
+
+- Before you ask the user anything about the card, read what's already decided: `card.md` (its `## API request and response`, `## Explained at pick-up`, `## Decided before planning`) and `runs/<KEY>/decisions.md`. An answer there is used for the rest of the card, in every command; it isn't asked again ([D94](../docs/design-decisions.md#d94); the user, 2026-10-24: "once the structure is provided by the user, you can use it for further process rather than asking again and again").
+- A response the card marks `unchanged` (it stays as it is today) isn't asked for: `/flow-verify` compares it with the real response before the change (`bash scripts/response-shape.sh compare …`).
+- A question whose answer you'd fill in yourself ("none is fine") isn't a question: write what you found and say it in one line; the user corrects it if needed.
