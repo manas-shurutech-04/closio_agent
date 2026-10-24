@@ -71,9 +71,10 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     `responses.<status>`; `null` in the structure = nullable and not required (e.g. `updated_at`, `updated_by`,
     `updated_by_name`). A field the WS2 code has that the structure doesn't is shown to the user, who decides. Common blocks
     (pagination, the audit fields) come from a shared schema helper, never copied (rule 16).
-18. Migration review (rule A23, D66): before any migration or seeder runs, or the user is asked to run one on a server, show the
-    files for review (the full up and down, what it changes, the repo, the database its `.env` names), then wait for a separate
-    yes. Never run one without it.
+18. Migration review (rule A23, D66, D94): before the first migration or seeder of a session runs, or the user is asked to run
+    one on a server, show the files for review (the full up and down, what it changes, the repo, the database its `.env`
+    names), then wait for a separate yes. Never run one without it. After that yes, the session's next migrations (or
+    seeders) run without asking, each said in one line; every one the deployment doc names is still shown first.
 19. WS1 login (rule A24, D71): every WS1 login for a check goes to the dev WS1 login URL (`WS1_LOGIN_URL` in
     `config/project-settings.sh`) with the WS1 login saved in the Keychain; `scripts/api-call.sh` does it. The session cookie it
     returns is used for the calls to the WS1 on this Mac (under its own name, else as `closio_session_local`). Never log in on the
@@ -95,7 +96,8 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     accepts; follow-up rounds until nothing is open; sum up what was agreed and wait for the confirmation before changing
     anything (at planning, the draft plan is that summary and its approval the confirmation, D90); record the decisions as
     rule 23 says. Short answers, approvals and the user's questions go straight
-    through. Safety stops (migrations, test data, commits and push, Jira and GitLab changes) stay their own plain yes/no.
+    through. Safety stops (migrations, test data, commits and push, Jira and GitLab changes) stay their own plain yes/no;
+    a push, a migration, a seeder and test data ask the first time in a session only (D94).
     The user's memory can't soften this rule.
 23. Every decision on a card is recorded in full, in one place (rule A27, D77): `runs/<CARD-KEY>/decisions.md`, one numbered
     row per decision, written with `bash scripts/run.sh decide <KEY> "<step>" "<question>" "<decided>" "<who / why>"` the
@@ -108,7 +110,10 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     `## API request and response` (written from the user's own structure) or from what the user pastes in chat. Never
     write one yourself, never derive one from the code, never fill in a missing field. If it's missing, ask the user for it
     and record their answer (rule 23). Where the code returns something different, show the difference as a "Found" line
-    and let the user decide. Error codes and messages still come from the code (rule 10).
+    and let the user decide. Error codes and messages still come from the code (rule 10). A structure the user gave is
+    used for the rest of the card and never asked again; a response the card says stays as it is today is written
+    `**Response (200)**: unchanged (AC <n>)` and checked against the real response before the change
+    (`bash scripts/response-shape.sh compare …`), nothing asked (D94).
 25. The card rules (rule A29, D86): `rulesets/card-rules.md` holds the rules to apply at every prompt about a card. The
     card-rules hook (`scripts/card-rules-hook.sh`, set in `.claude/settings.json` and `.codex/hooks.json`) adds it to every
     card command, every prompt that names a card key and every later prompt in that session, and again after the
@@ -122,7 +127,7 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     the card's folder (`runs/<CARD-KEY>/`) to its own branch `runs/<CARD-KEY>` and pushes it to GitHub at the end of every
     reply in a session working on a card, when it changed: "<KEY>: auto-saved after /flow-<command>" (or "after a reply").
     Only that branch: never `main`, never a code repo, never forced. The commands' own `run.sh save` steps stay. A failed
-    push shows one warning with its fix; tell the user.
+    push shows one warning with its fix; tell the user. A save that pushed shows one short line, so the user knows (D95).
 27. The Jira API backup (rule A31, D88): Jira is used through its connector first. When the connector's tools still aren't
     there after 3 tries, or a Jira tool fails or can't do an action, switch by yourself (no question) to
     `bash scripts/jira-api.sh`, say so in one line, and do the same there for the rest of the command: reading a card or its
@@ -143,3 +148,17 @@ The full list of agent rules, with the reasons, is in `docs/agent-rules.md`.
     the Mac's bash 3.2; Docker Desktop running), with all scripts together at 90% line coverage or more. Without Docker
     Desktop, `bash tests/run.sh --coverage` runs the same tests on the Mac itself (about 11 minutes). Tests run only against
     the fakes in `tests/fakes/`: never the real Jira, GitLab, VPN, Keychain, home folder, or this folder's `local/` and `runs/`.
+30. The command guard (rule A32, D94): `scripts/command-guard-hook.sh`, a hook before every shell command in
+    `.claude/settings.json` and `.codex/hooks.json` (the same block list is also in both tools' own settings), stops what the
+    AI may never run: git that throws work away or rewrites a remote (a forced or deleting push, `reset --hard`, `clean`,
+    `checkout --`, `restore`, `branch -D`, `stash drop` / `clear`, remote changes), migrations and seeders outside
+    `repo-run.sh`, a recursive `rm`, `sudo`, `chmod -R` / `chown -R`, Docker prunes, `dropdb`, `psql`; and a plain
+    `git push` outside this folder (a card's code goes out only through `ship.sh`; this folder's own pushes need no yes).
+    The session's first push, migration, seeder and test-data run also need the user's OK in the tool itself (Claude
+    Code's Allow box; Codex: a macOS dialog); after it, the session's next ones of that kind run without asking. When it
+    stops a command, don't look for another way: tell the user what it said and, if it's really needed, ask them to run it.
+    The helper agents `flow-story-check` and `flow-ac-checker` have no shell: they read the changes the command saved first
+    with `bash scripts/repo-git.sh <repo> save-diff <KEY> <base branch>`. A major step that runs without a question at that
+    moment (the session's next push, migration, seeder or test-data run, this folder's own push, a Jira change, a write
+    on a merge request) shows a short "⚠️ closio-agent: …" line, from the guard itself (D95); in Codex, a Jira change
+    through the Atlassian app gets the same line from you, since the guard can't see those tools.

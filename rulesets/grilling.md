@@ -55,7 +55,7 @@ Sum up in a few lines what was agreed (each decision with its answer), and wait 
 
 ## 5. Safety stops stay plain yes/no
 
-Grilling settles the decisions; it never replaces a safety stop. After the grilling, these are still their own plain yes/no, exactly as each command asks them today: running a migration or seeder (after its review), adding test data or sending calls that write, making the commits and pushing, posting on Jira or GitLab, moving the Jira card, approving the plan.
+Grilling settles the decisions; it never replaces a safety stop. After the grilling, these are still their own plain yes/no, exactly as each command asks them today: running a migration or seeder (after its review), adding test data or sending calls that write, making the commits and pushing, posting on Jira or GitLab, moving the Jira card, approving the plan. A push, a migration or seeder, and test data with calls that write ask the first time in a session only; after that yes, the session's next ones run without asking, each said in one line ([D94](../docs/design-decisions.md#d94)).
 
 ## 6. Where the decisions are saved
 
