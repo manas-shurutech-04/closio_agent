@@ -78,7 +78,7 @@ test_a_command_that_changes_the_repo_is_refused() {
   run repo-git.sh fake-repo push
   assert_rc 2
   assert_eq "$OUT" "❌ 'push' isn't a read-only git command here
-   Fix: Use log, diff, status or show. Anything that changes a repo goes through the commands' own scripts."
+   Fix: Use log, diff, status, show or save-diff. Anything that changes a repo goes through the commands' own scripts."
 }
 test_an_unknown_repo() {
   setup_repo
@@ -96,5 +96,39 @@ test_a_repo_that_is_not_cloned() {
 test_too_few_arguments_shows_the_usage() {
   setup_repo
   run repo-git.sh fake-repo
-  assert_rc 2; assert_eq "$OUT" "Usage: bash scripts/repo-git.sh <repo> log | diff | status | show [git arguments…]"
+  assert_rc 2; assert_eq "$OUT" "Usage: bash scripts/repo-git.sh <repo> log | diff | status | show [git arguments…] · <repo> save-diff <CARD-KEY> <base branch>"
+}
+
+# save-diff (D94): what the card changed, for the helper agents that have no shell
+test_save_diff_keeps_every_change_since_the_base_and_no_env_file() {
+  setup_repo
+  git -C "$R" checkout -q -b SCRUM-1/feature
+  echo "committed" >> "$R/app.js"; git -C "$R" commit -q -am "card commit"
+  echo "staged" > "$R/staged.js"; git -C "$R" add staged.js
+  echo "not staged" >> "$R/app.js"; echo "SECRET_X=changed" > "$R/.env.dev"
+  echo "brand new" > "$R/new file.js"; printf 'NEW_SECRET=x\n' > "$R/.env.local"
+  local before; before="$(git -C "$R" status --porcelain)"
+  run repo-git.sh fake-repo save-diff SCRUM-1 develop
+  assert_rc 0; assert_contains "$OUT" "✅ Saved what SCRUM-1 changed in fake-repo since develop"
+  assert_contains "$OUT" "local/diffs/SCRUM-1/fake-repo.diff"
+  local d; d="$(cat "$A/local/diffs/SCRUM-1/fake-repo.diff")"
+  assert_contains "$d" "+committed"; assert_contains "$d" "+staged"; assert_contains "$d" "+not staged"; assert_contains "$d" "+brand new"
+  assert_not_contains "$d" "SECRET"; assert_not_contains "$d" ".env"
+  assert_eq "$(git -C "$R" status --porcelain)" "$before" "the repo is left as it was"
+}
+test_save_diff_needs_a_card_key_and_a_base_it_knows() {
+  setup_repo
+  run repo-git.sh fake-repo save-diff SCRUM-1
+  assert_rc 2; assert_contains "$OUT" "save-diff <CARD-KEY> <base branch>"
+  run repo-git.sh fake-repo save-diff "../x" develop
+  assert_rc 2; assert_contains "$OUT" "isn't a card key"
+  run repo-git.sh fake-repo save-diff SCRUM-1 no-such-branch
+  assert_rc 1; assert_contains "$OUT" "has no commit in common with 'no-such-branch'"
+  assert_no_file "$A/local/diffs/SCRUM-1"
+}
+test_save_diff_says_when_it_cannot_write_its_file() {
+  setup_repo
+  mkdir -p "$A/local"; : > "$A/local/diffs"
+  run repo-git.sh fake-repo save-diff SCRUM-1 develop
+  assert_rc 1; assert_contains "$OUT" "Couldn't make local/diffs/SCRUM-1"
 }

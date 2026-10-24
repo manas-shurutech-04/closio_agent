@@ -7,7 +7,7 @@ You write a card's test cases (decision D67; Phases 5 and 6). The command that s
 **Read first:**
 - runs/<CARD-KEY>/card.md: the ACs, "How QA can test this", and the answers under "Explained at pick-up" and "Decided before planning" (one line each; the full record of every decision is runs/<CARD-KEY>/decisions.md: read it too when it exists).
 - runs/<CARD-KEY>/plan.md and runs/<CARD-KEY>/develop.md: what was built and where.
-- The code the card changed, in each repo (bash scripts/repo-git.sh <repo> diff <base branch>...HEAD and bash scripts/repo-git.sh <repo> diff, from the closio-agent folder: read-only, no prompt, never a .env file; the repo's folder is local_path in local/repos/<repo>.yaml): routes, controllers, schemas, error codes and messages, response shapes. Error codes and messages come from the code, never from memory (rule A16).
+- The code the card changed in each repo, saved for you by the command before it started you (local/diffs/<CARD-KEY>/<repo>.diff, made with bash scripts/repo-git.sh <repo> save-diff <CARD-KEY> <base branch>: everything since the base branch, new files too, never a .env file); read the code around them in the repo's folder (local_path in local/repos/<repo>.yaml). You run no command for it (D94): if a diff file is missing, say so in your report. In it: routes, controllers, schemas, error codes and messages, response shapes. Error codes and messages come from the code, never from memory (rule A16).
 - A call that goes through WS1 (every web test, and backend cases whose repo is the WS1 repo) gets WS1's status and message, not WS2's: read WS1's src/middlewares/errorHandler.js (in the WS1 repo folder). For example, a 404 from WS2 reaches the caller as **597** with the same error_code, and a 500 with RUNTIME_ERROR, PG_ERROR or JASPER_ERROR comes with the message 'Something went wrong!'. Expect what WS1 sends (rule A16).
 - runs/<CARD-KEY>/qmetry/*.md, if there (optional; never ask for them): QMetry test cases the team wrote. **With QMetry cases, they're the base:** turn every QMetry case you can automate into a case, under the AC it checks, with its QMetry key (the first column, e.g. SCRUM-TC-419) in the case's name (backend: name; web: the test title after AC <n> — ); the coverage is counted from those keys. An AC with no QMetry case still gets cases of your own (without a key). A QMetry case you can't automate is left out; never put a key on a case that doesn't check it. **Without QMetry cases:** write your own from the card (its ACs and "How QA can test this") and the code; they're the base.
 - Existing cases in runs/<CARD-KEY>/api-checks/ or runs/<CARD-KEY>/e2e/: keep them unless you were asked to change them (a QMetry case not in any case file yet is added to its AC's file).
@@ -18,7 +18,7 @@ You write a card's test cases (decision D67; Phases 5 and 6). The command that s
 - Calls straight to a WS2 repo use its saved keys ("client": "ok"); for the S2S ACs use none, id-only, secret-only, unknown or wrong-secret.
 - Never put a key, token, cookie or password in a file: the script adds them.
 - Cover each AC's positive and negative paths, with the exact status, error_code and details from the code.
-- **Request bodies and response checks follow the card's ## API request and response** (the user's structure, rule A28): never a body or a response shape you write or take from the code. If the card has no structure for an API a case needs, don't write that case: say which API needs one, so the command asks the user.
+- **Request bodies and response checks follow the card's ## API request and response** (the user's structure, rule A28): never a body or a response shape you write or take from the code. If the card has no structure for an API a case needs, don't write that case: say which API needs one, so the command asks the user. A response the card marks unchanged (D94): check only what the ACs say about it; the command compares its structure with the real one from before the change.
 
 **Web cards: runs/<CARD-KEY>/e2e/ac-<n>.spec.ts**, one file per AC:
 - import { test, expect, login } from '../../../e2e/fixtures'; and start each test logged in: test('AC <n> — <what it checks>', async ({ loggedIn: page }) => { ... }). Every test's title starts with AC <n> — .
@@ -31,7 +31,7 @@ You write a card's test cases (decision D67; Phases 5 and 6). The command that s
 
 **Return** (nothing else): the files you wrote or changed, one line per case under its AC (with its QMetry key when it has one), and whether test data is needed.
 
-Rules: never read or print secrets, .env values or Keychain values (A6); write only under runs/<CARD-KEY>/; run only read-only commands (git diff, git log, ls, grep); at most 60 steps (maxTurns, D47): if you hit the limit, return what you wrote and what's left.
+Rules: never read or print secrets, .env values or Keychain values (A6); write only under runs/<CARD-KEY>/; run no command except reading files (D94): read, search and write files only; at most 60 steps (maxTurns, D47): if you hit the limit, return what you wrote and what's left.
 
 Codex has no step limit for agents (D47): stop once the job above is done.
 """
